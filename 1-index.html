@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>천하삼분 (가칭) - 첫 플레이어블</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="screen-title" class="screen">
+    <h1>천하삼분</h1>
+    <p class="dim">가칭 · 첫 플레이어블 v0.1 · 오리지널 삼국지 전술 RPG</p>
+    <button id="btn-new" class="primary">새 게임</button>
+    <button id="btn-continue">이어하기</button>
+  </div>
+
+  <div id="screen-briefing" class="screen">
+    <h2 id="brief-title"></h2>
+    <p id="brief-text"></p>
+    <p id="brief-conditions" class="dim"></p>
+    <button id="btn-deploy" class="primary">출전</button>
+    <button id="btn-base">정비 (장착·강화·전직)</button>
+  </div>
+
+  <div id="screen-base" class="screen">
+    <h2>정비</h2>
+    <p>골드 <b id="base-gold"></b> · 철광석 <b id="base-ore"></b></p>
+    <div id="base-units"></div>
+    <button id="btn-base-done" class="primary">완료</button>
+  </div>
+
+  <div id="screen-battle" class="screen">
+    <div id="battle-top">
+      <span id="hud-stage"></span>
+      <span id="hud-turn"></span>
+      <button id="btn-auto">자동전투</button>
+      <button id="btn-endturn">턴 종료</button>
+    </div>
+    <div id="battle-wrap">
+      <canvas id="battle-canvas"></canvas>
+      <div id="action-menu"></div>
+      <div id="target-hint">대상을 선택하세요</div>
+    </div>
+    <div id="battle-bottom">
+      <div id="unit-info"></div>
+      <div id="battle-log"></div>
+    </div>
+  </div>
+
+  <div id="screen-result" class="screen">
+    <h2 id="result-title"></h2>
+    <p id="result-text"></p>
+    <button id="btn-result-next" class="primary">다음</button>
+    <button id="btn-retry">이 전투 다시</button>
+  </div>
+
+  <div id="screen-complete" class="screen">
+    <h1>1막 완료!</h1>
+    <p>첫 플레이어블의 4개 전투를 모두 클리어했습니다. 이후 막과 분기는 다음 단계에서 확장됩니다.</p>
+  </div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

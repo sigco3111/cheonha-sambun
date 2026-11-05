@@ -1,0 +1,40 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1c1a17; color: #ece5da; font-family: 'Noto Sans KR', sans-serif; }
+#app { max-width: 760px; margin: 0 auto; padding: 12px; }
+.screen { display: none; flex-direction: column; gap: 12px; align-items: flex-start; min-height: 90vh; }
+.screen:first-child { display: flex; }
+h1 { font-size: 42px; letter-spacing: 4px; margin-top: 18vh; }
+h2 { font-size: 24px; }
+.dim { color: #a89f93; }
+button { background: #2e2a25; color: #ece5da; border: 1px solid #575046; border-radius: 6px; padding: 10px 18px; font-size: 15px; font-family: inherit; cursor: pointer; }
+button:hover { background: #3a352e; }
+button:disabled { opacity: 0.4; cursor: default; }
+button.primary { background: #7a5c2e; border-color: #a98c4f; }
+button.primary:hover { background: #8d6d3a; }
+#screen-title button { min-width: 220px; }
+#battle-top { display: flex; gap: 10px; align-items: center; width: 100%; }
+#hud-stage { font-weight: bold; flex: 1; }
+#battle-wrap { position: relative; overflow-x: auto; width: 100%; }
+#battle-canvas { display: block; image-rendering: auto; border: 1px solid #575046; border-radius: 4px; }
+#action-menu { display: none; position: absolute; flex-direction: column; gap: 4px; background: #26221d; border: 1px solid #575046; border-radius: 6px; padding: 6px; z-index: 5; }
+#action-menu button { padding: 7px 12px; font-size: 13px; text-align: left; }
+#target-hint { display: none; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: #7a5c2e; padding: 4px 12px; border-radius: 4px; font-size: 13px; z-index: 6; }
+#battle-bottom { display: flex; gap: 12px; width: 100%; }
+#unit-info { min-width: 220px; font-size: 13px; line-height: 1.6; background: #26221d; border-radius: 6px; padding: 10px; }
+#battle-log { flex: 1; font-size: 12px; line-height: 1.55; background: #26221d; border-radius: 6px; padding: 10px; max-height: 140px; overflow-y: auto; color: #cfc6b8; }
+.unit-card { background: #26221d; border: 1px solid #3a352e; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; }
+.unit-card button { margin: 6px 6px 0 0; padding: 6px 12px; font-size: 13px; }
+#base-units select { background: #2e2a25; color: #ece5da; border: 1px solid #575046; border-radius: 4px; padding: 4px; font-family: inherit; }
+#test-result { position: fixed; bottom: 0; left: 0; background: #000; color: #0f0; font-size: 11px; z-index: 99; }
+#battle-canvas { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+#battle-top { flex-wrap: wrap; }
+
+/* 모바일 가독성: 헤더 2행 분리, 하단 패널 세로 배치, 빈 선택 패널 숨김 */
+#hud-stage { flex-basis: 100%; font-weight: bold; }
+#unit-info:empty { display: none; }
+@media (max-width: 700px) {
+  #battle-bottom { flex-direction: column; }
+  #unit-info { min-width: 0; }
+  #battle-log { max-height: 110px; }
+  #battle-top { gap: 6px; }
+}
