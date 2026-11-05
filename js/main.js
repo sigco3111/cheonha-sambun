@@ -41,6 +41,34 @@ window.addEventListener('load', () => {
       else Game.onTileClick(x, y);
     });
 
+    // 보기 조작: 확대/축소/전체
+    document.getElementById('btn-zoom-in').onclick = () => Game.setZoom(Game.zoom * 1.25);
+    document.getElementById('btn-zoom-out').onclick = () => Game.setZoom(Game.zoom / 1.25);
+    document.getElementById('btn-zoom-fit').onclick = () => Game.fitZoom();
+
+    // 마우스 드래그 패닝 (터치는 wrap 네이티브 스크롤이 담당)
+    const wrap = document.getElementById('battle-wrap');
+    let panning = false, panMoved = false, psx = 0, psy = 0, psl = 0, pst = 0;
+    wrap.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType !== 'mouse' || ev.button !== 0) return;
+      if (ev.target.closest('#action-menu')) return;
+      panning = true; panMoved = false;
+      psx = ev.clientX; psy = ev.clientY; psl = wrap.scrollLeft; pst = wrap.scrollTop;
+    });
+    wrap.addEventListener('pointermove', (ev) => {
+      if (!panning) return;
+      const dx = ev.clientX - psx, dy = ev.clientY - psy;
+      if (!panMoved && Math.hypot(dx, dy) > 6) { panMoved = true; wrap.classList.add('dragging'); }
+      if (panMoved) { wrap.scrollLeft = psl - dx; wrap.scrollTop = pst - dy; }
+    });
+    const endPan = () => { panning = false; wrap.classList.remove('dragging'); };
+    wrap.addEventListener('pointerup', endPan);
+    wrap.addEventListener('pointercancel', endPan);
+    // 드래그로 끝난 조작이 타일 클릭(이동/선택)으로 처리되지 않도록 캡처 단계에서 억제
+    wrap.addEventListener('click', (ev) => {
+      if (panMoved) { ev.preventDefault(); ev.stopPropagation(); panMoved = false; }
+    }, true);
+
     Game.restoreMenuButtons();
 
     if (new URLSearchParams(location.search).get('script') === '6') { setTimeout(() => {
@@ -130,6 +158,33 @@ window.addEventListener('load', () => {
           document.title = 'SCRIPT:OK equip=iron_sword inv ' + invBefore + '->' + Game.inventory.length + ' up=1 gold ' + goldBefore + '->' + Game.gold;
         } catch (err) { document.title = 'SCRIPT:FAIL ' + err; }
       }, 300); }
+      if (q.get('script') === '7') { (async () => {
+        try {
+          const b = Game.battle;
+          const cv = document.getElementById('battle-canvas');
+          const wr = document.getElementById('battle-wrap');
+          Game.setZoom(1.5, false);
+          wr.scrollLeft = 0; wr.scrollTop = 0;
+          if (cv.style.width !== (cv.width * 1.5) + 'px') throw 'zoom style fail: ' + cv.style.width;
+          const gy = b.units.find(u => u.charId === 'guan_yu');
+          const r = cv.getBoundingClientRect();
+          cv.dispatchEvent(new MouseEvent('click', { bubbles: true,
+            clientX: r.left + (gy.x + 0.5) * (r.width / b.w),
+            clientY: r.top + (gy.y + 0.5) * (r.height / b.h) }));
+          await new Promise(res => setTimeout(res, 80));
+          if (!Game.selected || Game.selected.charId !== 'guan_yu') throw 'zoomed pixel select fail';
+          Game.selected = null; Game.moveTiles = [];
+          const sl0 = wr.scrollLeft, st0 = wr.scrollTop;
+          wr.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'mouse', button: 0, clientX: 300, clientY: 300 }));
+          wr.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 220, clientY: 260 }));
+          wr.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: 220, clientY: 260 }));
+          cv.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 220, clientY: 260 }));
+          await new Promise(res => setTimeout(res, 80));
+          if (Game.selected) throw 'drag click not suppressed';
+          if (wr.scrollLeft === sl0 && wr.scrollTop === st0) throw 'pan did not scroll';
+          document.title = 'SCRIPT:OK zoom150 select+pan scroll=' + wr.scrollLeft + ',' + wr.scrollTop + ' label=' + document.getElementById('zoom-label').textContent;
+        } catch (err) { document.title = 'SCRIPT:FAIL ' + err; }
+      })(); }
       if (q.get('script') === '4') { (async () => {
         try {
           const b = Game.battle;
