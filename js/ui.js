@@ -31,6 +31,7 @@ const Game = {
   auto: false, fast: false,
   stageIndex: 0,
   canvas: null, ctx: null,
+  zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms)),
 
   save() {
@@ -68,6 +69,7 @@ const Game = {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
     document.getElementById(id).style.display = 'flex';
     this.screen = id;
+    document.body.classList.toggle('in-battle', id === 'screen-battle');
   },
 
   // ----- 타이틀/브리핑/정비 -----
@@ -196,6 +198,69 @@ const Game = {
     this.canvas = document.getElementById('battle-canvas');
     this.canvas.width = b.w * TILE; this.canvas.height = b.h * TILE;
     this.ctx = this.canvas.getContext('2d');
+    this.initView();
+  },
+
+  // ----- 보기 (확대/축소/패닝) -----
+  readView() {
+    try {
+      const v = JSON.parse(localStorage.getItem('cheonha3_view') || 'null');
+      if (v && v.zoom > 0) return v.zoom;
+    } catch (e) {}
+    return null;
+  },
+
+  initView() {
+    const wrap = document.getElementById('battle-wrap');
+    const fitW = (wrap.clientWidth - 4) / this.canvas.width;
+    const fitH = (wrap.clientHeight - 4) / this.canvas.height;
+    let z = this.readView();
+    if (!z) {
+      // 좁은 화면(모바일)은 전체 축소 대신 100% 타일 + 패닝으로 시작
+      z = fitW < 0.8 ? 1 : Math.min(1.5, fitW, fitH);
+    }
+    this.setZoom(z, false);
+    wrap.scrollLeft = 0; wrap.scrollTop = 0;
+    if (!this._viewInit) {
+      this._viewInit = true;
+      wrap.addEventListener('scroll', () => {
+        const hint = document.getElementById('target-hint');
+        if (hint.style.display === 'block') hint.style.top = (wrap.scrollTop + 6) + 'px';
+      });
+    }
+  },
+
+  setZoom(z, keepCenter = true) {
+    const wrap = document.getElementById('battle-wrap');
+    const cv = this.canvas;
+    if (!cv) return;
+    z = Math.max(this.ZOOM_MIN, Math.min(this.ZOOM_MAX, Math.round(z * 100) / 100));
+    const oldZ = this.zoom || 1;
+    const cx = (wrap.scrollLeft + wrap.clientWidth / 2) / oldZ;
+    const cy = (wrap.scrollTop + wrap.clientHeight / 2) / oldZ;
+    this.zoom = z;
+    cv.style.width = (cv.width * z) + 'px';
+    cv.style.height = (cv.height * z) + 'px';
+    if (keepCenter) {
+      wrap.scrollLeft = cx * z - wrap.clientWidth / 2;
+      wrap.scrollTop = cy * z - wrap.clientHeight / 2;
+    }
+    if (this.menuFor) { this.closeMenu(); this.menuFor = null; this.restoreMenuButtons(); }
+    this.updateZoomLabel();
+    try { localStorage.setItem('cheonha3_view', JSON.stringify({ zoom: z })); } catch (e) {}
+  },
+
+  fitZoom() {
+    const wrap = document.getElementById('battle-wrap');
+    const fitW = (wrap.clientWidth - 4) / this.canvas.width;
+    const fitH = (wrap.clientHeight - 4) / this.canvas.height;
+    this.setZoom(Math.min(fitW, fitH), false);
+    wrap.scrollLeft = 0; wrap.scrollTop = 0;
+  },
+
+  updateZoomLabel() {
+    const el = document.getElementById('zoom-label');
+    if (el) el.textContent = Math.round(this.zoom * 100) + '%';
   },
 
   renderBattle() {
@@ -291,8 +356,19 @@ const Game = {
     this.menuFor = u;
     const m = document.getElementById('action-menu');
     m.style.display = 'flex';
-    m.style.left = Math.min(u.x * TILE + 20, this.canvas.width - 140) + 'px';
-    m.style.top = Math.min(u.y * TILE + 10, this.canvas.height - 160) + 'px';
+    // 확대/패닝 상태에서도 유닛 옆, 지금 보이는 영역 안에 배치
+    const wrap = document.getElementById('battle-wrap');
+    const z = this.zoom;
+    const mw = m.offsetWidth || 150, mh = m.offsetHeight || 170;
+    const vL = wrap.scrollLeft, vT = wrap.scrollTop;
+    const vR = vL + wrap.clientWidth, vB = vT + wrap.clientHeight;
+    let left = (u.x + 1) * TILE * z + 6;
+    if (left + mw > vR - 4) left = u.x * TILE * z - mw - 6;
+    left = Math.max(vL + 4, Math.min(left, vR - mw - 4));
+    let top = u.y * TILE * z + 4;
+    top = Math.max(vT + 4, Math.min(top, vB - mh - 4));
+    m.style.left = left + 'px';
+    m.style.top = top + 'px';
     document.getElementById('menu-attack').disabled = this.battle.targetsFor(u).length === 0;
     document.getElementById('menu-tactic').disabled = u.tactics.length === 0;
   },
