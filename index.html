@@ -34,17 +34,25 @@
     <div id="battle-top">
       <span id="hud-stage"></span>
       <span id="hud-turn"></span>
+      <span id="zoom-controls">
+        <button id="btn-zoom-out" title="축소">−</button>
+        <span id="zoom-label">100%</span>
+        <button id="btn-zoom-in" title="확대">+</button>
+        <button id="btn-zoom-fit" title="전장 전체 보기">전체</button>
+      </span>
       <button id="btn-auto">자동전투</button>
       <button id="btn-endturn">턴 종료</button>
     </div>
-    <div id="battle-wrap">
-      <canvas id="battle-canvas"></canvas>
-      <div id="action-menu"></div>
-      <div id="target-hint">대상을 선택하세요</div>
-    </div>
-    <div id="battle-bottom">
-      <div id="unit-info"></div>
-      <div id="battle-log"></div>
+    <div id="battle-main">
+      <div id="battle-wrap">
+        <canvas id="battle-canvas"></canvas>
+        <div id="action-menu"></div>
+        <div id="target-hint">대상을 선택하세요</div>
+      </div>
+      <div id="battle-bottom">
+        <div id="unit-info"></div>
+        <div id="battle-log"></div>
+      </div>
     </div>
   </div>
 
