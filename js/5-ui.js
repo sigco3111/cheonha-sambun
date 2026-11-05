@@ -1,0 +1,524 @@
+// 렌더링 + 화면 상태기계
+'use strict';
+
+const TILE = 48;
+const IMG = { terrain: {}, units: {} };
+const TERRAIN_KEYS = Object.keys(TERRAIN);
+const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry','enemy_cavalry','enemy_archer','enemy_strategist'];
+
+function loadImages(cb) {
+  let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + 3; let done = 0;
+  const check = () => { if (++done >= total) cb(); };
+  for (const k of TERRAIN_KEYS) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/terrain/${k}.png`; IMG.terrain[k] = im; }
+  for (const k of UNIT_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/${k}_0_0.png`; IMG.units[k] = im; }
+  for (let i = 0; i < 3; i++) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/infantry_1_${i}.png`; (IMG.units.walk ||= {})[i] = im; }
+}
+
+function spriteFor(u) {
+  const c = CLASSES[u.cls];
+  let key = c.sprite;
+  if (u.side === 'enemy') key = 'enemy_' + c.cat;
+  return IMG.units[key] || IMG.units.infantry;
+}
+
+const Game = {
+  screen: 'title',
+  battle: null,
+  army: {},          // charId -> persistent state
+  inventory: [],     // [{id, up}]
+  gold: 500,
+  selected: null, moveTiles: [], menuFor: null,
+  auto: false, fast: false,
+  stageIndex: 0,
+  canvas: null, ctx: null,
+  delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms)),
+
+  save() {
+    localStorage.setItem('cheonha3_save', JSON.stringify({
+      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex,
+    }));
+  },
+  load() {
+    const s = localStorage.getItem('cheonha3_save');
+    if (!s) return false;
+    const d = JSON.parse(s);
+    this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
+    return true;
+  },
+
+  initArmy() {
+    for (const id of ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu']) {
+      const c = CHARS[id];
+      this.army[id] = {
+        charId: id, cls: c.cls, level: 1, exp: 0,
+        maxHp: c.hp, maxMp: c.mp, atk: c.atk, def: c.def, int: c.int, spd: c.spd,
+        equip: { weapon: null, armor: null, acc: null },
+      };
+    }
+    this.army.liu_bei.equip.weapon = { id: 'iron_sword', up: 0 };
+    this.army.guan_yu.equip.weapon = { id: 'spear', up: 0 };
+    this.army.zhang_fei.equip.weapon = { id: 'spear', up: 0 };
+    this.army.sun_qian.equip.weapon = { id: 'bow', up: 0 };
+    this.army.jian_yong.equip.weapon = { id: 'fan', up: 0 };
+    this.inventory = [{ id: 'leather', up: 0 }, { id: 'leather', up: 0 }, { id: 'bean', up: 0 }, { id: 'bean', up: 0 }, { id: 'ore', up: 0 }];
+    this.gold = 500;
+  },
+
+  show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'flex';
+    this.screen = id;
+  },
+
+  // ----- 타이틀/브리핑/정비 -----
+  renderTitle() {
+    this.show('screen-title');
+    document.getElementById('btn-continue').style.display = localStorage.getItem('cheonha3_save') ? 'block' : 'none';
+  },
+
+  renderBriefing() {
+    const st = STAGES[this.stageIndex];
+    if (!st) { this.renderComplete(); return; }
+    this.show('screen-briefing');
+    document.getElementById('brief-title').textContent = st.name;
+    document.getElementById('brief-text').textContent = st.briefing;
+    document.getElementById('brief-conditions').textContent = `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴`;
+  },
+
+  startBattle() {
+    this.battle = new Battle(STAGES[this.stageIndex], this.army);
+    this.selected = null; this.moveTiles = [];
+    this.show('screen-battle');
+    this.setupCanvas();
+    this.renderBattle();
+    this.updateHud();
+    this.log(this.battle.stage.briefing);
+    if (this.auto) this.autoLoop();
+  },
+
+  // ----- 정비 화면 -----
+  renderBase() {
+    this.show('screen-base');
+    document.getElementById('base-gold').textContent = this.gold;
+    const ore = this.inventory.filter(i => i.id === 'ore').length;
+    document.getElementById('base-ore').textContent = ore;
+    const list = document.getElementById('base-units');
+    list.innerHTML = '';
+    for (const id of Object.keys(this.army)) {
+      const a = this.army[id];
+      const div = document.createElement('div');
+      div.className = 'unit-card';
+      const eq = ['weapon','armor','acc'].map(s => {
+        const e = a.equip[s];
+        return e ? `${ITEMS[e.id].name}${e.up ? '+' + e.up : ''}` : '-';
+      }).join(' / ');
+      const promo = CLASSES[a.cls].promoTo;
+      div.innerHTML = `<b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
+        <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk)} 방 ${Math.round(a.def)} 지 ${Math.round(a.int)}</span><br>
+        <span class="dim">${eq}</span>`;
+      const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
+      btnEquip.onclick = () => this.renderEquip(id);
+      div.appendChild(btnEquip);
+      const btnUp = document.createElement('button'); btnUp.textContent = '강화';
+      btnUp.onclick = () => this.renderUpgrade(id);
+      div.appendChild(btnUp);
+      if (promo && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
+        const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[promo].name}`;
+        btnP.onclick = () => {
+          this.inventory.splice(this.inventory.findIndex(i => i.id === 'manual'), 1);
+          a.cls = promo; a.atk += 3; a.def += 3; a.maxHp += 10; a.maxMp += 5;
+          this.save(); this.renderBase();
+        };
+        div.appendChild(btnP);
+      }
+      list.appendChild(div);
+    }
+  },
+
+  renderEquip(charId) {
+    const a = this.army[charId];
+    const list = document.getElementById('base-units');
+    list.innerHTML = `<h3>${CHARS[charId].name} 장착</h3>`;
+    for (const slot of ['weapon','armor','acc']) {
+      const row = document.createElement('div');
+      const cur = a.equip[slot];
+      row.innerHTML = `<b>${{weapon:'무기',armor:'방어구',acc:'장신구'}[slot]}</b>: ${cur ? ITEMS[cur.id].name + (cur.up ? '+'+cur.up : '') : '없음'} `;
+      const sel = document.createElement('select');
+      sel.innerHTML = `<option value="">(비우기)</option>` + this.inventory
+        .map((it, i) => ITEMS[it.id].slot === slot ? `<option value="${i}">${ITEMS[it.id].name}${it.up ? '+'+it.up : ''}</option>` : '')
+        .join('');
+      sel.onchange = () => {
+        if (cur) this.inventory.push(cur);
+        const v = sel.value;
+        a.equip[slot] = v === '' ? null : this.inventory.splice(+v, 1)[0];
+        this.save(); this.renderEquip(charId);
+      };
+      row.appendChild(sel);
+      list.appendChild(row);
+    }
+    const back = document.createElement('button'); back.textContent = '돌아가기';
+    back.onclick = () => this.renderBase();
+    list.appendChild(back);
+  },
+
+  renderUpgrade(charId) {
+    const a = this.army[charId];
+    const list = document.getElementById('base-units');
+    list.innerHTML = `<h3>${CHARS[charId].name} 강화</h3><p class="dim">골드 ${this.gold} / 철광석 ${this.inventory.filter(i=>i.id==='ore').length}</p>`;
+    for (const slot of ['weapon','armor']) {
+      const e = a.equip[slot];
+      const row = document.createElement('div');
+      if (!e) { row.innerHTML = `<b>${slot==='weapon'?'무기':'방어구'}</b>: 없음`; list.appendChild(row); continue; }
+      const it = ITEMS[e.id];
+      const cost = 150 * ((e.up || 0) + 1);
+      row.innerHTML = `<b>${it.name}${e.up ? '+'+e.up : ''}</b> → +${(e.up||0)+1} (${cost}골드 + 철광석 1) `;
+      const btn = document.createElement('button');
+      btn.textContent = '강화';
+      const oreIdx = this.inventory.findIndex(i => i.id === 'ore');
+      btn.disabled = (e.up || 0) >= it.maxUp || this.gold < cost || oreIdx < 0;
+      btn.onclick = () => {
+        this.gold -= cost;
+        this.inventory.splice(this.inventory.findIndex(i => i.id === 'ore'), 1);
+        e.up = (e.up || 0) + 1;
+        this.save(); this.renderUpgrade(charId);
+      };
+      row.appendChild(btn);
+      list.appendChild(row);
+    }
+    const back = document.createElement('button'); back.textContent = '돌아가기';
+    back.onclick = () => this.renderBase();
+    list.appendChild(back);
+  },
+
+  // ----- 전투 화면 -----
+  setupCanvas() {
+    const b = this.battle;
+    this.canvas = document.getElementById('battle-canvas');
+    this.canvas.width = b.w * TILE; this.canvas.height = b.h * TILE;
+    this.ctx = this.canvas.getContext('2d');
+  },
+
+  renderBattle() {
+    const b = this.battle, ctx = this.ctx;
+    if (!b) return;
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+      const im = IMG.terrain[b.map[y][x]];
+      if (im && im.complete) ctx.drawImage(im, x * TILE, y * TILE, TILE, TILE);
+      else { ctx.fillStyle = '#9a9'; ctx.fillRect(x * TILE, y * TILE, TILE, TILE); }
+    }
+    // 이동 범위
+    if (this.selected && !this.selected.done) {
+      ctx.fillStyle = 'rgba(60,120,220,0.35)';
+      for (const [x, y] of this.moveTiles) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      // 공격 가능 적
+      ctx.fillStyle = 'rgba(220,60,60,0.4)';
+      const afterTiles = [...this.moveTiles, [this.selected.x, this.selected.y]];
+      const c = classOf(this.selected);
+      for (const e of b.alive('enemy')) {
+        if (afterTiles.some(([x, y]) => Math.abs(x - e.x) + Math.abs(y - e.y) >= c.rMin && Math.abs(x - e.x) + Math.abs(y - e.y) <= c.rMax))
+          ctx.fillRect(e.x * TILE, e.y * TILE, TILE, TILE);
+      }
+    }
+    // 유닛
+    for (const u of b.units) {
+      if (u.hp <= 0 || u.routed) continue;
+      const im = spriteFor(u);
+      const bob = (u.done ? 0 : 0);
+      if (im && im.complete) ctx.drawImage(im, u.x * TILE, u.y * TILE + bob, TILE, TILE);
+      else { ctx.fillStyle = u.side === 'player' ? '#36c' : '#c33'; ctx.beginPath(); ctx.arc(u.x*TILE+24, u.y*TILE+24, 18, 0, 7); ctx.fill(); }
+      if (u.done) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(u.x*TILE, u.y*TILE, TILE, TILE); }
+      // HP 바
+      ctx.fillStyle = '#000a'; ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40, 5);
+      ctx.fillStyle = u.side === 'player' ? '#4c4' : '#e55';
+      ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40 * (u.hp / u.maxHp), 5);
+      // 사기
+      ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(u.morale, u.x*TILE+4, u.y*TILE+41);
+      if (u.commander || u.boss) { ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+14, u.y*TILE+12); }
+    }
+  },
+
+  updateHud() {
+    const b = this.battle;
+    document.getElementById('hud-stage').textContent = b.stage.name;
+    document.getElementById('hud-turn').textContent = `턴 ${b.turn}/${b.stage.maxTurns} · ${b.phase === 'player' ? '아군' : '적군'}`;
+    document.getElementById('btn-auto').textContent = this.auto ? '자동전투 끄기' : '자동전투';
+  },
+
+  log(msg) {
+    const el = document.getElementById('battle-log');
+    const line = document.createElement('div');
+    line.textContent = msg;
+    el.prepend(line);
+    while (el.children.length > 30) el.lastChild.remove();
+  },
+
+  showUnitInfo(u) {
+    const el = document.getElementById('unit-info');
+    if (!u) { el.innerHTML = ''; return; }
+    const es = equipStats(u);
+    el.innerHTML = `<b>${u.name}</b> Lv.${u.level} ${CLASSES[u.cls].name}<br>
+      HP ${u.hp}/${u.maxHp} MP ${u.mp}/${u.maxMp} 사기 ${u.morale}<br>
+      공 ${Math.round(u.atk + es.atk)} 방 ${Math.round(u.def + es.def)} 지 ${Math.round(u.int)} 속 ${Math.round(u.spd)}`;
+  },
+
+  async onTileClick(x, y) {
+    const b = this.battle;
+    if (!b || b.over || b.phase !== 'player' || this.auto) return;
+    const u = b.unitAt(x, y);
+    if (this.menuFor) return; // 메뉴 처리는 버튼이
+    if (u && u.side === 'player' && !u.done) {
+      this.selected = u;
+      this.moveTiles = b.moveRange(u);
+      this.showUnitInfo(u);
+      this.renderBattle();
+      return;
+    }
+    if (this.selected && this.moveTiles.some(([tx, ty]) => tx === x && ty === y)) {
+      this.selected.x = x; this.selected.y = y;
+      this.moveTiles = [];
+      this.renderBattle();
+      await this.delay(120);
+      this.openMenu(this.selected);
+      return;
+    }
+    if (u) { this.showUnitInfo(u); return; }
+    this.selected = null; this.moveTiles = []; this.renderBattle();
+  },
+
+  openMenu(u) {
+    this.menuFor = u;
+    const m = document.getElementById('action-menu');
+    m.style.display = 'flex';
+    m.style.left = Math.min(u.x * TILE + 20, this.canvas.width - 140) + 'px';
+    m.style.top = Math.min(u.y * TILE + 10, this.canvas.height - 160) + 'px';
+    document.getElementById('menu-attack').disabled = this.battle.targetsFor(u).length === 0;
+    document.getElementById('menu-tactic').disabled = u.tactics.length === 0;
+  },
+
+  closeMenu() { this.menuFor = null; document.getElementById('action-menu').style.display = 'none'; },
+
+  async menuAction(kind) {
+    const u = this.menuFor;
+    if (!u) return;
+    const b = this.battle;
+    if (kind === 'wait') {
+      u.done = true; this.closeMenu(); this.selected = null; this.renderBattle(); this.afterAction(); return;
+    }
+    if (kind === 'attack') {
+      const targets = b.targetsFor(u);
+      if (targets.length === 1) { this.doAttack(u, targets[0]); return; }
+      this.pendingTargets = targets; this.pendingKind = 'attack';
+      this.closeMenuKeep();
+      this.log('대상을 선택하세요.');
+      document.getElementById('target-hint').style.display = 'block';
+      return;
+    }
+    if (kind === 'tactic') {
+      this.showTacticMenu(u); return;
+    }
+    if (kind === 'item') {
+      this.showItemMenu(u); return;
+    }
+  },
+
+  closeMenuKeep() { document.getElementById('action-menu').style.display = 'none'; },
+
+  showTacticMenu(u) {
+    const m = document.getElementById('action-menu');
+    m.innerHTML = '';
+    for (const tid of u.tactics) {
+      const t = TACTICS[tid];
+      const btn = document.createElement('button');
+      btn.textContent = `${t.name} (MP ${t.mp})`;
+      btn.disabled = u.mp < t.mp;
+      btn.onclick = () => {
+        // 사거리 내 대상 선택
+        const foes = this.battle.units.filter(v => v.hp > 0 && !v.routed &&
+          Math.abs(v.x - u.x) + Math.abs(v.y - u.y) <= t.range);
+        const validFactions = t.kind === 'damage' ? foes.filter(v => v.side !== u.side) : foes.filter(v => v.side === u.side);
+        if (!validFactions.length) { this.log('대상이 없습니다.'); this.closeMenu(); this.menuFor = null; return; }
+        if (t.kind === 'damage' || validFactions.length > 1) {
+          this.pendingTargets = validFactions; this.pendingKind = 'tactic:' + tid;
+          this.closeMenuKeep();
+          this.log('대상을 선택하세요.');
+          document.getElementById('target-hint').style.display = 'block';
+        } else {
+          this.doTactic(u, tid, validFactions[0].x, validFactions[0].y);
+        }
+      };
+      m.appendChild(btn);
+    }
+    const cancel = document.createElement('button'); cancel.textContent = '취소';
+    cancel.onclick = () => { this.closeMenu(); this.menuFor = null; this.restoreMenuButtons(); };
+    m.appendChild(cancel);
+  },
+
+  restoreMenuButtons() {
+    const m = document.getElementById('action-menu');
+    m.innerHTML = `
+      <button id="menu-attack">공격</button>
+      <button id="menu-tactic">책략</button>
+      <button id="menu-item">도구</button>
+      <button id="menu-wait">대기</button>
+      <button id="menu-cancel">취소</button>`;
+    document.getElementById('menu-attack').onclick = () => this.menuAction('attack');
+    document.getElementById('menu-tactic').onclick = () => this.menuAction('tactic');
+    document.getElementById('menu-item').onclick = () => this.menuAction('item');
+    document.getElementById('menu-wait').onclick = () => this.menuAction('wait');
+    document.getElementById('menu-cancel').onclick = () => { this.closeMenu(); this.menuFor = null; };
+  },
+
+  showItemMenu(u) {
+    const m = document.getElementById('action-menu');
+    m.innerHTML = '';
+    const usable = this.inventory.map((it, i) => ({ ...it, idx: i })).filter(it => ITEMS[it.id].use && !ITEMS[it.id].use.promo);
+    if (!usable.length) { this.log('사용할 도구가 없습니다.'); this.closeMenu(); this.menuFor = null; return; }
+    for (const it of usable) {
+      const btn = document.createElement('button');
+      btn.textContent = ITEMS[it.id].name;
+      btn.onclick = () => {
+        this.inventory.splice(it.idx, 1);
+        this.battle.useItem(u, it.id, u);
+        u.done = true;
+        this.closeMenu(); this.menuFor = null; this.restoreMenuButtons();
+        this.log(this.battle.log[this.battle.log.length - 1]);
+        this.renderBattle(); this.afterAction();
+      };
+      m.appendChild(btn);
+    }
+    const cancel = document.createElement('button'); cancel.textContent = '취소';
+    cancel.onclick = () => { this.closeMenu(); this.menuFor = null; this.restoreMenuButtons(); };
+    m.appendChild(cancel);
+  },
+
+  async onTargetClick(x, y) {
+    const b = this.battle;
+    const u = this.menuFor;
+    const t = this.pendingTargets.find(v => v.x === x && v.y === y);
+    if (!t || !u) return;
+    document.getElementById('target-hint').style.display = 'none';
+    if (this.pendingKind === 'attack') this.doAttack(u, t);
+    else if (this.pendingKind.startsWith('tactic:')) this.doTactic(u, this.pendingKind.slice(7), t.x, t.y);
+    this.pendingTargets = null; this.pendingKind = null;
+  },
+
+  async doAttack(u, t) {
+    const b = this.battle;
+    this.closeMenu(); this.menuFor = null;
+    const evs = b.attack(u, t);
+    this.log(b.log[b.log.length - 1]);
+    this.flashUnit(t);
+    u.done = true;
+    this.renderBattle();
+    await this.delay(200);
+    this.afterAction();
+  },
+
+  async doTactic(u, tid, x, y) {
+    const b = this.battle;
+    this.closeMenu(); this.menuFor = null; this.restoreMenuButtons();
+    b.useTactic(u, tid, x, y);
+    this.log(b.log[b.log.length - 1]);
+    u.done = true;
+    this.renderBattle();
+    await this.delay(200);
+    this.afterAction();
+  },
+
+  flashUnit(u) {
+    // 간단 플래시는 renderBattle 재호출로 대체
+  },
+
+  afterAction() {
+    const b = this.battle;
+    this.updateHud();
+    this.renderBattle();
+    if (b.over) { this.finishBattle(); return; }
+    if (this.auto) return; // autoLoop가 진행
+    if (b.alive('player').every(u => u.done)) this.runEnemyPhase();
+  },
+
+  async runEnemyPhase() {
+    const b = this.battle;
+    if (b.over || b.phase !== 'player') return;
+    b.endPhase(); // -> enemy
+    this.updateHud(); this.renderBattle();
+    await this.delay(250);
+    for (const e of b.alive('enemy')) {
+      if (b.over) break;
+      b.aiAct(e);
+      const last = b.log[b.log.length - 1];
+      if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
+      this.renderBattle();
+      await this.delay(160);
+    }
+    b.endPhase(); // -> player, turn++
+    b.checkTurnLimit();
+    this._lastLogged = null;
+    this.updateHud(); this.renderBattle();
+    if (b.over) this.finishBattle();
+  },
+
+  async autoLoop() {
+    const b = this.battle;
+    while (!b.over) {
+      // 플레이어 페이즈 자동
+      for (const u of b.alive('player')) {
+        if (b.over) break;
+        if (u.done) continue;
+        b.aiAct(u);
+        u.done = true;
+        const last = b.log[b.log.length - 1];
+        if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
+        this.renderBattle();
+        await this.delay(this.fast ? 20 : 120);
+      }
+      if (b.over) break;
+      await this.runEnemyPhase();
+      if (this.turnGuard++ > 200) break;
+    }
+    if (b.over) this.finishBattle();
+  },
+  turnGuard: 0,
+
+  finishBattle() {
+    const b = this.battle;
+    this.log(b.over.reason);
+    if (b.over.win) {
+      // 보상
+      const r = b.stage.rewards;
+      this.gold += r.gold;
+      for (const id of r.items) this.inventory.push({ id, up: 0 });
+      for (const u of b.alive('player')) {
+        const a = this.army[u.charId];
+        if (a) {
+          a.level = u.level; a.exp = u.exp + r.exp; a.cls = u.cls;
+          a.maxHp = u.maxHp; a.maxMp = u.maxMp; a.atk = u.atk; a.def = u.def; a.int = u.int; a.spd = u.spd;
+          while (a.exp >= 100) { a.exp -= 100; a.level++; a.maxHp += 4; a.maxMp += 2; a.atk += 1.6; a.def += 1.3; a.int += 1.4; a.spd += 1.1; }
+          a.equip = u.equip;
+        }
+      }
+      // 격파한 적 드랍: 철광석 확률
+      for (const k of b.kills) if (Math.random() < 0.5) this.inventory.push({ id: 'ore', up: 0 });
+      this.stageIndex++;
+      this.save();
+      setTimeout(() => {
+        document.getElementById('result-title').textContent = '승리!';
+        document.getElementById('result-text').textContent = `${b.over.reason} 보상: ${r.gold}골드, ${r.items.map(i => ITEMS[i].name).join(', ')}`;
+        this.show('screen-result');
+      }, this.auto ? 100 : 800);
+    } else {
+      setTimeout(() => {
+        document.getElementById('result-title').textContent = '패배...';
+        document.getElementById('result-text').textContent = b.over.reason + ' 다시 도전하세요.';
+        this.show('screen-result');
+      }, this.auto ? 100 : 800);
+    }
+  },
+
+  renderComplete() {
+    this.show('screen-complete');
+  },
+};

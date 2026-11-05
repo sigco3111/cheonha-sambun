@@ -1,0 +1,320 @@
+// 전투 엔진
+'use strict';
+
+let UID = 1;
+function makeUnit(charId, x, y, side, opts = {}) {
+  const c = CHARS[charId];
+  const lvl = opts.level || 1;
+  const growth = (lvl - 1);
+  return {
+    uid: UID++, charId, name: c.name, cls: opts.cls || c.cls, side,
+    x, y, level: lvl, exp: opts.exp || 0,
+    maxHp: c.hp + growth * 4, hp: c.hp + growth * 4,
+    maxMp: c.mp + growth * 2, mp: c.mp + growth * 2,
+    atk: c.atk + growth * 1.6, def: c.def + growth * 1.3,
+    int: c.int + growth * 1.4, spd: c.spd + growth * 1.1,
+    morale: c.morale, baseMorale: c.morale,
+    tactics: c.tactics || [], ai: opts.ai || 'aggressive',
+    commander: !!opts.commander, boss: !!opts.boss,
+    equip: opts.equip || { weapon: null, armor: null, acc: null },
+    done: false, routed: false,
+  };
+}
+
+function classOf(u) { return CLASSES[u.cls]; }
+function catOf(u) { return CLASSES[u.cls].cat; }
+
+function equipStats(u) {
+  let atk = 0, def = 0, morale = 0, mp = 0;
+  for (const slot of ['weapon', 'armor', 'acc']) {
+    const e = u.equip[slot];
+    if (!e) continue;
+    const it = ITEMS[e.id];
+    const up = e.up || 0;
+    if (it.atk) atk += it.atk + up * 2;
+    if (it.def) def += it.def + up * 2;
+    if (it.morale) morale += it.morale;
+    if (it.mp) mp += it.mp;
+  }
+  return { atk, def, morale, mp };
+}
+
+function moraleFactor(u) { return 0.75 + (u.morale / 100) * 0.5; } // 0.75~1.25
+
+function computeDamage(att, def_, map) {
+  const es = equipStats(att), ds = equipStats(def_);
+  const ter = TERRAIN[map[def_.y][def_.x]];
+  const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
+  const terMod = 1 - (ter.def / 100);
+  const variance = 0.9 + Math.random() * 0.2;
+  let dmg = Math.round(base * terMod * variance);
+  const crit = Math.random() < (att.morale / 100) * 0.15 + 0.03;
+  if (crit) dmg = Math.round(dmg * 1.5);
+  return { dmg: Math.max(1, dmg), crit };
+}
+
+function tacticDamage(caster, target) {
+  const es = equipStats(caster);
+  return Math.round(30 + (caster.int + es.atk) * 1.4 - target.def * 0.5);
+}
+
+class Battle {
+  constructor(stage, army) {
+    this.stage = stage;
+    this.map = buildMap(stage.map);
+    this.h = this.map.length; this.w = this.map[0].length;
+    this.units = [];
+    this.turn = 1;
+    this.phase = 'player';
+    this.log = [];
+    this.over = null;
+    this.kills = [];
+    for (const p of stage.players) {
+      const saved = army[p.char];
+      const u = makeUnit(p.char, p.x, p.y, 'player', {
+        commander: p.commander,
+        level: saved ? saved.level : 1,
+        exp: saved ? saved.exp : 0,
+        cls: saved ? saved.cls : undefined,
+        equip: saved ? saved.equip : undefined,
+      });
+      if (saved) { u.maxHp = saved.maxHp; u.hp = saved.maxHp; u.maxMp = saved.maxMp; u.mp = saved.maxMp;
+        u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; }
+      this.units.push(u);
+    }
+    for (const e of stage.enemies) {
+      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, level: stage.id + (e.boss ? 2 : 0) }));
+    }
+  }
+
+  unitAt(x, y) { return this.units.find(u => !u.routed && u.hp > 0 && u.x === x && u.y === y); }
+  alive(side) { return this.units.filter(u => u.side === side && u.hp > 0 && !u.routed); }
+
+  terrainCost(u, x, y) {
+    const row = this.map[y];
+    const t = row && TERRAIN[row[x]];
+    if (!t) return -1;
+    return t.costs[catOf(u)] ?? 1;
+  }
+
+  moveRange(u) {
+    const mv = classOf(u).move;
+    const dist = Array.from({ length: this.h }, () => Array(this.w).fill(Infinity));
+    dist[u.y][u.x] = 0;
+    const q = [[u.x, u.y]];
+    const out = [];
+    while (q.length) {
+      const [x, y] = q.shift();
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= this.w || ny >= this.h) continue;
+        const c = this.terrainCost(u, nx, ny);
+        if (c < 0) continue;
+        const occ = this.unitAt(nx, ny);
+        if (occ && occ.side !== u.side) continue;
+        const nd = dist[y][x] + c;
+        if (nd <= mv && nd < dist[ny][nx]) {
+          dist[ny][nx] = nd;
+          if (!occ) q.push([nx, ny]);
+        }
+      }
+    }
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++)
+      if (dist[y][x] <= mv && dist[y][x] > 0 && !this.unitAt(x, y)) out.push([x, y]);
+    return out;
+  }
+
+  inRange(att, def_, rMin, rMax) {
+    const d = Math.abs(att.x - def_.x) + Math.abs(att.y - def_.y);
+    return d >= rMin && d <= rMax;
+  }
+
+  targetsFor(u) {
+    const c = classOf(u);
+    return this.alive(u.side === 'player' ? 'enemy' : 'player').filter(e => this.inRange(u, e, c.rMin, c.rMax));
+  }
+
+  attack(att, def_) {
+    const { dmg, crit } = computeDamage(att, def_, this.map);
+    def_.hp = Math.max(0, def_.hp - dmg);
+    def_.morale = Math.max(0, def_.morale - (crit ? 18 : 10));
+    let msg = `${att.name} → ${def_.name} ${dmg} 피해${crit ? ' (회심!)' : ''}`;
+    const events = [{ type: 'attack', att: att.uid, def: def_.uid, dmg, crit }];
+    if (def_.hp <= 0) {
+      this.kill(def_, att); msg += ` ${def_.name} 격파!`;
+    } else {
+      if (def_.morale <= 0) { def_.routed = true; msg += ` ${def_.name} 사기 붕괴로 퇴각!`; this.gainExp(att, 20); this.kills.push(def_.charId); }
+      else if (classOf(def_).counter && this.inRange(def_, att, classOf(def_).rMin, classOf(def_).rMax)) {
+        const r = computeDamage(def_, att, this.map);
+        att.hp = Math.max(0, att.hp - r.dmg);
+        att.morale = Math.max(0, att.morale - 6);
+        msg += ` / 반격 ${r.dmg}`;
+        events.push({ type: 'attack', att: def_.uid, def: att.uid, dmg: r.dmg, crit: r.crit });
+        if (att.hp <= 0) { this.kill(att, def_); msg += ` ${att.name} 격파!`; }
+        if (att.morale <= 0 && att.hp > 0) { att.routed = true; this.kills.push(att.charId); }
+      }
+    }
+    this.gainExp(att, def_.hp <= 0 ? 25 : 8);
+    this.log.push(msg);
+    this.checkEnd();
+    return events;
+  }
+
+  kill(u, by) {
+    u.hp = 0;
+    this.kills.push(u.charId);
+    this.gainExp(by, 25);
+  }
+
+  gainExp(u, n) {
+    if (u.side !== 'player') return;
+    u.exp += n;
+    while (u.exp >= 100) {
+      u.exp -= 100; u.level++;
+      u.maxHp += 4; u.maxMp += 2; u.atk += 1.6; u.def += 1.3; u.int += 1.4; u.spd += 1.1;
+      u.hp = u.maxHp; u.mp = u.maxMp;
+      this.log.push(`${u.name} 레벨 ${u.level} 달성!`);
+    }
+  }
+
+  useTactic(u, tid, tx, ty) {
+    const t = TACTICS[tid];
+    if (u.mp < t.mp) return [];
+    u.mp -= t.mp;
+    const targets = [];
+    for (const v of this.units) {
+      if (v.hp <= 0 || v.routed) continue;
+      const d = Math.abs(v.x - tx) + Math.abs(v.y - ty);
+      if (d <= t.area) targets.push(v);
+    }
+    let msg = `${u.name} ${t.name}!`;
+    for (const v of targets) {
+      if (t.kind === 'damage' && v.side !== u.side) {
+        const dmg = tacticDamage(u, v);
+        v.hp = Math.max(0, v.hp - dmg);
+        v.morale = Math.max(0, v.morale - 12);
+        msg += ` ${v.name} ${dmg}`;
+        if (v.hp <= 0) { this.kill(v, u); msg += ' 격파!'; }
+        else if (v.morale <= 0) { v.routed = true; this.kills.push(v.charId); msg += ` ${v.name} 퇴각!`; }
+      } else if (t.kind === 'heal' && v.side === u.side) {
+        v.hp = Math.min(v.maxHp, v.hp + t.power + u.int);
+        msg += ` ${v.name} 회복`;
+      } else if (t.kind === 'morale' && v.side === u.side) {
+        v.morale = Math.min(100, v.morale + t.power);
+        msg += ` ${v.name} 사기+`;
+      }
+    }
+    this.gainExp(u, 10);
+    this.log.push(msg);
+    this.checkEnd();
+    return [{ type: 'tactic', tid, tx, ty }];
+  }
+
+  useItem(u, itemId, target) {
+    const it = ITEMS[itemId];
+    if (!it || !it.use) return false;
+    const t = target || u;
+    if (it.use.hp) t.hp = Math.min(t.maxHp, t.hp + it.use.hp);
+    if (it.use.mp) t.mp = Math.min(t.maxMp, t.mp + it.use.mp);
+    this.log.push(`${u.name} ${it.name} 사용 → ${t.name}`);
+    return true;
+  }
+
+  endPhase() {
+    // 턴 시작 효과: 회복 지형, 사기 소폭 회복
+    if (this.phase === 'enemy') {
+      this.turn++;
+      for (const u of this.units) {
+        if (u.hp <= 0 || u.routed) continue;
+        const t = TERRAIN[this.map[u.y][u.x]];
+        if (t.heal) u.hp = Math.min(u.maxHp, u.hp + Math.round(u.maxHp * t.heal));
+        u.morale = Math.min(100, u.morale + 3);
+        u.done = false;
+      }
+      this.phase = 'player';
+    } else {
+      for (const u of this.units) if (u.side === 'player') u.done = false;
+      this.phase = 'enemy';
+    }
+  }
+
+  checkEnd() {
+    const bossChar = this.stage.bossChar;
+    if (bossChar) {
+      const boss = this.units.find(u => u.charId === bossChar);
+      if (boss && (boss.hp <= 0 || boss.routed)) { this.over = { win: true, reason: `${boss.name} 격파! 승리!` }; return; }
+    } else if (this.alive('enemy').length === 0) { this.over = { win: true, reason: '적 전멸! 승리!' }; return; }
+    const cmdr = this.units.find(u => u.commander);
+    if (!cmdr || cmdr.hp <= 0 || cmdr.routed) { this.over = { win: false, reason: '유비가 쓰러졌다...' }; return; }
+    if (this.alive('player').length === 0) { this.over = { win: false, reason: '전군 궤멸...' }; }
+  }
+
+  checkTurnLimit() {
+    if (!this.over && this.turn > this.stage.maxTurns) this.over = { win: false, reason: '제한 턴 초과...' };
+  }
+
+  // AI 한 유닛 행동
+  aiAct(u) {
+    const foes = this.alive(u.side === 'player' ? 'enemy' : 'player');
+    if (!foes.length) return;
+    const friends = this.alive(u.side);
+    // 모사: 아군 치유 우선
+    if (u.tactics.includes('heal') && u.mp >= TACTICS.heal.mp) {
+      const hurt = friends.filter(f => f.hp < f.maxHp * 0.6 && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.heal.range);
+      if (hurt.length) { this.useTactic(u, 'heal', hurt[0].x, hurt[0].y); return; }
+    }
+    if (u.tactics.includes('cheer') && u.mp >= TACTICS.cheer.mp && Math.random() < 0.4) {
+      const low = friends.filter(f => f.morale < 70 && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.cheer.range);
+      if (low.length) { this.useTactic(u, 'cheer', low[0].x, low[0].y); return; }
+    }
+    // 이미 사거리 안 적이 있으면 공격
+    let targets = this.targetsFor(u);
+    if (!targets.length) {
+      // 이동
+      if (u.ai === 'hold' && u.morale > 30) {
+        // hold: 적이 가까이 오기 전까지 대기 (3칸 이내 적 있으면 반응)
+        const near = foes.filter(f => Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= 4);
+        if (!near.length) return;
+      }
+      const range = this.moveRange(u);
+      if (range.length) {
+        const nearest = foes.reduce((a, b) => {
+          const da = Math.min(...range.map(([x, y]) => Math.abs(x - a.x) + Math.abs(y - a.y)));
+          const db = Math.min(...range.map(([x, y]) => Math.abs(x - b.x) + Math.abs(y - b.y)));
+          return db < da ? b : a;
+        });
+        let best = null, bestScore = Infinity;
+        for (const [x, y] of range) {
+          const d = Math.abs(x - nearest.x) + Math.abs(y - nearest.y);
+          const c = classOf(u);
+          const score = (d >= c.rMin && d <= c.rMax) ? -100 + d : d;
+          if (score < bestScore) { bestScore = score; best = [x, y]; }
+        }
+        if (best) { u.x = best[0]; u.y = best[1]; }
+      }
+      targets = this.targetsFor(u);
+    }
+    if (targets.length) {
+      // 책략 사용 판단 (모사, 범위 밖이거나 강적 상대)
+      if (u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp && catOf(u) === 'strategist') {
+        const t = targets[0];
+        const d = Math.abs(t.x - u.x) + Math.abs(t.y - u.y);
+        if (d <= TACTICS.fire.range && (t.boss || t.hp > u.atk * 2)) { this.useTactic(u, 'fire', t.x, t.y); return; }
+      }
+      // 가장 약한 적 공격
+      const t = targets.reduce((a, b) => (b.hp < a.hp ? b : a));
+      this.attack(u, t);
+    } else if (u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp) {
+      // 사거리 내 적에게 화계
+      const inR = foes.filter(f => Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.fire.range);
+      if (inR.length) this.useTactic(u, 'fire', inR[0].x, inR[0].y);
+    }
+  }
+
+  aiPhase(side) {
+    for (const u of this.alive(side)) {
+      if (this.over) break;
+      this.aiAct(u);
+    }
+  }
+}

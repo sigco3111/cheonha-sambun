@@ -1,0 +1,224 @@
+// 천하삼분(가칭) - 데이터 정의. 전부 오리지널 수치.
+'use strict';
+
+const TERRAIN = {
+  plain:     { name: '평지',   def: 0,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  grass:     { name: '초원',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  forest:    { name: '숲',     def: 15, heal: 0,   costs: { infantry:2, cavalry:3, archer:2, strategist:2 } },
+  mountain:  { name: '산',     def: 20, heal: 0,   costs: { infantry:3, cavalry:-1, archer:3, strategist:3 } },
+  river:     { name: '강',     def: 0,  heal: 0,   costs: { infantry:4, cavalry:-1, archer:4, strategist:4 } },
+  bridge:    { name: '다리',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  swamp:     { name: '습지',   def: -5, heal: 0,   costs: { infantry:3, cavalry:4, archer:3, strategist:3 } },
+  wasteland: { name: '황무지', def: 5,  heal: 0,   costs: { infantry:2, cavalry:2, archer:2, strategist:2 } },
+  castle:    { name: '성내',   def: 20, heal: 0.1, costs: { infantry:1, cavalry:2, archer:1, strategist:1 } },
+  wall:      { name: '성벽',   def: 0,  heal: 0,   costs: { infantry:-1, cavalry:-1, archer:-1, strategist:-1 } },
+  gate:      { name: '관문',   def: 15, heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  village:   { name: '마을',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  barracks:  { name: '병영',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  treasure:  { name: '보물창고', def: 10, heal: 0, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+};
+
+const CLASSES = {
+  infantry:   { name: '단병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: 'infantry2',   promoLevel: 10, sprite: 'infantry' },
+  infantry2:  { name: '장병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'infantry' },
+  cavalry:    { name: '경기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: 'cavalry2',    promoLevel: 10, sprite: 'cavalry' },
+  cavalry2:   { name: '중기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'cavalry' },
+  archer:     { name: '궁수',   cat: 'archer',     move: 4, rMin: 2, rMax: 3, counter: false, promoTo: 'archer2',     promoLevel: 10, sprite: 'archer' },
+  archer2:    { name: '장궁병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: null, sprite: 'archer' },
+  strategist: { name: '모사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist2', promoLevel: 10, sprite: 'strategist' },
+  strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
+};
+
+const TACTICS = {
+  fire:  { name: '화계', mp: 12, power: 45, range: 3, area: 1, kind: 'damage' },
+  cheer: { name: '고무', mp: 8,  power: 20, range: 2, area: 1, kind: 'morale' },
+  heal:  { name: '치유', mp: 10, power: 60, range: 2, area: 0, kind: 'heal' },
+};
+
+const ITEMS = {
+  dagger:    { name: '단검',       slot: 'weapon', atk: 3,  price: 200,  maxUp: 5 },
+  iron_sword:{ name: '철검',       slot: 'weapon', atk: 6,  price: 600,  maxUp: 5 },
+  spear:     { name: '철창',       slot: 'weapon', atk: 7,  price: 800,  maxUp: 5 },
+  bow:       { name: '장궁',       slot: 'weapon', atk: 6,  price: 600,  maxUp: 5 },
+  fan:       { name: '책략부채',   slot: 'weapon', atk: 4,  price: 500,  maxUp: 5 },
+  leather:   { name: '가죽 갑옷',  slot: 'armor',  def: 3,  price: 250,  maxUp: 5 },
+  iron_armor:{ name: '철 갑옷',    slot: 'armor',  def: 6,  price: 700,  maxUp: 5 },
+  jade:      { name: '옥패',       slot: 'acc',    morale: 10, price: 400, maxUp: 0 },
+  scroll:    { name: '족자',       slot: 'acc',    mp: 10,  price: 400,  maxUp: 0 },
+  bean:      { name: '콩',         use: { hp: 30 },  price: 50 },
+  rice:      { name: '쌀',         use: { hp: 80 },  price: 120 },
+  meat:      { name: '고기',       use: { hp: 150 }, price: 250 },
+  tonic:     { name: '각성제',     use: { mp: 30 },  price: 150 },
+  manual:    { name: '전직 지침서', use: { promo: true }, price: 1000 },
+  ore:       { name: '철광석',     material: true, price: 100 },
+};
+
+// 장수 정의 (성장 오리지널)
+const CHARS = {
+  liu_bei:  { name: '유비',   cls: 'infantry',   hp: 92, mp: 30, atk: 24, def: 20, int: 22, spd: 18, morale: 100, tactics: ['cheer'] },
+  guan_yu:  { name: '관우',   cls: 'cavalry',    hp: 105, mp: 20, atk: 32, def: 24, int: 16, spd: 20, morale: 100 },
+  zhang_fei:{ name: '장비',   cls: 'cavalry',    hp: 110, mp: 15, atk: 34, def: 22, int: 10, spd: 19, morale: 100 },
+  jian_yong:{ name: '간옹',   cls: 'strategist', hp: 78, mp: 55, atk: 14, def: 15, int: 30, spd: 16, morale: 100, tactics: ['fire','heal'] },
+  sun_qian: { name: '손건',   cls: 'archer',     hp: 84, mp: 25, atk: 26, def: 17, int: 18, spd: 22, morale: 100 },
+  mi_zhu:   { name: '미축',   cls: 'strategist', hp: 76, mp: 50, atk: 13, def: 14, int: 28, spd: 15, morale: 100, tactics: ['heal','cheer'] },
+  // 적 장수
+  cheng:    { name: '정원지', cls: 'infantry',   hp: 95, mp: 10, atk: 25, def: 18, int: 8,  spd: 14, morale: 90 },
+  deng:     { name: '등무',   cls: 'infantry',   hp: 88, mp: 10, atk: 22, def: 16, int: 8,  spd: 13, morale: 85 },
+  pei:      { name: '배원소', cls: 'archer',     hp: 82, mp: 12, atk: 24, def: 15, int: 10, spd: 18, morale: 85 },
+  zhang_jue:{ name: '장각',   cls: 'strategist', hp: 120, mp: 70, atk: 18, def: 20, int: 34, spd: 16, morale: 100, tactics: ['fire'] },
+  hua_xiong:{ name: '화웅',   cls: 'cavalry',    hp: 135, mp: 15, atk: 36, def: 26, int: 10, spd: 22, morale: 100 },
+  lu_bu:    { name: '여포',   cls: 'cavalry',    hp: 170, mp: 20, atk: 44, def: 30, int: 8,  spd: 26, morale: 100 },
+  li_ru:    { name: '이유',   cls: 'strategist', hp: 85, mp: 60, atk: 15, def: 16, int: 32, spd: 15, morale: 95, tactics: ['fire','heal'] },
+  soldier_i:{ name: '황건 보병', cls: 'infantry', hp: 70, mp: 5, atk: 19, def: 14, int: 5, spd: 12, morale: 80 },
+  soldier_a:{ name: '황건 궁수', cls: 'archer',   hp: 62, mp: 5, atk: 20, def: 12, int: 5, spd: 14, morale: 80 },
+  soldier_c:{ name: '동탁 기병', cls: 'cavalry',  hp: 85, mp: 5, atk: 25, def: 18, int: 5, spd: 17, morale: 85 },
+};
+
+// 스테이지: 오리지널 맵/배치/대사. 맵 문자 -> TERRAIN 키
+const MAP_CHARS = { '.':'plain', ',':'grass', 'F':'forest', 'M':'mountain', '~':'river', '=':'bridge', 'S':'swamp', 'W':'wasteland', 'C':'castle', '#':'wall', 'G':'gate', 'V':'village', 'B':'barracks', 'T':'treasure' };
+
+const STAGES = [
+  {
+    id: 1, name: '제1전 · 탁현의 맹세', maxTurns: 20,
+    briefing: '황건의 난이 일어났다. 도원에서 의를 맺은 유비·관우·장비가 의병을 이끌고 탁현 밖 황건적 선봉을 맞는다. 첫 전투, 전열을 가다듬어라.',
+    victory: '적 전멸', defeat: '유비 전사 또는 턴 초과',
+    map: [
+      'MMMMMMMMMMMM',
+      'M..FF....WWM',
+      '..FFF.....WM',
+      ',,....==..~M',
+      ',,.~~~~==..M',
+      ',,.~~~~....M',
+      'M....FF....M',
+      'M.W...FF..VM',
+      'M.WW....B..M',
+      'MMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 2, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 1, y: 3 },
+      { char: 'sun_qian', x: 1, y: 5 },
+    ],
+    enemies: [
+      { char: 'cheng', x: 9, y: 4, boss: true, ai: 'hold' },
+      { char: 'soldier_i', x: 8, y: 3, ai: 'aggressive' },
+      { char: 'soldier_i', x: 8, y: 5, ai: 'aggressive' },
+      { char: 'soldier_a', x: 9, y: 6, ai: 'hold' },
+      { char: 'soldier_i', x: 7, y: 4, ai: 'aggressive' },
+    ],
+    rewards: { gold: 500, items: ['bean','bean','ore','manual'], exp: 30 },
+  },
+  {
+    id: 2, name: '제2전 · 광종 공방', maxTurns: 24,
+    briefing: '황건의 본거지 광종. 강을 사이에 두고 적진이 버틴다. 다리를 확보하고 배원소의 궁수진을 무너뜨려라.',
+    victory: '적 전멸', defeat: '유비 전사 또는 턴 초과',
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M..FF...~~~WWM',
+      '..FFF..~~~~.WM',
+      ',,....~~~....M',
+      ',,.~~~~..==..M',
+      ',,.~~~~~~....M',
+      'M....~~~.....M',
+      'M.W...==..F..M',
+      'M.WW......BV.M',
+      'M...F....F...M',
+      'M..F...V.....M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 2, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 1, y: 3 },
+      { char: 'sun_qian', x: 1, y: 5 },
+      { char: 'mi_zhu', x: 0, y: 4 },
+    ],
+    enemies: [
+      { char: 'pei', x: 11, y: 4, boss: true, ai: 'hold' },
+      { char: 'deng', x: 9, y: 3, ai: 'aggressive' },
+      { char: 'soldier_i', x: 9, y: 5, ai: 'aggressive' },
+      { char: 'soldier_a', x: 10, y: 2, ai: 'hold' },
+      { char: 'soldier_a', x: 10, y: 6, ai: 'hold' },
+      { char: 'soldier_i', x: 8, y: 4, ai: 'aggressive' },
+      { char: 'soldier_i', x: 10, y: 8, ai: 'aggressive' },
+    ],
+    rewards: { gold: 800, items: ['rice','ore','ore','iron_sword'], exp: 45 },
+  },
+  {
+    id: 3, name: '제3전 · 사수관의 화웅', maxTurns: 26,
+    briefing: '반동탁 연합군이 결성됐다. 관문 앞을 지키는 맹장 화웅이 연합군 선봉을 연파하고 있다. 유비 일행이 돌파구를 연다.',
+    victory: '화웅 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'hua_xiong',
+    map: [
+      'MMMMMMMMMMMMMM',
+      'MM..FF..W.GMMM',
+      'M..FFF...WW#MM',
+      '..FFFF....W#CM',
+      ',,...==...W#CM',
+      ',,.~~~~...W#BM',
+      ',..FFF....W#MM',
+      'M....FF..WWW#M',
+      'MM...WWWWW.GMM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 2, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 0, y: 4 },
+      { char: 'sun_qian', x: 1, y: 6 },
+      { char: 'mi_zhu', x: 1, y: 3 },
+    ],
+    enemies: [
+      { char: 'hua_xiong', x: 11, y: 4, boss: true, ai: 'hold' },
+      { char: 'li_ru', x: 11, y: 3, ai: 'hold' },
+      { char: 'soldier_c', x: 9, y: 2, ai: 'aggressive' },
+      { char: 'soldier_c', x: 9, y: 6, ai: 'aggressive' },
+      { char: 'soldier_i', x: 7, y: 3, ai: 'aggressive' },
+      { char: 'soldier_i', x: 7, y: 5, ai: 'aggressive' },
+      { char: 'soldier_a', x: 10, y: 5, ai: 'hold' },
+    ],
+    rewards: { gold: 1200, items: ['iron_armor','ore','ore','tonic','manual'], exp: 60 },
+  },
+  {
+    id: 4, name: '제4전 · 호로관의 귀신', maxTurns: 28,
+    briefing: '마침내 호로관. 관 앞에 선 자는 천하의 여포다. 무리한 정면 승부는 금물. 지형을 쓰고, 사기를 모으고, 귀신을 꺾어라.',
+    victory: '여포 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'lu_bu',
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M..FF....W.GMM',
+      'M..FFF...WW#MM',
+      '..FFFF....W#CM',
+      ',,...==...W#CM',
+      ',,.~~~~...W#TM',
+      ',..FFF....W#MM',
+      'M....FF..WWW#M',
+      'MM..WWWWWW.GMM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 2, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 0, y: 4 },
+      { char: 'sun_qian', x: 1, y: 6 },
+      { char: 'mi_zhu', x: 1, y: 3 },
+    ],
+    enemies: [
+      { char: 'lu_bu', x: 11, y: 4, boss: true, ai: 'aggressive' },
+      { char: 'li_ru', x: 12, y: 3, ai: 'hold' },
+      { char: 'soldier_c', x: 9, y: 2, ai: 'aggressive' },
+      { char: 'soldier_c', x: 9, y: 6, ai: 'aggressive' },
+      { char: 'soldier_c', x: 8, y: 4, ai: 'aggressive' },
+      { char: 'soldier_a', x: 10, y: 5, ai: 'hold' },
+      { char: 'soldier_i', x: 10, y: 3, ai: 'aggressive' },
+    ],
+    rewards: { gold: 2000, items: ['spear','ore','ore','ore','meat'], exp: 90 },
+  },
+];
+
+function buildMap(pattern) {
+  return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
+}
