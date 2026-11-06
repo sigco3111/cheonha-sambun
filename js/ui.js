@@ -672,7 +672,7 @@ const Game = {
     if (it.regen) parts.push(`턴 시작 HP ${Math.round(it.regen * 100)}% 회복`);
     if (it.counter) parts.push(`반격 피해 +${Math.round(it.counter * 100)}%`);
     if (it.tacDef) parts.push(`받는 책략 피해 -${Math.round(it.tacDef * 100)}%`);
-    if (it.exp) parts.push(`전투 경험치 +${Math.round(it.exp * 100)}%`);
+    if (it.exp) parts.push(`경험치 +${Math.round(it.exp * 100)}%(행동·승리 보상)`);
     if (it.use && it.use.hp) parts.push(`HP${it.use.hp} 회복`);
     if (it.use && it.use.mp) parts.push(`MP${it.use.mp} 회복`);
     if (it.use && it.use.promo) parts.push('전직용');
@@ -1055,7 +1055,9 @@ const Game = {
       for (const u of b.alive('player')) {
         const a = this.army[u.charId];
         if (a) {
-          a.level = u.level; a.exp = u.exp + r.exp; a.cls = u.cls;
+          a.level = u.level; a.cls = u.cls;
+          const emul = 1 + (equipStats(u).exp || 0); // 수련패: 승리 보상 경험치에도 동일 적용
+          a.exp = u.exp + Math.round(r.exp * emul);
           a.maxHp = u.maxHp; a.maxMp = u.maxMp; a.atk = u.atk; a.def = u.def; a.int = u.int; a.spd = u.spd;
           while (a.exp >= 100) { a.exp -= 100; a.level++; a.maxHp += 4; a.maxMp += 2; a.atk += 1.6; a.def += 1.3; a.int += 1.4; a.spd += 1.1; }
           a.equip = u.equip;
