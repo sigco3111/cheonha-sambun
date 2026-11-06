@@ -63,7 +63,7 @@ const Game = {
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
-    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {} } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} };
+    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null };
     return true;
   },
 
@@ -88,6 +88,30 @@ const Game = {
   resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
     this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} };
+  },
+
+  // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
+  supportOptions() {
+    const defs = [
+      { id: 'gold', ach: 'new_cycle', label: '군자금 800골드', apply: () => { this.gold += 800; } },
+      { id: 'ore', ach: 'smith', label: '철광석 3개', apply: () => { for (let i = 0; i < 3; i++) this.inventory.push({ id: 'ore', up: 0 }); } },
+      { id: 'food', ach: 'veteran', label: '식량 꾸러미(쌀 2·콩 2)', apply: () => { this.inventory.push({ id: 'rice', up: 0 }, { id: 'rice', up: 0 }, { id: 'bean', up: 0 }, { id: 'bean', up: 0 }); } },
+      { id: 'scroll', ach: 'first_s', label: '족자 1개(MP+10 장신구)', apply: () => { this.inventory.push({ id: 'scroll', up: 0 }); } },
+    ];
+    return defs.filter(d => (this.records.ach || {})[d.ach]);
+  },
+
+  supportAvailable() { return this.cycle >= 2 && this.stageIndex === 0 && !(this.records.support && this.records.support.c === this.cycle) && this.supportOptions().length > 0; },
+
+  claimSupport(id) {
+    // 원자적 수령: 조건 재검증 → 적용 → 기록 → 저장을 동기 실행으로 한 번에 (새로고침·더블클릭·브리핑 재진입 중복 지급 방지)
+    if (!this.supportAvailable()) return;
+    const o = this.supportOptions().find(x => x.id === id);
+    if (!o) return;
+    o.apply();
+    this.records.support = { c: this.cycle, id };
+    this.save();
+    this.renderBriefing();
   },
 
   // 업적 뼈대(다회차 장치, 명예 전용·보상 없음): 조건은 전부 저장된 기록/군단 상태로 검증 — 후속 증분에서 숨겨진 장수·병종 해금의 연결점
@@ -149,10 +173,52 @@ const Game = {
     document.getElementById('brief-text').textContent = st.briefing;
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
+    // 회차 시작 지원(택1): 업적 해금 옵션만 표시. 첫 전투 브리핑에서만 받을 수 있고 출진 시 미선택은 포기 확정
+    const sp = document.getElementById('brief-support');
+    if (sp) {
+      sp.innerHTML = '';
+      this.checkAchievements(); // 2회차 진입 업적은 정비 화면 전이라도 여기서 확정
+      const taken = this.records.support && this.records.support.c === this.cycle ? this.records.support : null;
+      if (this.cycle >= 2 && this.stageIndex === 0) {
+        if (taken) {
+          const o = this.supportOptions().find(x => x.id === taken.id);
+          sp.innerHTML = `<span class="dim">이번 회차 지원: ${taken.id === 'none' ? '받지 않음' : (o ? o.label + ' 수령 완료' : '수령 완료')}</span>`;
+        } else {
+          const opts = this.supportOptions();
+          if (opts.length) {
+            sp.innerHTML = '<b>회차 시작 지원</b> <span class="dim">택1 · 이번 회차만 · 출진하면 더는 받을 수 없음</span><br>';
+            for (const o of opts) {
+              const btn = document.createElement('button');
+              btn.textContent = o.label;
+              btn.onclick = () => this.claimSupport(o.id);
+              sp.appendChild(btn);
+              sp.appendChild(document.createTextNode(' '));
+            }
+          }
+        }
+      }
+    }
   },
 
   startBattle() {
     if (!this.armyComplete(this.army)) { console.warn('[출진 차단] 군단 데이터가 불완전해 전투를 시작하지 않습니다'); this._corruptSave = !!localStorage.getItem('cheonha3_save'); this.renderTitle(); return; } // 무변경 차단
+    if (this.supportAvailable()) { // 회차 지원 미수령 출진: 1회 확인 후 이번 회차 포기 확정
+      const sp = document.getElementById('brief-support');
+      if (sp && !document.getElementById('support-decline-confirm')) {
+        const div = document.createElement('div');
+        div.id = 'support-decline-confirm';
+        div.innerHTML = '<span class="dim">이번 회차 지원을 받지 않고 출진합니다. 이후 이 회차에서는 받을 수 없습니다.</span> ';
+        const ok = document.createElement('button'); ok.textContent = '지원 없이 출진'; ok.className = 'primary';
+        const no = document.createElement('button'); no.textContent = '취소';
+        no.onclick = () => div.remove();
+        ok.onclick = () => { div.remove(); this.records.support = { c: this.cycle, id: 'none' }; this.save(); this.startBattle(); };
+        const row = document.createElement('div'); row.className = 'btnrow';
+        row.appendChild(ok); row.appendChild(no);
+        div.appendChild(row);
+        sp.appendChild(div);
+        return;
+      }
+    }
     this._autoNote = null; this._equipBackup = null;
     this.battle = new Battle(STAGES[this.stageIndex], this.army, this.cycle);
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
