@@ -238,6 +238,8 @@ class Battle {
         if (u.hp <= 0 || u.routed) continue;
         const t = TERRAIN[this.map[u.y][u.x]];
         if (t.heal) u.hp = Math.min(u.maxHp, u.hp + Math.round(u.maxHp * t.heal));
+        const accIt = u.equip && u.equip.acc && ITEMS[u.equip.acc.id];
+        if (accIt && accIt.regen) u.hp = Math.min(u.maxHp, u.hp + Math.round(u.maxHp * accIt.regen)); // 호신부 턴 회복
         u.morale = Math.min(100, u.morale + 3);
         u.done = false;
       }
