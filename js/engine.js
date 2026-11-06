@@ -258,6 +258,8 @@ class Battle {
     const foes = this.alive(u.side === 'player' ? 'enemy' : 'player');
     if (!foes.length) return;
     const friends = this.alive(u.side);
+    // 오토 아이템: 아군 자동 행동 시 HP 40% 미만이면 회복 도구 우선 사용
+    if (u.side === 'player' && this.autoItem && u.hp < u.maxHp * 0.4 && this.autoItem(u)) return;
     // 모사: 아군 치유 우선
     if (u.tactics.includes('heal') && u.mp >= TACTICS.heal.mp) {
       const hurt = friends.filter(f => f.hp < f.maxHp * 0.6 && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.heal.range);
