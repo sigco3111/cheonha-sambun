@@ -679,7 +679,7 @@ const Game = {
     if (!u) { el.innerHTML = ''; return; }
     const es = equipStats(u);
     el.innerHTML = `<b>${u.name}</b> Lv.${u.level} ${CLASSES[u.cls].name}<br>
-      HP ${u.hp}/${u.maxHp} MP ${u.mp}/${u.maxMp} 사기 ${u.morale}<br>
+      HP ${u.hp}/${u.maxHp} MP ${u.mp}/${u.maxMp} 사기 ${u.morale}${es.morale && Math.min(100, u.morale + es.morale) !== u.morale ? `(장비 포함 ${Math.min(100, u.morale + es.morale)})` : ''}<br>
       공 ${Math.round(u.atk + es.atk)} 방 ${Math.round(u.def + es.def)} 지 ${Math.round(u.int)} 속 ${Math.round(u.spd)}
       <span class="unit-trait">${this.traitText(u)}</span>`;
   },
