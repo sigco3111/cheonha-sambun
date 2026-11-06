@@ -46,6 +46,9 @@ const ITEMS = {
   jade:      { name: '옥패',       slot: 'acc',    morale: 10, price: 400, maxUp: 0 },
   scroll:    { name: '족자',       slot: 'acc',    mp: 10,  price: 400,  maxUp: 0 },
   amulet:    { name: '호신부',      slot: 'acc',    regen: 0.08, price: 600,  maxUp: 0 },
+  heavy_blade:{ name: '중검',      slot: 'weapon', atk: 9, price: 1000, maxUp: 5 },
+  famed_sword:{ name: '명검',      slot: 'weapon', atk: 5, morale: 10, price: 900, maxUp: 5 },
+  plate:     { name: '판금 갑옷',  slot: 'armor',  def: 8, price: 950, maxUp: 5 },
   bean:      { name: '콩',         use: { hp: 30 },  price: 50 },
   rice:      { name: '쌀',         use: { hp: 80 },  price: 120 },
   meat:      { name: '고기',       use: { hp: 150 }, price: 250 },
@@ -268,3 +271,5 @@ const STAGES = [
 function buildMap(pattern) {
   return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
 }
+
+const SHOP = ['heavy_blade', 'famed_sword', 'plate']; // 정비 상점 판매 품목
