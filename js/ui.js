@@ -910,9 +910,10 @@ const Game = {
       let lootText = '';
       if (b.lootClaimed && b.stage.treasure) {
         const t = b.stage.treasure;
-        this.gold += t.gold || 0;
+        const lootGold = Math.round((t.gold || 0) * (1 + 0.5 * (this.cycle - 1))); // 기본 보상과 동일한 회차 스케일
+        this.gold += lootGold;
         for (const id of (t.items || [])) this.inventory.push({ id, up: 0 });
-        lootText = ` + 보물창고 전리품(${t.gold || 0}골드${(t.items || []).length ? ' · ' + t.items.map(i => ITEMS[i].name).join(', ') : ''})`;
+        lootText = ` + 보물창고 전리품(${lootGold}골드${(t.items || []).length ? ' · ' + t.items.map(i => ITEMS[i].name).join(', ') : ''})`;
       }
       this.stageIndex++;
       this.save();
