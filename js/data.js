@@ -20,13 +20,17 @@ const TERRAIN = {
 
 const CLASSES = {
   infantry:   { name: '단병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: 'infantry2',   promoLevel: 10, sprite: 'infantry' },
-  infantry2:  { name: '장병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'infantry' },
+  infantry2:  { name: '장병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: 'infantry3',   promoLevel: 20, sprite: 'infantry' },
+  infantry3:  { name: '근위병', cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'infantry' },
   cavalry:    { name: '경기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: 'cavalry2',    promoLevel: 10, sprite: 'cavalry' },
-  cavalry2:   { name: '중기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'cavalry' },
+  cavalry2:   { name: '중기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: 'cavalry3',    promoLevel: 20, sprite: 'cavalry' },
+  cavalry3:   { name: '정예기병', cat: 'cavalry',  move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'cavalry' },
   archer:     { name: '궁수',   cat: 'archer',     move: 4, rMin: 2, rMax: 3, counter: false, promoTo: 'archer2',     promoLevel: 10, sprite: 'archer' },
-  archer2:    { name: '장궁병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: null, sprite: 'archer' },
+  archer2:    { name: '장궁병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: 'archer3',     promoLevel: 20, sprite: 'archer' },
+  archer3:    { name: '연노병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: null, sprite: 'archer' },
   strategist: { name: '모사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist2', promoLevel: 10, sprite: 'strategist' },
-  strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
+  strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist3', promoLevel: 20, sprite: 'strategist' },
+  strategist3:{ name: '책사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
 };
 
 // 전투 변형(날씨): 2회차부터 결정론 배정 — 같은 회차·같은 전투는 항상 같은 날씨, 저장 없이 파생
