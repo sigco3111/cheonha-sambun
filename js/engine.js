@@ -71,6 +71,7 @@ class Battle {
     this.over = null;
     this.kills = [];
     this.foeKills = []; // 적 격파/퇴각만 (결과 표시·드랍 보상용)
+    this.lootClaimed = false; // 보물창고 점령 여부 (전리품은 승리 시에만 지급)
     for (const p of stage.players) {
       const saved = army[p.char];
       const u = makeUnit(p.char, p.x, p.y, 'player', {
@@ -92,6 +93,11 @@ class Battle {
   unitAt(x, y) { return this.units.find(u => !u.routed && u.hp > 0 && u.x === x && u.y === y); }
   alive(side) { return this.units.filter(u => u.side === side && u.hp > 0 && !u.routed); }
   isBossUnit(u) { return !!(this.stage.bossChar && u.charId === this.stage.bossChar); } // 보스는 사기 0이어도 퇴각하지 않음(위력만 저하)
+  checkTreasure(u) { // 보물창고: 아군이 타일에 오르면 점령(전투당 1회, 전리품은 승리 시 지급)
+    const t = this.stage.treasure;
+    if (!t || this.lootClaimed || u.side !== 'player' || u.hp <= 0 || u.routed) return;
+    if (u.x === t.x && u.y === t.y) { this.lootClaimed = true; this.log.push(`${u.name}이(가) 보물창고를 점령했다! 전리품은 승리 후 획득.`); }
+  }
 
   terrainCost(u, x, y) {
     const row = this.map[y];
@@ -302,7 +308,11 @@ class Battle {
           return db < da ? b : a;
         });
         let best = null, bestScore = Infinity;
+        const tr = this.stage.treasure;
+        const claimTile = (u.side === 'player' && tr && !this.lootClaimed) ? pool.find(([x, y]) => x === tr.x && y === tr.y) : null;
+        if (claimTile) best = claimTile;
         for (const [x, y] of pool) {
+          if (claimTile) break;
           const d = Math.abs(x - nearest.x) + Math.abs(y - nearest.y);
           let score;
           if (lordFlee) {
@@ -315,7 +325,7 @@ class Battle {
           }
           if (score < bestScore) { bestScore = score; best = [x, y]; }
         }
-        if (best) { u.x = best[0]; u.y = best[1]; }
+        if (best) { u.x = best[0]; u.y = best[1]; this.checkTreasure(u); }
       }
       targets = this.targetsFor(u);
     }
