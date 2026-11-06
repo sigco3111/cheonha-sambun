@@ -731,7 +731,7 @@ const Game = {
       this.log('대상을 선택하세요.');
       const hintEl = document.getElementById('target-hint');
       const critPct = b.forecastAttack(u, targets[0]).critPct; // 회심률은 공격자 사기 기준으로 모든 대상 동일
-      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 피해 범위 · 회심 ${critPct}% 시 ×1.5 · 반격?은 조건부`;
+      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격?은 조건부`;
       hintEl.style.display = 'block';
       this.renderBattle(); // 예측 프리뷰 표시
       return;
