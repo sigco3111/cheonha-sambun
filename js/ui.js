@@ -141,6 +141,17 @@ const Game = {
       joined.push('taishi_ci');
       this.save();
     }
+    if ((this.records.ach || {}).veteran && !this.army.zhou_cang && Object.keys(this.army).length >= 6) {
+      const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+      const c = CHARS.zhou_cang, g = lv - 1; // 관해·태사자와 같은 1회 편입 규칙
+      this.army.zhou_cang = {
+        charId: 'zhou_cang', cls: c.cls, level: lv, exp: 0,
+        maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+        equip: { weapon: { id: 'spear', up: 0 }, armor: null, acc: null }, // 초기 장비 고정
+      };
+      joined.push('zhou_cang');
+      this.save();
+    }
     return joined;
   },
 
