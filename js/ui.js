@@ -496,6 +496,24 @@ const Game = {
       ctx.textAlign = 'left';
       if (u.commander || u.boss) { ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+2, u.y*TILE+2, 22, 11); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+4, u.y*TILE+11); }
     }
+    // 공격 대상 예측 프리뷰 (대상 선택 모드) — 유닛 위에 그림
+    if (this.pendingKind === 'attack' && this.pendingTargets && this.menuFor) {
+      for (const t of this.pendingTargets) {
+        const f = b.forecastAttack(this.menuFor, t);
+        const bx = t.x * TILE, by = t.y * TILE;
+        const bh = f.counter ? 25 : 15;
+        ctx.fillStyle = 'rgba(20,20,30,0.82)';
+        ctx.fillRect(bx - 5, by + 1, TILE + 10, bh);
+        ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffe08a';
+        ctx.fillText(`${f.min}~${f.max} 치${f.critPct}%`, bx + TILE / 2, by + 11);
+        if (f.counter) {
+          ctx.fillStyle = '#ff9a9a';
+          ctx.fillText(`반격 ${f.counter.min}~${f.counter.max}`, bx + TILE / 2, by + 22);
+        }
+        ctx.textAlign = 'left';
+      }
+    }
     // 부유 텍스트 (피해/회복/상태)
     this.fx = this.fx.filter(f => now - f.t0 < f.dur);
     for (const f of this.fx) {
@@ -703,6 +721,7 @@ const Game = {
       this.closeMenuKeep();
       this.log('대상을 선택하세요.');
       document.getElementById('target-hint').style.display = 'block';
+      this.renderBattle(); // 예측 프리뷰 표시
       return;
     }
     if (kind === 'tactic') {
