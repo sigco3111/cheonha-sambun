@@ -108,6 +108,20 @@ const Game = {
     document.getElementById('base-ore').textContent = ore;
     const list = document.getElementById('base-units');
     list.innerHTML = '';
+    // 소지품 한눈에 보기
+    const inv = document.createElement('div');
+    inv.id = 'inv-list';
+    if (this.inventory.length) {
+      const grouped = {};
+      for (const e of this.inventory) {
+        const key = e.id + (e.up ? '+' + e.up : '');
+        grouped[key] = (grouped[key] || 0) + 1;
+      }
+      inv.innerHTML = '<b>소지품</b> ' + Object.entries(grouped)
+        .map(([k, n]) => `${ITEMS[k.replace(/\+\d+$/, '')].name}${k.includes('+') ? k.slice(k.indexOf('+')) : ''}×${n}`)
+        .join(' · ');
+    } else inv.innerHTML = '<b>소지품</b> 없음';
+    list.appendChild(inv);
     for (const id of Object.keys(this.army)) {
       const a = this.army[id];
       const div = document.createElement('div');
@@ -117,9 +131,13 @@ const Game = {
         return e ? `${ITEMS[e.id].name}${e.up ? '+' + e.up : ''}` : '-';
       }).join(' / ');
       const promo = CLASSES[a.cls].promoTo;
-      div.innerHTML = `<b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
-        <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk)} 방 ${Math.round(a.def)} 지 ${Math.round(a.int)}</span><br>
-        <span class="dim">${eq}</span>`;
+      const es = equipStats(a);
+      const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [] };
+      div.innerHTML = `<img class="card-sprite" src="assets/units/${CLASSES[a.cls].sprite}_0_0.png" alt="">
+        <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
+        <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 +${es.atk}/+${es.def})` : ''}</span><br>
+        <span class="dim">${eq}</span>
+        <span class="unit-trait">${this.traitText(pseudo)}</span></div>`;
       const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
       btnEquip.onclick = () => this.renderEquip(id);
       div.appendChild(btnEquip);
@@ -145,11 +163,12 @@ const Game = {
     list.innerHTML = `<h3>${CHARS[charId].name} 장착</h3>`;
     for (const slot of ['weapon','armor','acc']) {
       const row = document.createElement('div');
+      row.className = 'equip-row';
       const cur = a.equip[slot];
-      row.innerHTML = `<b>${{weapon:'무기',armor:'방어구',acc:'장신구'}[slot]}</b>: ${cur ? ITEMS[cur.id].name + (cur.up ? '+'+cur.up : '') : '없음'} `;
+      row.innerHTML = `<b>${{weapon:'무기',armor:'방어구',acc:'장신구'}[slot]}</b>: ${cur ? ITEMS[cur.id].name + (cur.up ? '+'+cur.up : '') + ` <span class="dim">(${this.itemStatText(cur)})</span>` : '없음'} `;
       const sel = document.createElement('select');
       sel.innerHTML = `<option value="">(비우기)</option>` + this.inventory
-        .map((it, i) => ITEMS[it.id].slot === slot ? `<option value="${i}">${ITEMS[it.id].name}${it.up ? '+'+it.up : ''}</option>` : '')
+        .map((it, i) => ITEMS[it.id].slot === slot ? `<option value="${i}">${ITEMS[it.id].name}${it.up ? '+'+it.up : ''} — ${this.itemStatText(it)}</option>` : '')
         .join('');
       sel.onchange = () => {
         if (cur) this.inventory.push(cur);
@@ -175,11 +194,17 @@ const Game = {
       if (!e) { row.innerHTML = `<b>${slot==='weapon'?'무기':'방어구'}</b>: 없음`; list.appendChild(row); continue; }
       const it = ITEMS[e.id];
       const cost = 150 * ((e.up || 0) + 1);
-      row.innerHTML = `<b>${it.name}${e.up ? '+'+e.up : ''}</b> → +${(e.up||0)+1} (${cost}골드 + 철광석 1) `;
+      const statName = it.atk ? '공' : '방';
+      const statNow = (it.atk || it.def) + (e.up || 0) * 2;
+      row.innerHTML = `<b>${it.name}${e.up ? '+'+e.up : ''}</b> ${statName}+${statNow} → +${statNow + 2} (${cost}골드 + 철광석 1) `;
       const btn = document.createElement('button');
       btn.textContent = '강화';
       const oreIdx = this.inventory.findIndex(i => i.id === 'ore');
       btn.disabled = (e.up || 0) >= it.maxUp || this.gold < cost || oreIdx < 0;
+      if (btn.disabled) {
+        const why = (e.up || 0) >= it.maxUp ? '최대 강화' : (this.gold < cost ? '골드 부족' : '철광석 부족');
+        row.insertAdjacentHTML('beforeend', `<span class="upgrade-note">${why}</span>`);
+      }
       btn.onclick = () => {
         this.gold -= cost;
         this.inventory.splice(this.inventory.findIndex(i => i.id === 'ore'), 1);
@@ -394,6 +419,21 @@ const Game = {
     line.textContent = msg;
     el.prepend(line);
     while (el.children.length > 30) el.lastChild.remove();
+  },
+
+  itemStatText(e) {
+    const it = ITEMS[e.id];
+    const up = e.up || 0;
+    const parts = [];
+    if (it.atk) parts.push(`공+${it.atk + up * 2}`);
+    if (it.def) parts.push(`방+${it.def + up * 2}`);
+    if (it.morale) parts.push(`사기+${it.morale}`);
+    if (it.mp) parts.push(`MP+${it.mp}`);
+    if (it.use && it.use.hp) parts.push(`HP${it.use.hp} 회복`);
+    if (it.use && it.use.mp) parts.push(`MP${it.use.mp} 회복`);
+    if (it.use && it.use.promo) parts.push('전직용');
+    if (it.material) parts.push('강화 재료');
+    return parts.join(' ');
   },
 
   traitText(u) {
