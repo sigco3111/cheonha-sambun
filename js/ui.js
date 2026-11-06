@@ -431,7 +431,7 @@ const Game = {
     if (baseNewAch.length) { // innerHTML 초기화 이후에 넣어야 배너가 지워지지 않음
       const banner = document.createElement('div');
       banner.id = 'ach-banner';
-      banner.innerHTML = '<b>업적 달성: ' + baseNewAch.map(a => a.name).join(', ') + '</b> <span class="dim">(보상 없는 명예)</span>';
+      banner.innerHTML = '<b>업적 달성: ' + baseNewAch.map(a => a.name).join(', ') + '</b> <span class="dim">(해금 내역은 아래 업적에서 확인)</span>';
       list.prepend(banner);
     }
     if (baseJoined.length) {
@@ -509,7 +509,7 @@ const Game = {
     recDiv.id = 'base-records';
     const rc = this.records || { wins: 0, bestTurns: {}, noDeath: {} };
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 이 기능 도입 이후 플레이부터 집계 · 보상 없는 명예 기록 · 회차마다 적 레벨이 달라 회차가 다른 최단 턴끼리는 단순 비교 불가</span><br>` +
+    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 이 기능 도입 이후 플레이부터 집계 · 전투 기록 · 회차마다 적 레벨이 달라 회차가 다른 최단 턴끼리는 단순 비교 불가</span><br>` +
       STAGES.map(st => {
         const bt = rc.bestTurns[st.id];
         const nd = rc.noDeath[st.id] || 0;
@@ -523,10 +523,19 @@ const Game = {
       ['swift', '질풍신뢰', '신속 목표 내 클리어'], ['veteran', '백전노장', '누적 승리 20회'], ['new_cycle', '새로운 천하', '2회차 진입'],
     ];
     const ach = rc.ach || {};
-    recDiv.innerHTML += '<br><b>업적</b> <span class="dim">보상 없는 명예 — 이후 해금 보상의 연결점</span><br>' +
+    const unlockNotes = {
+      first_s: '회차 지원 선택지: 족자 1개',
+      nine: '관해 합류(가상 설정) · 회차 시작 골드 +500',
+      flawless: '회차 시작 콩 ×2',
+      smith: '회차 지원 선택지: 철광석 3개 · 회차 시작 철광석 ×5',
+      swift: '태사자 합류(가상 설정)',
+      veteran: '주창 합류(가상 설정) · 회차 지원 선택지: 쌀2·콩2',
+      new_cycle: '회차 지원 선택지: 군자금 800골드',
+    };
+    recDiv.innerHTML += '<br><b>업적</b> <span class="dim">장수 합류·회차 지원·시작 자원 해금 조건. 회차 지원은 첫 전투에서 택1, 시작 자원은 별도 지급. 구버전 이행 시 회차 도중 추가 지급될 수 있습니다.</span><br>' +
       ACH_LIST.map(([id, name, desc]) => ach[id]
-        ? `✓ ${esc(name)} — ${esc(desc)} (${ach[id].c}회차)`
-        : `<span class="dim">· ${esc(name)} — ${esc(desc)}</span>`).join('<br>');
+        ? `✓ ${esc(name)} - ${esc(desc)} (${ach[id].c}회차)<br><span class="dim">해금: ${esc(unlockNotes[id])}</span>`
+        : `<span class="dim">· ${esc(name)} - ${esc(desc)}<br>해금 조건 충족 시: ${esc(unlockNotes[id])}</span>`).join('<br>');
     list.appendChild(recDiv);
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
     const sell = document.createElement('div');
@@ -1556,7 +1565,7 @@ const Game = {
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
-          `<b>클리어 등급 ${b.clearGrade}</b> <span class="dim">(무사망+신속 S · 보상 없는 명예)</span><br>` +
+          `<b>클리어 등급 ${b.clearGrade}</b> <span class="dim">(무사망+신속 S · S 달성은 업적 해금 조건)</span><br>` +
           ((b.newAch && b.newAch.length) ? `<b>업적 달성: ${b.newAch.map(a => a.name).join(', ')}</b><br>` : '') +
           `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText + dropText;
         this.show('screen-result');
