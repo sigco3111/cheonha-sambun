@@ -120,7 +120,7 @@ function deploymentFor(stage, army, cycle) {
 }
 
 class Battle {
-  constructor(stage, army, cycle = 1) {
+  constructor(stage, army, cycle = 1, features = {}) {
     this.stage = stage;
     this.cycle = cycle;
     this.map = buildMap(stage.map);
@@ -134,7 +134,7 @@ class Battle {
     this.foeKills = []; // 적 격파/퇴각만 (결과 표시·드랍 보상용)
     this.lootClaimed = false; // 보물창고 점령 여부 (전리품은 승리 시에만 지급)
     this.weather = weatherFor(stage.id, cycle); // 전투 변형(날씨) — 결정론 배정
-    const deployment = deploymentFor(stage, army, cycle);
+    const deployment = features.deploymentVariant === true ? deploymentFor(stage, army, cycle) : { variant: null, positions: stage.players.map(p => [p.x, p.y]) };
     this.deployVar = deployment.variant;
     for (const [i, p] of stage.players.entries()) {
       const saved = army[p.char];
