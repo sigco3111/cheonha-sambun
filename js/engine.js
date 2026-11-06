@@ -281,6 +281,7 @@ class Battle {
     if (!targets.length && isLord && safeAt(u.x, u.y)) return;
     if (!targets.length) {
       // 이동
+      if (u.ai === 'guard') return; // 수비: 사거리 밖이면 절대 이동하지 않음 (공성전 거점 수호)
       if (u.ai === 'hold' && u.morale > 30 && this.turn < (u.holdUntil || Infinity)) {
         // hold: 적이 가까이 오기 전까지 대기 (4칸 이내 적 있으면 반응). holdUntil 턴 도달 시 대기 해제(돌격)
         const near = foes.filter(f => Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= 4);
