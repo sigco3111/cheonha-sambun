@@ -249,6 +249,10 @@ const Game = {
       const joined = this.checkJoiners();
       jn.innerHTML = joined.length ? `<b>오리지널 IF</b> · ${joined.map(id => `${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ')} · 아래 출전 편성에서 선택 가능` : '';
     }
+    // 회차 시작 자원 해금 표시(다음 회차 시작 버튼에서 적용된 보상)
+    let bn = document.getElementById('brief-bonus');
+    if (!bn && jn && jn.parentNode) { bn = document.createElement('div'); bn.id = 'brief-bonus'; jn.parentNode.insertBefore(bn, jn.nextSibling); }
+    if (bn) bn.innerHTML = (this._cycleBonus && this._cycleBonus.length && this.stageIndex === 0) ? `<b>업적 시작 보상</b> · ${this._cycleBonus.join(' / ')}` : '';
     // 출전 편성: 보유 장수 중 스테이지 슬롯 수만큼 사용자가 직접 선택. 유비는 지휘관 슬롯 고정. 기본=기존 고정 순서(미선택 시 기존과 동일한 전투)
     const dp = document.getElementById('brief-deploy');
     if (dp) {
