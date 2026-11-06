@@ -393,4 +393,4 @@ function buildMap(pattern) {
   return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
 }
 
-const SHOP = ['heavy_blade', 'famed_sword', 'plate', 'counter_blade', 'bulwark', 'training_charm']; // 정비 상점 판매 품목
+const SHOP = ['heavy_blade', 'famed_sword', 'plate', 'counter_blade', 'bulwark', 'training_charm', 'bean', 'rice', 'meat', 'tonic']; // 정비 상점 판매 품목 (장비 + 소모품 — 회복 도구의 구매 경로)
