@@ -496,20 +496,29 @@ const Game = {
       ctx.textAlign = 'left';
       if (u.commander || u.boss) { ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+2, u.y*TILE+2, 22, 11); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+4, u.y*TILE+11); }
     }
-    // 공격 대상 예측 프리뷰 (대상 선택 모드) — 유닛 위에 그림
+    // 대상 선택 모드: 비대상 타일 디밍으로 대상·라벨 강조
+    if (this.pendingTargets && this.menuFor) {
+      const tset = new Set(this.pendingTargets.map(t => t.x + ',' + t.y));
+      ctx.fillStyle = 'rgba(8,8,14,0.38)';
+      for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++)
+        if (!tset.has(x + ',' + y)) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+    }
+    // 공격 대상 예측 프리뷰 (대상 선택 모드) — 디밍·유닛 위에 그림
     if (this.pendingKind === 'attack' && this.pendingTargets && this.menuFor) {
       for (const t of this.pendingTargets) {
         const f = b.forecastAttack(this.menuFor, t);
         const bx = t.x * TILE, by = t.y * TILE;
-        const bh = f.counter ? 25 : 15;
-        ctx.fillStyle = 'rgba(20,20,30,0.82)';
-        ctx.fillRect(bx - 5, by + 1, TILE + 10, bh);
-        ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+        const bh = f.counter ? 25 : 14;
+        ctx.fillStyle = 'rgba(20,20,30,0.88)';
+        ctx.fillRect(bx + 1, by + 1, TILE - 2, bh);
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 10px sans-serif';
         ctx.fillStyle = '#ffe08a';
-        ctx.fillText(`${f.min}~${f.max} 치${f.critPct}%`, bx + TILE / 2, by + 11);
+        ctx.fillText(`${f.min}~${f.max}`, bx + TILE / 2, by + 11);
         if (f.counter) {
-          ctx.fillStyle = '#ff9a9a';
-          ctx.fillText(`반격 ${f.counter.min}~${f.counter.max}`, bx + TILE / 2, by + 22);
+          ctx.font = 'bold 8px sans-serif';
+          ctx.fillStyle = f.counter.certain ? '#ff9a9a' : '#ffc46b';
+          ctx.fillText(`반격 ${f.counter.min}~${f.counter.max}${f.counter.certain ? '' : '?'}`, bx + TILE / 2, by + 22);
         }
         ctx.textAlign = 'left';
       }
@@ -720,7 +729,10 @@ const Game = {
       this.pendingTargets = targets; this.pendingKind = 'attack';
       this.closeMenuKeep();
       this.log('대상을 선택하세요.');
-      document.getElementById('target-hint').style.display = 'block';
+      const hintEl = document.getElementById('target-hint');
+      const critPct = b.forecastAttack(u, targets[0]).critPct; // 회심률은 공격자 사기 기준으로 모든 대상 동일
+      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 피해 범위 · 회심 ${critPct}% 시 ×1.5 · 반격?은 조건부`;
+      hintEl.style.display = 'block';
       this.renderBattle(); // 예측 프리뷰 표시
       return;
     }
@@ -752,7 +764,10 @@ const Game = {
           this.pendingTargets = validFactions; this.pendingKind = 'tactic:' + tid;
           this.closeMenuKeep();
           this.log('대상을 선택하세요.');
-          document.getElementById('target-hint').style.display = 'block';
+          const hintEl = document.getElementById('target-hint');
+          hintEl.textContent = '대상을 선택하세요';
+          hintEl.style.display = 'block';
+          this.renderBattle(); // 디밍 표시
         } else {
           this.doTactic(u, tid, validFactions[0].x, validFactions[0].y);
         }
