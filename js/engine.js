@@ -39,7 +39,8 @@ function equipStats(u) {
   return { atk, def, morale, mp };
 }
 
-function moraleFactor(u) { return 0.75 + (u.morale / 100) * 0.5; } // 0.75~1.25
+function effMorale(u) { return Math.min(100, u.morale + equipStats(u).morale); } // 장비 사기 포함 유효 사기(상한 100)
+function moraleFactor(u) { return 0.75 + (effMorale(u) / 100) * 0.5; } // 0.75~1.25
 
 function computeDamage(att, def_, map) {
   const es = equipStats(att), ds = equipStats(def_);
@@ -48,7 +49,7 @@ function computeDamage(att, def_, map) {
   const terMod = 1 - (ter.def / 100);
   const variance = 0.9 + Math.random() * 0.2;
   let dmg = Math.round(base * terMod * variance);
-  const crit = Math.random() < (att.morale / 100) * 0.15 + 0.03;
+  const crit = Math.random() < (effMorale(att) / 100) * 0.15 + 0.03;
   if (crit) dmg = Math.round(dmg * 1.5);
   return { dmg: Math.max(1, dmg), crit };
 }
@@ -61,7 +62,7 @@ function forecastDamage(att, def_, map) { // 예상 피해(무작위 없이 결�
   return {
     min: Math.max(1, Math.round(base * terMod * 0.9)),
     max: Math.max(1, Math.round(base * terMod * 1.1)),
-    critPct: Math.round(((att.morale / 100) * 0.15 + 0.03) * 100),
+    critPct: Math.round(((effMorale(att) / 100) * 0.15 + 0.03) * 100),
   };
 }
 
@@ -380,4 +381,4 @@ class Battle {
       this.aiAct(u);
     }
   }
-}
+        }
