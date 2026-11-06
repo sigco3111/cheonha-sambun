@@ -29,7 +29,7 @@ button.primary:hover { background: #8d6d3a; }
 #battle-canvas { display: block; margin: 0 auto; }
 #action-menu { display: none; position: absolute; flex-direction: column; gap: 4px; background: #26221d; border: 1px solid #575046; border-radius: 6px; padding: 6px; z-index: 5; }
 #action-menu button { padding: 7px 12px; font-size: 13px; text-align: left; white-space: nowrap; }
-#target-hint { display: none; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: #7a5c2e; padding: 4px 12px; border-radius: 4px; font-size: 13px; z-index: 6; white-space: nowrap; }
+#target-hint { display: none; position: absolute; top: 6px; left: 6px; background: #7a5c2e; padding: 4px 12px; border-radius: 4px; font-size: 13px; z-index: 6; white-space: normal; text-align: center; box-sizing: border-box; }
 #turn-banner { display: none; position: absolute; top: 40%; left: 50%; transform: translateX(-50%); background: rgba(28,24,20,0.88); border: 1px solid #a98c4f; color: #f0d9a8; padding: 10px 26px; border-radius: 8px; font-size: 20px; font-weight: bold; letter-spacing: 2px; z-index: 7; pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.25s; }
 #turn-banner.show { opacity: 1; }
 .unit-trait { display: block; margin-top: 4px; color: #a89f93; font-size: 12px; }
