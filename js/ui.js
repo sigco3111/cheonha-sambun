@@ -135,7 +135,7 @@ const Game = {
       const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [] };
       div.innerHTML = `<img class="card-sprite" src="assets/units/${CLASSES[a.cls].sprite}_0_0.png" alt="">
         <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
-        <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 +${es.atk}/+${es.def})` : ''}</span><br>
+        <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 공+${es.atk} 방+${es.def})` : ''}</span><br>
         <span class="dim">${eq}</span>
         <span class="unit-trait">${this.traitText(pseudo)}</span></div>`;
       const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
