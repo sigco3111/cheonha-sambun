@@ -257,9 +257,10 @@ class Battle {
         v.hp = Math.min(v.maxHp, v.hp + t.power + u.int);
         msg += ` ${v.name} 회복`;
       } else if (t.kind === 'demoralize' && v.side !== u.side) {
-        v.morale = Math.max(0, v.morale - t.power);
-        msg += ` ${v.name} 사기-${t.power}`;
-        if (v.morale <= 0 && v.hp > 0 && !this.isBossUnit(v)) { v.routed = true; this.gainExp(u, 20); this.kills.push(v.charId); if (v.side === 'enemy') this.foeKills.push(v.charId); msg += ` ${v.name} 사기 붕괴로 퇴각!`; }
+        const dm = Math.min(v.morale, t.power);
+        v.morale -= dm;
+        msg += ` ${v.name} 사기-${dm}`;
+        if (dm > 0 && v.morale <= 0 && v.hp > 0 && !this.isBossUnit(v)) { v.routed = true; this.gainExp(u, 20); this.kills.push(v.charId); if (v.side === 'enemy') this.foeKills.push(v.charId); msg += ` ${v.name} 사기 붕괴로 퇴각!`; }
       } else if (t.kind === 'morale' && v.side === u.side) {
         v.morale = Math.min(100, v.morale + t.power);
         msg += ` ${v.name} 사기+`;
@@ -391,8 +392,14 @@ class Battle {
       }
       // 위협: 사거리 내 적 2기 이상이면 사기 붕괴 노림
       if (u.tactics.includes('intimidate') && u.mp >= TACTICS.intimidate.mp) {
-        const near = this.alive('enemy').filter(v => Math.abs(v.x - u.x) + Math.abs(v.y - u.y) <= TACTICS.intimidate.range);
-        if (near.length >= 2) { this.useTactic(u, 'intimidate', near[0].x, near[0].y); return; }
+        const it = TACTICS.intimidate;
+        const inRange = this.alive('enemy').filter(v => v.morale > 0 && Math.abs(v.x - u.x) + Math.abs(v.y - u.y) <= it.range); // 사기 0 대상은 효과 없음 — 제외
+        let bestC = null, bestN = 0;
+        for (const c of inRange) { // 실제 효과 범위(클릭 중심 십자)에 들어가는 수로 판단
+          const n = inRange.filter(v => Math.abs(v.x - c.x) + Math.abs(v.y - c.y) <= it.area).length;
+          if (n > bestN) { bestN = n; bestC = c; }
+        }
+        if (bestN >= 2) { this.useTactic(u, 'intimidate', bestC.x, bestC.y); return; }
       }
       // 가장 약한 적 공격
       const t = targets.reduce((a, b) => (b.hp < a.hp ? b : a));
