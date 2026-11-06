@@ -24,6 +24,9 @@ window.addEventListener('load', () => {
       Game.renderBriefing();
     };
     document.getElementById('btn-retry').onclick = () => Game.startBattle();
+    document.getElementById('btn-next-cycle').onclick = () => {
+      Game.cycle++; Game.stageIndex = 0; Game.save(); Game.renderBriefing();
+    };
 
     document.getElementById('btn-endturn').onclick = () => Game.runEnemyPhase();
     document.getElementById('btn-speed').onclick = () => Game.cycleSpeed();
@@ -108,6 +111,7 @@ window.addEventListener('load', () => {
         }
       }
       Game.stageIndex = (+q.get('battle') || 1) - 1;
+      if (q.get('cycle')) Game.cycle = +q.get('cycle');
       if (q.get('screen') === 'base') { Game.renderBase(); return; }
       Game.auto = !q.get('deploy'); Game.fast = !!q.get('fast');
       Game.startBattle();
