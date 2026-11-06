@@ -89,6 +89,7 @@ const Game = {
   },
 
   startBattle() {
+    this._autoNote = null; this._equipBackup = null;
     this.battle = new Battle(STAGES[this.stageIndex], this.army);
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
     this.battle.autoItem = (u) => {
@@ -142,6 +143,18 @@ const Game = {
     inv.appendChild(document.createTextNode(' '));
     inv.appendChild(autoBtn);
     list.appendChild(inv);
+    if (this._autoNote) {
+      const note = document.createElement('div');
+      note.className = 'dim auto-note';
+      note.textContent = this._autoNote + ' ';
+      if (this._equipBackup) {
+        const undo = document.createElement('button');
+        undo.textContent = '되돌리기';
+        undo.onclick = () => this.undoAutoEquip();
+        note.appendChild(undo);
+      }
+      list.appendChild(note);
+    }
     for (const id of Object.keys(this.army)) {
       const a = this.army[id];
       const div = document.createElement('div');
@@ -157,7 +170,8 @@ const Game = {
         <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
         <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 공+${es.atk} 방+${es.def})` : ''}</span><br>
         <span class="dim">${eq}</span>
-        <span class="unit-trait">${this.traitText(pseudo)}</span></div>`;
+        <span class="unit-trait">${this.traitText(pseudo)}</span>
+        ${promo ? `<br><span class="dim promo-hint">전직 → ${CLASSES[promo].name}: Lv.${CLASSES[a.cls].promoLevel} + 전직 지침서 (${a.level >= CLASSES[a.cls].promoLevel ? (this.inventory.some(i => i.id === 'manual') ? '가능' : '지침서 부족') : '레벨 부족'})</span>` : ''}</div>`;
       const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
       btnEquip.onclick = () => this.renderEquip(id);
       div.appendChild(btnEquip);
@@ -179,6 +193,11 @@ const Game = {
 
   autoEquip() {
     const ids = Object.keys(this.army);
+    // 되돌리기용 스냅샷 (연속 실행해도 최초 상태 유지)
+    if (!this._equipBackup) this._equipBackup = JSON.stringify({
+      equip: Object.fromEntries(ids.map(id => [id, this.army[id].equip])),
+      inventory: this.inventory,
+    });
     // 1) 장착 중인 것까지 전부 풀에 모으기
     const pool = [];
     for (const id of ids) {
@@ -190,21 +209,35 @@ const Game = {
     pool.push(...this.inventory.filter(e => ITEMS[e.id].slot));
     this.inventory = this.inventory.filter(e => !ITEMS[e.id].slot);
     const val = (e) => { const it = ITEMS[e.id]; return (it.atk || it.def || 0) + (e.up || 0) * 2; };
-    // 2) 무기·방어구: 해당 능력치 높은 장수부터 좋은 장비 배정
-    for (const slot of ['weapon', 'armor']) {
-      const stat = slot === 'weapon' ? 'atk' : 'def';
-      const units = ids.map(id => this.army[id]).sort((a, b) => b[stat] - a[stat]);
-      const items = pool.filter(e => ITEMS[e.id].slot === slot).sort((x, y) => val(y) - val(x));
+    const cnt = { weapon: 0, armor: 0, acc: 0 };
+    // 2) 무기: 공격 높은 장수부터. 같은 값이면 병종에 맞는 무기 우선(궁수=장궁, 모사=책략부채)
+    for (const u of ids.map(id => this.army[id]).sort((a, b) => b.atk - a.atk)) {
+      const cands = pool.filter(e => ITEMS[e.id].slot === 'weapon');
+      if (!cands.length) break;
+      const cat = CLASSES[u.cls].cat;
+      let best = null, bs = -1;
+      for (const e of cands) {
+        const flavor = (cat === 'archer' && e.id === 'bow') || (cat === 'strategist' && e.id === 'fan');
+        const sc = val(e) * 100 + (flavor ? 10 : 0);
+        if (sc > bs) { bs = sc; best = e; }
+      }
+      u.equip.weapon = best; cnt.weapon++;
+      pool.splice(pool.indexOf(best), 1);
+    }
+    // 3) 방어구: 방어 높은 장수부터 좋은 갑옷
+    {
+      const units = ids.map(id => this.army[id]).sort((a, b) => b.def - a.def);
+      const items = pool.filter(e => ITEMS[e.id].slot === 'armor').sort((x, y) => val(y) - val(x));
       for (let i = 0; i < Math.min(units.length, items.length); i++) {
-        units[i].equip[slot] = items[i];
+        units[i].equip.armor = items[i]; cnt.armor++;
         pool.splice(pool.indexOf(items[i]), 1);
       }
     }
-    // 3) 장신구: 모사는 MP 족자 우선, 나머지는 남은 것 순서대로
+    // 4) 장신구: 모사는 MP 족자 우선, 나머지는 남은 것 순서대로
     const accs = pool.filter(e => ITEMS[e.id].slot === 'acc');
     const take = (pred, unit) => {
       const i = accs.findIndex(pred);
-      if (i >= 0) { unit.equip.acc = accs[i]; pool.splice(pool.indexOf(accs[i]), 1); accs.splice(i, 1); }
+      if (i >= 0) { unit.equip.acc = accs[i]; cnt.acc++; pool.splice(pool.indexOf(accs[i]), 1); accs.splice(i, 1); }
     };
     for (const id of ids) {
       const a = this.army[id];
@@ -214,8 +247,20 @@ const Game = {
       const a = this.army[id];
       if (!a.equip.acc) take(() => true, a);
     }
-    // 4) 남은 것은 소지품으로
+    // 5) 남은 것은 소지품으로
     this.inventory.push(...pool);
+    this._autoNote = `자동 장착 완료: 무기 ${cnt.weapon} · 방어구 ${cnt.armor} · 장신구 ${cnt.acc} 배정`;
+    this.save();
+    this.renderBase();
+  },
+
+  undoAutoEquip() {
+    if (!this._equipBackup) return;
+    const b = JSON.parse(this._equipBackup);
+    for (const [id, eq] of Object.entries(b.equip)) if (this.army[id]) this.army[id].equip = eq;
+    this.inventory = b.inventory;
+    this._equipBackup = null;
+    this._autoNote = '자동 장착을 되돌렸습니다.';
     this.save();
     this.renderBase();
   },
