@@ -29,6 +29,10 @@ const CLASSES = {
   strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
 };
 
+// 전투 변형(날씨): 2회차부터 결정론 배정 — 같은 회차·같은 전투는 항상 같은 날씨, 저장 없이 파생
+function weatherFor(stageId, cycle) { return (cycle >= 2 && (stageId + cycle) % 3 === 0) ? 'rain' : null; }
+const WEATHER = { rain: { name: '비', note: '화계 불가 · 궁병 사거리 -1(양측)' } };
+
 const TACTICS = {
   fire:  { name: '화계', mp: 12, power: 45, range: 3, area: 1, kind: 'damage' },
   cheer: { name: '고무', mp: 8,  power: 20, range: 2, area: 1, kind: 'morale' },
