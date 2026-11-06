@@ -487,9 +487,11 @@ const Game = {
       ctx.fillStyle = '#000a'; ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40, 5);
       ctx.fillStyle = u.side === 'player' ? '#4c4' : '#e55';
       ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40 * (u.hp / u.maxHp), 5);
-      // 사기
-      ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
-      ctx.fillText(u.morale, u.x*TILE+4, u.y*TILE+41);
+      // 사기 (우상단 배지 — 스프라이트와 겹침 최소화)
+      ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+29, u.y*TILE+2, 17, 11);
+      ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(u.morale, u.x*TILE+37.5, u.y*TILE+11);
+      ctx.textAlign = 'left';
       if (u.commander || u.boss) { ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+14, u.y*TILE+12); }
     }
     // 부유 텍스트 (피해/회복/상태)
