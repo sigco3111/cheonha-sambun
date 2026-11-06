@@ -40,8 +40,9 @@ const Game = {
   fx: [], threatTiles: null, _fxRunning: false,
   delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms / Game.speed)),
 
+  armyComplete(a) { const NEED = ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu']; return !!a && NEED.every(id => !!a[id]); }, // 정상 군단 완전성 술어 (save/load/startBattle 공통)
   save() {
-    if (!this.army || !Object.keys(this.army).length) { console.warn('[save 차단] 군단 데이터가 비어 있어 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
+    if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared,
     }));
@@ -50,8 +51,7 @@ const Game = {
     const s = localStorage.getItem('cheonha3_save');
     if (!s) return false;
     const d = JSON.parse(s);
-    const NEED = ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'];
-    if (!d.army || NEED.some(id => !d.army[id])) { // 손상 세이브: 원본을 바꾸지 않고 로드하지 않음 (자동 복구/초기화는 하지 않음)
+    if (!this.armyComplete(d.army)) { // 손상 세이브: 원본을 바꾸지 않고 로드하지 않음 (자동 복구/초기화는 하지 않음)
       console.warn('[load 차단] 세이브의 군단 데이터가 비어 있거나 누락됐습니다');
       this._corruptSave = true; this.renderTitle();
       return false;
@@ -96,7 +96,7 @@ const Game = {
     let warn = document.getElementById('title-warn');
     if (this._corruptSave) {
       if (!warn) { warn = document.createElement('div'); warn.id = 'title-warn'; warn.className = 'dim'; document.getElementById('screen-title').appendChild(warn); }
-      warn.textContent = '저장 데이터의 군단 정보가 비어 있어 이어하기를 중단했습니다. 원본 저장은 변경하지 않았습니다. 새 게임을 시작하면 기존 저장 위에 덮어씁니다.';
+      warn.textContent = '저장 데이터의 군단 정보가 불완전하여 이어하기를 중단했습니다. 원본 저장은 변경하지 않았습니다. 새 게임을 시작하면 기존 저장 위에 덮어씁니다.';
     } else if (warn) warn.remove();
   },
 
@@ -111,7 +111,7 @@ const Game = {
   },
 
   startBattle() {
-    if (!this.army || !Object.keys(this.army).length) { console.warn('[출진 차단] 군단 데이터가 없어 전투를 시작하지 않습니다'); this._corruptSave = !!localStorage.getItem('cheonha3_save'); this.renderTitle(); return; } // 무변경 차단
+    if (!this.armyComplete(this.army)) { console.warn('[출진 차단] 군단 데이터가 불완전해 전투를 시작하지 않습니다'); this._corruptSave = !!localStorage.getItem('cheonha3_save'); this.renderTitle(); return; } // 무변경 차단
     this._autoNote = null; this._equipBackup = null;
     this.battle = new Battle(STAGES[this.stageIndex], this.army, this.cycle);
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
