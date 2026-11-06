@@ -719,6 +719,15 @@ const Game = {
     document.getElementById('hud-stage').textContent = b.stage.name;
     document.getElementById('hud-turn').textContent = `턴 ${b.turn}/${b.stage.maxTurns} · ${b.phase === 'player' ? '아군' : '적군'}`;
     document.getElementById('btn-auto').textContent = this.auto ? '자동전투 끄기' : '자동전투';
+    let hint = document.getElementById('hud-autoitem-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'hud-autoitem-hint';
+      hint.className = 'dim';
+      hint.style.cssText = 'flex-basis:100%;font-size:12px;';
+      document.getElementById('battle-top').appendChild(hint);
+    }
+    hint.textContent = '자동전투: HP 40% 미만 아군은 HP 회복 도구 1개를 자동 사용합니다(그 유닛의 행동 소비 · HP 도구만)';
   },
 
   log(msg) {
@@ -1100,22 +1109,6 @@ const Game = {
       for (const u of b.alive('player')) {
         if (b.over) break;
         if (u.done) continue;
-        // 자동 회복: HP 35% 미만이면 회복제 1개 자동 사용 (수동과 동일하게 그 유닛의 행동 소비, 부족분을 덮는 가장 약한 것부터)
-        if (u.hp > 0 && u.hp < u.maxHp * 0.35) {
-          const heals = this.inventory.map((it, i) => ({ it, i, hp: (ITEMS[it.id].use && ITEMS[it.id].use.hp) || 0 })).filter(h => h.hp > 0).sort((x, y) => x.hp - y.hp);
-          if (heals.length) {
-            const missing = u.maxHp - u.hp;
-            const pick = heals.find(h => h.hp >= missing) || heals[heals.length - 1];
-            this.inventory.splice(pick.i, 1);
-            b.useItem(u, pick.it.id, u);
-            const last0 = b.log[b.log.length - 1];
-            if (last0 && last0 !== this._lastLogged) { this.log(last0); this._lastLogged = last0; }
-            u.done = true;
-            this.renderBattle();
-            await this.delay(this.fast ? 20 : 120);
-            continue;
-          }
-        }
         const before = this.snapshotHp();
         b.aiAct(u);
         this.diffHp(before);
