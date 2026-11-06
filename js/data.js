@@ -40,6 +40,27 @@ const CLASSES = {
 
 const PROMO_BONUS_DEFAULT = { atk: 3, def: 3, hp: 10, mp: 5 };
 // 전직 선택지: 문자열|배열 모두 허용(하위호환)
+// 회차 시작 자원 해금: 업적이 다음 회차 시작 시 소규모 자원을 해금(원기획 "클리어 등급과 업적이 숨겨진 장수·병종·시작 자원을 해금"). 회차 시작 버튼 1회 적용.
+const ACH_START_BONUS = {
+  nine:     { gold: 500 },                                  // 아홉 전투 정복
+  flawless: { items: ['bean', 'bean'] },                    // 불사의 군단
+  smith:    { items: ['ore', 'ore', 'ore', 'ore', 'ore'] }, // 대장의 손길
+};
+function startBonusFor(ach) { // 해금된 업적 -> 이번 회차 시작 보상 목록(라벨 포함)
+  const out = [];
+  for (const id of Object.keys(ACH_START_BONUS)) {
+    if (!ach || !ach[id]) continue;
+    const b = ACH_START_BONUS[id];
+    if (b.gold) out.push({ gold: b.gold, label: `골드 +${b.gold}` });
+    if (b.items) {
+      const cnt = {};
+      for (const it of b.items) cnt[it] = (cnt[it] || 0) + 1;
+      out.push({ items: b.items, label: Object.keys(cnt).map(k => `${ITEMS[k].name} ×${cnt[k]}`).join('·') });
+    }
+  }
+  return out;
+}
+
 function promoOptions(clsId) { const c = CLASSES[clsId]; if (!c) return []; const p = c.promoTo; const base = p ? (Array.isArray(p) ? p : [p]) : []; if (c.promoAlt) base.push(c.promoAlt); return base; } // promoTo는 구 ui 호환용 문자열 유지, promoAlt는 신 ui 전용 분기
 
 // 전투 변형(날씨): 2회차부터 결정론 배정 — 같은 회차·같은 전투는 항상 같은 날씨, 저장 없이 파생
