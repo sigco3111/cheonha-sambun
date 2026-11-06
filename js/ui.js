@@ -46,7 +46,7 @@ const Game = {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared, deploySel: this.deploySel,
-      records: this.records, bonusCycle: this.bonusCycle || 0,
+      records: this.records, bonusCycle: this.bonusCycle || 0, epilogue: this.epilogue || null, epilogueHistory: this.epilogueHistory || {},
     }));
   },
   load() {
@@ -61,6 +61,7 @@ const Game = {
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
     this.deploySel = (d.deploySel && Array.isArray(d.deploySel.picks)) ? d.deploySel : null; // 구 세이브(필드 없음)는 기본 편성
     this.cycle = d.cycle || 1;
+    this.epilogue = d.epilogue || null; this.epilogueHistory = d.epilogueHistory || {};
     this.bonusCycle = d.bonusCycle || 0; // 구세이브(필드 없음)는 0. 미지급 회차는 브리핑에서 1회 보완
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
@@ -103,7 +104,7 @@ const Game = {
   resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
     this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} };
-    this.deploySel = null;
+    this.deploySel = null; this.epilogue = null; this.epilogueHistory = {};
   },
 
   // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
