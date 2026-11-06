@@ -510,6 +510,24 @@ const Game = {
       for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++)
         if (!tset.has(x + ',' + y)) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
     }
+    // 책략 대상 예측 (대상 선택 모드) — 화계 피해/치유 회복량/고무 사기 상승, 결정적 단일값
+    if (this.pendingKind && this.pendingKind.startsWith('tactic:') && this.pendingTargets && this.menuFor) {
+      const tid = this.pendingKind.slice(7), tc = TACTICS[tid];
+      for (const v of this.pendingTargets) {
+        let txt = null, color = '#ffe08a';
+        if (tc.kind === 'damage' && v.side !== this.menuFor.side) { txt = `${tc.name} ${tacticDamage(this.menuFor, v)}`; color = '#ffb08a'; }
+        else if (tc.kind === 'heal' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(v.maxHp - v.hp, tc.power + this.menuFor.int)}`; color = '#a8e0a8'; }
+        else if (tc.kind === 'morale' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(100 - v.morale, tc.power)}`; color = '#a8c8ff'; }
+        if (!txt) continue;
+        const bx = v.x * TILE, by = v.y * TILE;
+        ctx.fillStyle = 'rgba(20,20,30,0.88)';
+        ctx.fillRect(bx + 1, by + 1, TILE - 2, 14);
+        ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = color;
+        ctx.fillText(txt, bx + TILE / 2, by + 11);
+        ctx.textAlign = 'left';
+      }
+    }
     // 공격 대상 예측 프리뷰 (대상 선택 모드) — 디밍·유닛 위에 그림
     if (this.pendingKind === 'attack' && this.pendingTargets && this.menuFor) {
       for (const t of this.pendingTargets) {
