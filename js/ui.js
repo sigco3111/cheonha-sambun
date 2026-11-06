@@ -670,6 +670,9 @@ const Game = {
     if (it.morale) parts.push(`사기+${it.morale}`);
     if (it.mp) parts.push(`MP+${it.mp}`);
     if (it.regen) parts.push(`턴 시작 HP ${Math.round(it.regen * 100)}% 회복`);
+    if (it.counter) parts.push(`반격 피해 +${Math.round(it.counter * 100)}%`);
+    if (it.tacDef) parts.push(`받는 책략 피해 -${Math.round(it.tacDef * 100)}%`);
+    if (it.exp) parts.push(`전투 경험치 +${Math.round(it.exp * 100)}%`);
     if (it.use && it.use.hp) parts.push(`HP${it.use.hp} 회복`);
     if (it.use && it.use.mp) parts.push(`MP${it.use.mp} 회복`);
     if (it.use && it.use.promo) parts.push('전직용');
