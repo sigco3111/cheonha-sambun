@@ -124,6 +124,30 @@ class Battle {
     for (const e of stage.enemies) {
       this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: anchorLv + (e.boss ? 2 : 0) }));
     }
+    this.anchorLv = anchorLv; // 증원 유닛도 동일 앵커(보스 가산 없음)
+    const rf = reinforceFor(stage.id, cycle);
+    this.pendingReinforce = rf ? { atTurn: rf.atTurn, units: rf.units.map(u => ({ ...u })) } : null; // 전투 변형(증원) — 미출현 목록, 전멸 승리 판정에 포함하지 않음
+  }
+
+  spawnReinforce() { // 증원 출현: 아군 페이즈 개시(턴 진행)와 함께 배치 — 첫 행동은 다음 적 페이즈(아군 대응 기회 보장)
+    const rf = this.pendingReinforce;
+    if (!rf || this.over || this.turn < rf.atTurn) return; // 이미 끝난 전투에는 출현 없음
+    const free = (u, x, y) => y >= 0 && y < this.map.length && x >= 0 && x < this.map[0].length
+      && (TERRAIN[this.map[y][x]].costs[catOf(u)] ?? 1) > 0 && !this.unitAt(x, y); // 통과 가능 지형 + 맵 안 + 빈 칸
+    const remain = [];
+    for (const spec of rf.units) {
+      const probe = makeUnit(spec.char, spec.x, spec.y, 'enemy', { level: this.anchorLv });
+      let spot = null;
+      outer: for (let r = 0; r <= 2; r++) { // 지정 타일 → 인접 1~2칸 유한 탐색(무한 탐색 없음), 전부 막히면 다음 턴으로 지연
+        for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          if (free(probe, spec.x + dx, spec.y + dy)) { spot = { x: spec.x + dx, y: spec.y + dy }; break outer; }
+        }
+      }
+      if (spot) { probe.x = spot.x; probe.y = spot.y; this.units.push(probe); this.log.push(`적의 증원 도착: ${probe.name}(${REINFORCEMENTS[this.stage.id].dir})`); }
+      else remain.push(spec);
+    }
+    this.pendingReinforce = remain.length ? { atTurn: this.turn + 1, units: remain } : null;
   }
 
   unitAt(x, y) { return this.units.find(u => !u.routed && u.hp > 0 && u.x === x && u.y === y); }
@@ -302,6 +326,7 @@ class Battle {
     // 턴 시작 효과: 회복 지형, 사기 소폭 회복
     if (this.phase === 'enemy') {
       this.turn++;
+      this.spawnReinforce();
       for (const u of this.units) {
         if (u.hp <= 0 || u.routed) continue;
         const t = TERRAIN[this.map[u.y][u.x]];
