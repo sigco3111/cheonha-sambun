@@ -825,7 +825,8 @@ const Game = {
     if (this.selected && this.moveTiles.some(([tx, ty]) => tx === x && ty === y)) {
       this.selected.x = x; this.selected.y = y;
       this.battle.checkTreasure(this.selected);
-      if (this.battle.log[this.battle.log.length - 1].includes('보물창고')) this.log(this.battle.log[this.battle.log.length - 1]);
+      const lastLog = this.battle.log[this.battle.log.length - 1]; // 로그가 비어 있으면(전투 첫 이동) 건너뜀 — 미가드 시 TypeError로 행동 메뉴가 열리지 않음
+      if (lastLog && lastLog.includes('보물창고')) this.log(lastLog);
       this.moveTiles = [];
       this.renderBattle();
       await this.delay(120);
