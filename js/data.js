@@ -84,6 +84,10 @@ const CHARS = {
   soldier_a:{ name: '황건 궁수', cls: 'archer',   hp: 62, mp: 5, atk: 20, def: 12, int: 5, spd: 14, morale: 80 },
   soldier_c:{ name: '동탁 기병', cls: 'cavalry',  hp: 85, mp: 5, atk: 25, def: 18, int: 5, spd: 17, morale: 85 },
   dong_elite:{ name: '동탁 친위병', cls: 'infantry', hp: 95, mp: 5, atk: 28, def: 22, int: 5, spd: 14, morale: 88 },
+  chen_gong:{ name: '진궁',   cls: 'strategist', hp: 90, mp: 65, atk: 16, def: 17, int: 33, spd: 15, morale: 95, tactics: ['fire','heal'] },
+  lu_elite: { name: '여포 친위기병', cls: 'cavalry',  hp: 95, mp: 5, atk: 29, def: 21, int: 5, spd: 18, morale: 90 },
+  lu_soldier:{ name: '여포군 보병', cls: 'infantry', hp: 78, mp: 5, atk: 23, def: 16, int: 5, spd: 14, morale: 85 },
+  lu_archer:{ name: '여포군 궁수', cls: 'archer',   hp: 70, mp: 5, atk: 25, def: 14, int: 5, spd: 16, morale: 85 },
 };
 
 // 스테이지: 오리지널 맵/배치/대사. 맵 문자 -> TERRAIN 키
@@ -386,6 +390,45 @@ const STAGES = [
       { char: 'soldier_i', x: 12, y: 7, ai: 'aggressive' },
     ],
     rewards: { gold: 4500, items: ['meat','ore','ore','tonic','manual'], exp: 190 },
+  },
+  {
+    id: 9, name: '제9전 · 하비의 함락', maxTurns: 30,
+    briefing: '소패를 빼앗긴 유비는 조조와 손잡고 여포가 웅거한 하비를 포위했다. 궁지에 몰린 천하의 귀신은 성 안에서 마지막 결전을 준비한다. 서쪽 관문이나 남쪽 문을 돌파해 성으로 밀고 들어가 여포를 끝장내라. 남쪽 보급고를 점령하면 추가 전리품을 얻는다(선택, 승리 시 획득).',
+    victory: '여포 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'lu_bu',
+    bossDrop: 'plate',
+    fastWin: { turns: 14, gold: 1200 },
+    treasure: { x: 10, y: 6, gold: 1600, items: ['manual'] },
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M...F....#CC#M',
+      'M.V..~~..#CC#M',
+      'M....~~..GCC#M',
+      'M.FF.==..#CC#M',
+      'M.FF.~~..##G#M',
+      'M....~~...T..M',
+      'M..B.....FF..M',
+      'M......FF....M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 2, y: 4, commander: true },
+      { char: 'guan_yu', x: 3, y: 3 },
+      { char: 'zhang_fei', x: 3, y: 5 },
+      { char: 'jian_yong', x: 1, y: 3 },
+      { char: 'sun_qian', x: 2, y: 6 },
+      { char: 'mi_zhu', x: 1, y: 5 },
+    ],
+    enemies: [
+      { char: 'lu_bu', x: 10, y: 2, boss: true, ai: 'aggressive' },
+      { char: 'chen_gong', x: 11, y: 1, ai: 'hold' },
+      { char: 'lu_elite', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'lu_elite', x: 11, y: 4, ai: 'aggressive' },
+      { char: 'lu_soldier', x: 10, y: 3, ai: 'aggressive' },
+      { char: 'lu_archer', x: 11, y: 2, ai: 'hold' },
+      { char: 'lu_archer', x: 11, y: 3, ai: 'hold' },
+      { char: 'lu_soldier', x: 10, y: 7, ai: 'hold', holdUntil: 6 },
+    ],
+    rewards: { gold: 5000, items: ['meat','ore','ore','tonic','manual'], exp: 210 },
   },
 ];
 
