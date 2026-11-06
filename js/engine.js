@@ -127,6 +127,7 @@ class Battle {
     this.anchorLv = anchorLv; // 증원 유닛도 동일 앵커(보스 가산 없음)
     const rf = reinforceFor(stage.id, cycle);
     this.pendingReinforce = rf ? { atTurn: rf.atTurn, units: rf.units.map(u => ({ ...u })) } : null; // 전투 변형(증원) — 미출현 목록, 전멸 승리 판정에 포함하지 않음
+    this.defense = defenseFor(stage.id, cycle); // 전투 변형(거점 사수) — 적 점거 시 패배
   }
 
   spawnReinforce() { // 증원 출현: 아군 페이즈 개시(턴 진행)와 함께 배치 — 첫 행동은 다음 적 페이즈(아군 대응 기회 보장)
@@ -344,6 +345,7 @@ class Battle {
   }
 
   checkEnd() {
+    if (this.defense) { const occ = this.unitAt(this.defense.x, this.defense.y); if (occ && occ.side === 'enemy') { this.over = { win: false, reason: `${this.defense.name}이(가) 적에게 함락됐다...` }; return; } }
     const bossChar = this.stage.bossChar;
     if (bossChar) {
       const boss = this.units.find(u => u.charId === bossChar);
