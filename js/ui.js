@@ -29,7 +29,7 @@ const Game = {
   gold: 500,
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
-  stageIndex: 0,
+  stageIndex: 0, cycle: 1,
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
@@ -37,7 +37,7 @@ const Game = {
 
   save() {
     localStorage.setItem('cheonha3_save', JSON.stringify({
-      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex,
+      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle,
     }));
   },
   load() {
@@ -45,6 +45,7 @@ const Game = {
     if (!s) return false;
     const d = JSON.parse(s);
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
+    this.cycle = d.cycle || 1;
     return true;
   },
 
@@ -85,12 +86,12 @@ const Game = {
     this.show('screen-briefing');
     document.getElementById('brief-title').textContent = st.name;
     document.getElementById('brief-text').textContent = st.briefing;
-    document.getElementById('brief-conditions').textContent = `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴`;
+    document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴`;
   },
 
   startBattle() {
     this._autoNote = null; this._equipBackup = null;
-    this.battle = new Battle(STAGES[this.stageIndex], this.army);
+    this.battle = new Battle(STAGES[this.stageIndex], this.army, this.cycle);
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
     this.battle.autoItem = (u) => {
       const cand = this.inventory.map((it, i) => ({ it, i }))
@@ -872,7 +873,8 @@ const Game = {
     if (b.over.win) {
       // 보상
       const r = b.stage.rewards;
-      this.gold += r.gold;
+      const goldGain = Math.round(r.gold * (1 + 0.5 * (this.cycle - 1)));
+      this.gold += goldGain;
       for (const id of r.items) this.inventory.push({ id, up: 0 });
       for (const u of b.alive('player')) {
         const a = this.army[u.charId];
@@ -892,7 +894,7 @@ const Game = {
         document.getElementById('result-title').textContent = '승리!';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length} · 생존: ${surv}</span><br>` +
-          `보상: ${r.gold}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
+          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
@@ -906,6 +908,9 @@ const Game = {
   },
 
   renderComplete() {
+    document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
+    document.getElementById('complete-text').textContent =
+      `4개 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 더 강해진 적과 ${this.cycle + 1}회차를 시작할 수 있습니다.`;
     this.show('screen-complete');
   },
 };
