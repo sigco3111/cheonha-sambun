@@ -791,7 +791,10 @@ const Game = {
           this.closeMenuKeep();
           this.log('대상을 선택하세요.');
           const hintEl = document.getElementById('target-hint');
-          hintEl.textContent = '대상을 선택하세요';
+          const areaTxt = t.area > 0 ? `클릭 중심 십자 ${t.area}칸 범위` : '단일 대상';
+          const sideTxt = t.kind === 'damage' ? '의 적 피해 · 아군 피해 없음 · 표시는 해당 대상 기준'
+            : t.kind === 'morale' ? '의 아군 사기 상승 · 표시는 해당 대상 기준' : ' 회복';
+          hintEl.textContent = `대상 선택 — ${t.name}: ${areaTxt}${sideTxt}`;
           hintEl.style.display = 'block';
           this.positionHint();
           this.renderBattle(); // 디밍 표시
