@@ -269,6 +269,11 @@ class Battle {
     }
     // 이미 사거리 안 적이 있으면 공격
     let targets = this.targetsFor(u);
+    // 주군 보호: 아군 오토에서 유비는 위협 범위 밖에 머묾 (다른 아군이 있을 때만)
+    const isLord = u.side === 'player' && u.charId === 'liu_bei' && friends.length > 1;
+    const reach = f => { const cf = classOf(f); return cf.movement + cf.rMax; };
+    const safeAt = (x, y) => foes.every(f => Math.abs(x - f.x) + Math.abs(y - f.y) > reach(f));
+    if (!targets.length && isLord && safeAt(u.x, u.y)) return;
     if (!targets.length) {
       // 이동
       if (u.ai === 'hold' && u.morale > 30) {
@@ -278,16 +283,29 @@ class Battle {
       }
       const range = this.moveRange(u);
       if (range.length) {
+        let pool = range;
+        let lordFlee = false;
+        if (isLord) {
+          const safe = range.filter(([x, y]) => safeAt(x, y));
+          if (safe.length) pool = safe; else lordFlee = true;
+        }
         const nearest = foes.reduce((a, b) => {
           const da = Math.min(...range.map(([x, y]) => Math.abs(x - a.x) + Math.abs(y - a.y)));
           const db = Math.min(...range.map(([x, y]) => Math.abs(x - b.x) + Math.abs(y - b.y)));
           return db < da ? b : a;
         });
         let best = null, bestScore = Infinity;
-        for (const [x, y] of range) {
+        for (const [x, y] of pool) {
           const d = Math.abs(x - nearest.x) + Math.abs(y - nearest.y);
-          const c = classOf(u);
-          const score = (d >= c.rMin && d <= c.rMax) ? -100 + d : d;
+          let score;
+          if (lordFlee) {
+            // 안전 타일이 없으면 적과의 최소거리 최대화(도주)
+            const dmin = Math.min(...foes.map(f => Math.abs(x - f.x) + Math.abs(y - f.y)));
+            score = -dmin * 100 + d;
+          } else {
+            const c = classOf(u);
+            score = (d >= c.rMin && d <= c.rMax) ? -100 + d : d;
+          }
           if (score < bestScore) { bestScore = score; best = [x, y]; }
         }
         if (best) { u.x = best[0]; u.y = best[1]; }
