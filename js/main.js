@@ -42,7 +42,16 @@ window.addEventListener('load', () => {
     document.getElementById('btn-next-cycle').onclick = (ev) => {
       if (ev.currentTarget.disabled) return;
       ev.currentTarget.disabled = true;
-      Game.cycle++; Game.stageIndex = 0; Game.save(); Game.renderBriefing();
+      Game.cycle++; Game.stageIndex = 0;
+      Game._cycleBonus = [];
+      if (typeof startBonusFor === 'function') { // 구 data 혼합 폴백: 함수 없으면 보상 생략
+        for (const g of startBonusFor(Game.records && Game.records.ach)) {
+          if (g.gold) Game.gold += g.gold;
+          if (g.items) for (const it of g.items) Game.inventory.push({ id: it, up: 0 });
+          Game._cycleBonus.push(g.label);
+        }
+      }
+      Game.save(); Game.renderBriefing();
     };
 
     document.getElementById('btn-endturn').onclick = () => Game.runEnemyPhase();
