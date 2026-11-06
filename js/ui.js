@@ -170,6 +170,32 @@ const Game = {
       shop.appendChild(document.createTextNode(' '));
     }
     list.appendChild(shop);
+    // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
+    const sell = document.createElement('div');
+    sell.id = 'base-sell';
+    sell.innerHTML = '<b>판매</b> ';
+    const SELL_EXCLUDE = new Set(['manual']);
+    const groups = {};
+    this.inventory.forEach((e, i) => { const k = e.id + '|' + (e.up || 0); (groups[k] = groups[k] || []).push(i); });
+    const sellKeys = Object.keys(groups).filter(k => !SELL_EXCLUDE.has(k.split('|')[0]) && (ITEMS[k.split('|')[0]].price || 0) > 0);
+    if (!sellKeys.length) sell.innerHTML += '<span class="dim">판매 가능한 소지품 없음</span>';
+    for (const k of sellKeys) {
+      const [id, up] = k.split('|');
+      const it = ITEMS[id];
+      const price = Math.floor(it.price / 2);
+      const btn = document.createElement('button');
+      btn.textContent = `${it.name}${+up ? '+' + up : ''} (${groups[k].length}개) +${price}골드`;
+      btn.onclick = () => {
+        const i = this.inventory.findIndex(e => e.id === id && (e.up || 0) === +up);
+        if (i < 0) return;
+        this.inventory.splice(i, 1);
+        this.gold += price;
+        this.save(); this.renderBase();
+      };
+      sell.appendChild(btn);
+      sell.appendChild(document.createTextNode(' '));
+    }
+    list.appendChild(sell);
     if (this._autoNote) {
       const note = document.createElement('div');
       note.className = 'dim auto-note';
