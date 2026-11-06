@@ -53,6 +53,18 @@ function computeDamage(att, def_, map) {
   return { dmg: Math.max(1, dmg), crit };
 }
 
+function forecastDamage(att, def_, map) { // 예상 피해(무작위 없이 결정적) — computeDamage와 동일 계수, 변동폭 0.9~1.1 양끝
+  const es = equipStats(att), ds = equipStats(def_);
+  const ter = TERRAIN[map[def_.y][def_.x]];
+  const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
+  const terMod = 1 - (ter.def / 100);
+  return {
+    min: Math.max(1, Math.round(base * terMod * 0.9)),
+    max: Math.max(1, Math.round(base * terMod * 1.1)),
+    critPct: Math.round(((att.morale / 100) * 0.15 + 0.03) * 100),
+  };
+}
+
 function tacticDamage(caster, target) {
   const es = equipStats(caster);
   return Math.round(30 + (caster.int + es.atk) * 1.4 - target.def * 0.5);
@@ -136,6 +148,17 @@ class Battle {
   inRange(att, def_, rMin, rMax) {
     const d = Math.abs(att.x - def_.x) + Math.abs(att.y - def_.y);
     return d >= rMin && d <= rMax;
+  }
+
+  forecastAttack(att, def_) { // 공격 예측 프리뷰: 예상 피해·회심률·반격 가능(대상이 최소 피해로도 격파되면 반격 없음)
+    const f = forecastDamage(att, def_, this.map);
+    let counter = null;
+    const cd = classOf(def_);
+    if (def_.hp > f.min && cd.counter && this.inRange(def_, att, cd.rMin, cd.rMax)) {
+      const c = forecastDamage(def_, att, this.map);
+      counter = { min: c.min, max: c.max };
+    }
+    return { ...f, counter };
   }
 
   targetsFor(u) {
