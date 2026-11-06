@@ -243,7 +243,7 @@ const Game = {
       }).join(' / ');
       const promo = CLASSES[a.cls].promoTo;
       const es = equipStats(a);
-      const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [] };
+      const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [], perk: a.perk };
       const cardSprite = CHAR_SPRITES.includes(id) ? `char_${id}` : (SPRITE_FILE[CLASSES[a.cls].sprite] || CLASSES[a.cls].sprite);
       div.innerHTML = `<div class="card-top"><img class="card-sprite" src="assets/units/${cardSprite}_0_0.png" alt="">
         <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
@@ -257,7 +257,7 @@ const Game = {
       if (a.perk) {
         const perkSpan = document.createElement('span');
         perkSpan.className = 'dim';
-        perkSpan.textContent = `특기: ${a.perk === 'atk' ? '공격(물리 피해 +8%)' : '수비(받는 물리 피해 -8%)'}`;
+        perkSpan.textContent = '특기: ' + { atk: '공격(물리 피해 +8%)', def: '수비(받는 물리 피해 -8%)', mob: '기동(이동 +1)' }[a.perk];
         perkRow.appendChild(perkSpan);
       } else if (a.level >= 3) {
         const mkPerk = (pid, label) => {
@@ -283,6 +283,7 @@ const Game = {
         };
         perkRow.appendChild(mkPerk('atk', '특기 공격(물리 피해+8%)'));
         perkRow.appendChild(mkPerk('def', '특기 수비(받는 물리피해-8%)'));
+        perkRow.appendChild(mkPerk('mob', '특기 기동(이동 +1)'));
         const perkNote = document.createElement('span');
         perkNote.className = 'dim perk-note';
         perkNote.textContent = '1회 선택 · 변경 불가';
@@ -749,7 +750,7 @@ const Game = {
 
   traitText(u) {
     const c = CLASSES[u.cls];
-    const parts = [`이동 ${c.move}`, `사거리 ${c.rMin === c.rMax ? c.rMax : c.rMin + '~' + c.rMax}`];
+    const parts = [`이동 ${c.move + (u.perk === 'mob' ? 1 : 0)}`, `사거리 ${c.rMin === c.rMax ? c.rMax : c.rMin + '~' + c.rMax}`];
     parts.push(c.counter ? '반격 가능' : '반격 불가');
     const blocked = Object.keys(TERRAIN).filter(t => t !== 'wall' && (TERRAIN[t].costs[c.cat] || 0) < 0).map(t => TERRAIN[t].name);
     if (blocked.length) parts.push(blocked.join('·') + ' 진입 불가');
