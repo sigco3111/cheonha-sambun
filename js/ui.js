@@ -467,7 +467,8 @@ const Game = {
       this.save(); this.renderBase();
     };
     const spLine = document.createElement('div');
-    spLine.appendChild(document.createTextNode('특별 품목(전투마다 교체): '));
+    spLine.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0;'; // 좁은 화면에서 라벨-버튼 밀착 방지
+    spLine.appendChild(document.createTextNode('특별 품목(전투마다 교체):'));
     spLine.appendChild(spBtn);
     const spNote = document.createElement('span');
     spNote.className = 'dim';
