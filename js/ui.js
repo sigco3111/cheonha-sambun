@@ -492,7 +492,7 @@ const Game = {
       ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(u.morale, u.x*TILE+37.5, u.y*TILE+11);
       ctx.textAlign = 'left';
-      if (u.commander || u.boss) { ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+14, u.y*TILE+12); }
+      if (u.commander || u.boss) { ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+2, u.y*TILE+2, 22, 11); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+4, u.y*TILE+11); }
     }
     // 부유 텍스트 (피해/회복/상태)
     this.fx = this.fx.filter(f => now - f.t0 < f.dur);
