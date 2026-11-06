@@ -70,3 +70,7 @@ button.primary:hover { background: #8d6d3a; }
 #target-detail .td-row:active { background: #3a342a; }
 #target-detail .td-mu-up { color: #9ae6a0; font-weight: bold; }
 #target-detail .td-mu-down { color: #ff9a9a; font-weight: bold; }
+
+/* 손상 세이브 덮어쓰기 확인 상자 */
+#title-overwrite-confirm { border: 1px solid #575046; border-radius: 6px; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; max-width: 480px; }
+#title-overwrite-confirm .btnrow { display: flex; gap: 8px; }
