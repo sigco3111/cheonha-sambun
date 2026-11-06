@@ -8,7 +8,7 @@ const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry
 // Sprite files renamed on GitHub (web UI upload prefixed them); map sprite keys to actual file basenames.
 const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist', infantry:'new_infantry', enemy_infantry:'new_enemy_infantry'};
 // Individual commander sprites (allied officers); fallback to class sprite when absent.
-const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu'];
+const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru'];
 
 function loadImages(cb) {
   let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length + 3; let done = 0;
@@ -20,7 +20,7 @@ function loadImages(cb) {
 }
 
 function spriteFor(u) {
-  if (u.side === 'player' && IMG.chars && IMG.chars[u.charId] && IMG.chars[u.charId].naturalWidth) return IMG.chars[u.charId];
+  if (IMG.chars && IMG.chars[u.charId] && IMG.chars[u.charId].naturalWidth) return IMG.chars[u.charId];
   const c = CLASSES[u.cls];
   let key = c.sprite;
   if (u.side === 'enemy') key = 'enemy_' + c.cat;
