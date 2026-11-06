@@ -245,8 +245,8 @@ const STAGES = [
       { char: 'mi_zhu', x: 1, y: 3 },
     ],
     enemies: [
-      { char: 'dong_zhuo', x: 11, y: 4, boss: true, ai: 'hold', holdUntil: 8 },
-      { char: 'guo_si', x: 12, y: 3, ai: 'hold' },
+      { char: 'dong_zhuo', x: 11, y: 4, boss: true, ai: 'guard' },
+      { char: 'guo_si', x: 12, y: 3, ai: 'guard' },
       { char: 'li_jue', x: 8, y: 2, ai: 'aggressive' },
       { char: 'soldier_c', x: 8, y: 4, ai: 'aggressive' },
       { char: 'soldier_c', x: 8, y: 6, ai: 'aggressive' },
