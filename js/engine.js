@@ -273,7 +273,7 @@ class Battle {
     let targets = this.targetsFor(u);
     // 주군 보호: 아군 오토에서 유비는 위협 범위 밖에 머묾 (다른 아군이 있을 때만)
     const isLord = u.side === 'player' && u.charId === 'liu_bei' && friends.length > 1;
-    const reach = f => { const cf = classOf(f); return cf.movement + cf.rMax; };
+    const reach = f => { const cf = classOf(f); return cf.move + cf.rMax; };
     const safeAt = (x, y) => foes.every(f => Math.abs(x - f.x) + Math.abs(y - f.y) > reach(f));
     if (!targets.length && isLord && safeAt(u.x, u.y)) return;
     if (!targets.length) {
