@@ -171,7 +171,7 @@ const Game = {
     }
     // 특별 품목 로테이션: 전투·회차마다 1종씩 교체 (규칙적 — 다음 품목 예고)
     const ROT = ['jade', 'scroll', 'amulet', 'manual'];
-    const rotIdx = (this.stageIndex + this.cycle) % ROT.length;
+    const rotIdx = (this.stageIndex + (this.cycle - 1) * STAGES.length) % ROT.length; // 누적 전투 번호 — 회차 경계에서도 연속 중복 없이 전진
     const spId = ROT[rotIdx], nextId = ROT[(rotIdx + 1) % ROT.length];
     const sp = ITEMS[spId];
     const spBtn = document.createElement('button');
