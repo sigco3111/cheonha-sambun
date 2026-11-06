@@ -243,34 +243,58 @@ const Game = {
       const es = equipStats(a);
       const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [] };
       const cardSprite = CHAR_SPRITES.includes(id) ? `char_${id}` : (SPRITE_FILE[CLASSES[a.cls].sprite] || CLASSES[a.cls].sprite);
-      div.innerHTML = `<img class="card-sprite" src="assets/units/${cardSprite}_0_0.png" alt="">
+      div.innerHTML = `<div class="card-top"><img class="card-sprite" src="assets/units/${cardSprite}_0_0.png" alt="">
         <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
         <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 공+${es.atk} 방+${es.def})` : ''}</span><br>
         <span class="dim">${eq}</span>
         <span class="unit-trait">${this.traitText(pseudo)}</span>
-        ${promo ? `<br><span class="dim promo-hint">전직 → ${CLASSES[promo].name}: Lv.${CLASSES[a.cls].promoLevel} + 전직 지침서 (${a.level >= CLASSES[a.cls].promoLevel ? (this.inventory.some(i => i.id === 'manual') ? '가능' : '지침서 부족') : '레벨 부족'})</span>` : ''}</div>`;
-      const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
-      btnEquip.onclick = () => this.renderEquip(id);
-      div.appendChild(btnEquip);
-      const btnUp = document.createElement('button'); btnUp.textContent = '강화';
-      btnUp.onclick = () => this.renderUpgrade(id);
-      div.appendChild(btnUp);
-      // 성장 특기: Lv.3부터 1회 선택(변경 불가) — 물리 피해 +8% 또는 받는 물리 피해 -8%
+        ${promo ? `<br><span class="dim promo-hint">전직 → ${CLASSES[promo].name}: Lv.${CLASSES[a.cls].promoLevel} + 전직 지침서 (${a.level >= CLASSES[a.cls].promoLevel ? (this.inventory.some(i => i.id === 'manual') ? '가능' : '지침서 부족') : '레벨 부족'})</span>` : ''}</div></div>`;
+      // 성장 특기: Lv.3부터 1회 선택(변경 불가) — 카드 정보 아래 전폭 행, 확정/취소 2단계로 오조작 방지
+      const perkRow = document.createElement('div');
+      perkRow.className = 'perk-row';
       if (a.perk) {
         const perkSpan = document.createElement('span');
         perkSpan.className = 'dim';
-        perkSpan.textContent = ` 특기: ${a.perk === 'atk' ? '공격(물리 피해 +8%)' : '수비(받는 물리 피해 -8%)'}`;
-        div.appendChild(perkSpan);
+        perkSpan.textContent = `특기: ${a.perk === 'atk' ? '공격(물리 피해 +8%)' : '수비(받는 물리 피해 -8%)'}`;
+        perkRow.appendChild(perkSpan);
       } else if (a.level >= 3) {
-        const mkPerk = (pid, label) => { const pb = document.createElement('button'); pb.textContent = label; pb.onclick = () => { a.perk = pid; this.save(); this.renderBase(); }; return pb; };
-        div.appendChild(mkPerk('atk', '특기 공격(물리 피해+8%)'));
-        div.appendChild(document.createTextNode(' '));
-        div.appendChild(mkPerk('def', '특기 수비(받는 물리피해-8%)'));
+        const mkPerk = (pid, label) => {
+          const pb = document.createElement('button');
+          pb.textContent = label;
+          pb.onclick = () => {
+            perkRow.innerHTML = '';
+            const warn = document.createElement('span');
+            warn.className = 'dim perk-note';
+            warn.textContent = `${label} — 확정하면 변경할 수 없습니다.`;
+            const ok = document.createElement('button');
+            ok.textContent = '확정';
+            ok.className = 'primary';
+            ok.onclick = () => { a.perk = pid; this.save(); this.renderBase(); };
+            const no = document.createElement('button');
+            no.textContent = '취소';
+            no.onclick = () => this.renderBase();
+            perkRow.appendChild(warn);
+            perkRow.appendChild(ok);
+            perkRow.appendChild(no);
+          };
+          return pb;
+        };
+        perkRow.appendChild(mkPerk('atk', '특기 공격(물리 피해+8%)'));
+        perkRow.appendChild(mkPerk('def', '특기 수비(받는 물리피해-8%)'));
         const perkNote = document.createElement('span');
-        perkNote.className = 'dim';
-        perkNote.textContent = ' 1회 선택 · 변경 불가';
-        div.appendChild(perkNote);
+        perkNote.className = 'dim perk-note';
+        perkNote.textContent = '1회 선택 · 변경 불가';
+        perkRow.appendChild(perkNote);
       }
+      if (a.perk || a.level >= 3) div.appendChild(perkRow);
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+      const btnEquip = document.createElement('button'); btnEquip.textContent = '장착';
+      btnEquip.onclick = () => this.renderEquip(id);
+      actions.appendChild(btnEquip);
+      const btnUp = document.createElement('button'); btnUp.textContent = '강화';
+      btnUp.onclick = () => this.renderUpgrade(id);
+      actions.appendChild(btnUp);
       if (promo && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
         const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[promo].name}`;
         btnP.onclick = () => {
@@ -278,8 +302,9 @@ const Game = {
           a.cls = promo; a.atk += 3; a.def += 3; a.maxHp += 10; a.maxMp += 5;
           this.save(); this.renderBase();
         };
-        div.appendChild(btnP);
+        actions.appendChild(btnP);
       }
+      div.appendChild(actions);
       list.appendChild(div);
     }
   },
