@@ -61,6 +61,7 @@ button.primary:hover { background: #8d6d3a; }
 }
 
 #target-detail { margin-bottom: 6px; }
+#target-detail .td-head { font-size: 12px; color: #a89f93; margin: 2px 0 4px; }
 #target-detail .td-row { padding: 8px 10px; margin: 3px 0; background: #2a2620; border: 1px solid #575046; border-radius: 4px; font-size: 14px; line-height: 1.55; cursor: pointer; }
 #target-detail .td-row:active { background: #3a342a; }
 #target-detail .td-mu-up { color: #9ae6a0; font-weight: bold; }
