@@ -16,7 +16,7 @@ window.addEventListener('load', () => {
         const ok = document.createElement('button'); ok.textContent = '덮어쓰고 새 게임'; ok.className = 'primary';
         const no = document.createElement('button'); no.textContent = '취소';
         no.onclick = () => div.remove();
-        ok.onclick = () => { div.remove(); Game._corruptSave = false; Game.initArmy(); Game.stageIndex = 0; Game.save(); Game.renderBriefing(); };
+        ok.onclick = () => { div.remove(); Game._corruptSave = false; Game.initArmy(); Game.resetRun(); Game.save(); Game.renderBriefing(); };
         const row = document.createElement('div'); row.className = 'btnrow';
         row.appendChild(ok); row.appendChild(no);
         div.appendChild(row);
@@ -24,7 +24,7 @@ window.addEventListener('load', () => {
         return;
       }
       Game.initArmy();
-      Game.stageIndex = 0;
+      Game.resetRun();
       Game.save();
       Game.renderBriefing();
     };
