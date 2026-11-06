@@ -142,19 +142,20 @@ const Game = {
     const def = this.defaultDeploy();
     const stored = (this.deploySel && Array.isArray(this.deploySel.picks)) ? this.deploySel : null;
     let corrected = false;
+    const dropped = [], added = [];
     const picks = [];
     if (!stored) { for (const id of def) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); } }
     else {
       for (const id of stored.picks) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); }
-      if (stored.stage !== this.stageIndex) { // 스테이지가 달라져 슬롯 수가 어긋날 때만 자동 보정(내용 표시), 같은 스테이지의 사용자 선택은 그대로 존중
-        if (picks.length > slots - 1) picks.length = slots - 1;
-        for (const id of [...def, ...Object.keys(this.army)]) { if (picks.length >= slots - 1) break; if (id !== 'liu_bei' && !picks.includes(id)) picks.push(id); }
+      if (stored.stage !== this.stageIndex) { // 스테이지가 달라져 슬롯 수가 어긋날 때만 자동 보정(제외/보충된 장수를 이름으로 표시), 같은 스테이지의 사용자 선택은 그대로 존중
+        if (picks.length > slots - 1) { dropped.push(...picks.splice(slots - 1)); }
+        for (const id of [...def, ...Object.keys(this.army)]) { if (picks.length >= slots - 1) break; if (id !== 'liu_bei' && !picks.includes(id)) { picks.push(id); added.push(id); } }
         corrected = true;
       }
     }
     const sel = ['liu_bei', ...picks];
     const valid = sel.length === slots && sel.every(id => this.army[id]);
-    return { sel, valid, corrected };
+    return { sel, valid, corrected, dropped, added };
   },
 
   // 업적 뼈대(다회차 장치, 명예 전용·보상 없음): 조건은 전부 저장된 기록/군단 상태로 검증 — 후속 증분에서 숨겨진 장수·병종 해금의 연결점
@@ -231,7 +232,9 @@ const Game = {
       const slots = this.deploySlots().length;
       const head = document.createElement('div');
       head.innerHTML = `<b>출전 편성</b> <span class="dim">${dep.sel.length}/${slots}명 · 유비 고정</span>`
-        + (dep.corrected ? ' <span class="dim">· 스테이지 규모가 달라 자동 조정됨(기본 순서로 보충/절단)</span>' : '')
+        + (dep.corrected ? ' <span class="dim">· 스테이지 규모가 달라 자동 조정됨'
+          + (dep.dropped && dep.dropped.length ? ` — 제외: ${dep.dropped.map(id => CHARS[id].name).join(',')}` : '')
+          + (dep.added && dep.added.length ? ` — 보충: ${dep.added.map(id => CHARS[id].name).join(',')}` : '') + '</span>' : '')
         + (!dep.valid ? ` <span style="color:#e08a8a">출전 인원이 ${slots}명이 되어야 출진할 수 있습니다</span>` : '');
       dp.appendChild(head);
       const fixed = document.createElement('button'); fixed.textContent = `✓ 유비 Lv${this.army.liu_bei.level} (고정)`; fixed.disabled = true; fixed.className = 'primary';
