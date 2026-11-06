@@ -34,7 +34,7 @@ const Game = {
   gold: 500,
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
-  stageIndex: 0, cycle: 1,
+  stageIndex: 0, cycle: 1, battlesCleared: 0,
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
@@ -42,7 +42,7 @@ const Game = {
 
   save() {
     localStorage.setItem('cheonha3_save', JSON.stringify({
-      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle,
+      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared,
     }));
   },
   load() {
@@ -51,6 +51,8 @@ const Game = {
     const d = JSON.parse(s);
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
     this.cycle = d.cycle || 1;
+    // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
+    this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     return true;
   },
 
@@ -171,7 +173,7 @@ const Game = {
     }
     // 특별 품목 로테이션: 전투·회차마다 1종씩 교체 (규칙적 — 다음 품목 예고)
     const ROT = ['jade', 'scroll', 'amulet', 'manual'];
-    const rotIdx = (this.stageIndex + (this.cycle - 1) * STAGES.length) % ROT.length; // 누적 전투 번호 — 회차 경계에서도 연속 중복 없이 전진
+    const rotIdx = this.battlesCleared % ROT.length; // 누적 승리 수 — 신규 전투 추가(STAGES.length 변동)에도 기존 세이브의 예고와 어긋나지 않음
     const spId = ROT[rotIdx], nextId = ROT[(rotIdx + 1) % ROT.length];
     const sp = ITEMS[spId];
     const spBtn = document.createElement('button');
@@ -1161,6 +1163,7 @@ const Game = {
         fastText = ` + 신속 승리 보너스(${fwGold}골드)`;
       }
       this.stageIndex++;
+      this.battlesCleared++; // 승리 분기 1회 — 패배·재도전 시 불변
       this.save();
       setTimeout(() => {
         const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
