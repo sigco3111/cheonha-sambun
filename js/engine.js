@@ -137,7 +137,7 @@ class Battle {
   }
 
   moveRange(u) {
-    const mv = classOf(u).move;
+    const mv = classOf(u).move + (u.perk === 'mob' ? 1 : 0); // 성장 특기 '기동': 실제 이동력에만 +1 (표시도 같은 경로로 반영)
     const dist = Array.from({ length: this.h }, () => Array(this.w).fill(Infinity));
     dist[u.y][u.x] = 0;
     const q = [[u.x, u.y]];
@@ -419,4 +419,4 @@ class Battle {
       this.aiAct(u);
     }
   }
-}
+      }
