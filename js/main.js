@@ -13,11 +13,13 @@ window.addEventListener('load', () => {
         const div = document.createElement('div');
         div.id = 'title-overwrite-confirm';
         div.innerHTML = '<span class="dim">기존 저장(불완전) 위에 덮어씁니다. 되돌릴 수 없습니다.</span> ';
-        const ok = document.createElement('button'); ok.textContent = '덮어쓰고 새 게임';
+        const ok = document.createElement('button'); ok.textContent = '덮어쓰고 새 게임'; ok.className = 'primary';
         const no = document.createElement('button'); no.textContent = '취소';
         no.onclick = () => div.remove();
         ok.onclick = () => { div.remove(); Game._corruptSave = false; Game.initArmy(); Game.stageIndex = 0; Game.save(); Game.renderBriefing(); };
-        div.appendChild(ok); div.appendChild(no);
+        const row = document.createElement('div'); row.className = 'btnrow';
+        row.appendChild(ok); row.appendChild(no);
+        div.appendChild(row);
         document.getElementById('screen-title').appendChild(div);
         return;
       }
