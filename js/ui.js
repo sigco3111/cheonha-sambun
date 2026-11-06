@@ -557,8 +557,8 @@ const Game = {
         ctx.fillRect(bx + 1, by + 1, TILE - 2, bh);
         ctx.textAlign = 'center';
         ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = '#ffe08a';
-        ctx.fillText(`${f.min}~${f.max}`, bx + TILE / 2, by + 11);
+        ctx.fillStyle = f.mu > 0 ? '#9ae6a0' : f.mu < 0 ? '#ff9a9a' : '#ffe08a';
+        ctx.fillText(`${f.mu > 0 ? '▲' : f.mu < 0 ? '▼' : ''}${f.min}~${f.max}`, bx + TILE / 2, by + 11);
         if (f.counter) {
           ctx.font = 'bold 8px sans-serif';
           ctx.fillStyle = f.counter.certain ? '#ff9a9a' : '#ffc46b';
@@ -775,7 +775,7 @@ const Game = {
       this.log('대상을 선택하세요.');
       const hintEl = document.getElementById('target-hint');
       const critPct = b.forecastAttack(u, targets[0]).critPct; // 회심률은 공격자 사기 기준으로 모든 대상 동일
-      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격?은 조건부`;
+      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격?은 조건부 · ▲상성우세/▼열세 ×1.15/×0.85`;
       hintEl.style.display = 'block';
       this.positionHint();
       this.renderBattle(); // 예측 프리뷰 표시
