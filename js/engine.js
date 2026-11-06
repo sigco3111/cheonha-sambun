@@ -419,4 +419,4 @@ class Battle {
       this.aiAct(u);
     }
   }
-      }
+}
