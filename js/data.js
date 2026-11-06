@@ -86,6 +86,20 @@ function defenseFor(stageId, cycle) {
   return DEFENSE_POINTS[stageId] || null; // v1은 표에 있는 전투만(일부 전투 적용)
 }
 
+// 전투 변형(배치 변주): 2회차부터 일부 전투(v1: 제3·5·7전)에 아군 초기 배치 변형 — 거점사수 슬롯(%3==2) 중 거점 미등록 전투에만 배정해 날씨(%3==0)·증원(%3==1)과 전투당 변형 최대 1종 유지, 결정론(저장 추가 없음)
+// v1은 아군 좌표만 변형(적 배치·char 집합·commander 동일). 좌표는 전 병종 통과 가능 지형만 사용 — 선택 편성의 대체 장수 병종이 달라도 엔진이 유닛별 통행 가능·점유를 재확인하고 부적합 시 해당 유닛만 기존(v1) 좌표로 되돌림
+const DEPLOY_VARIANTS = {
+  3: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
+  5: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
+  7: [ { name: '남쪽 전개', players: { liu_bei: [1,6], guan_yu: [2,7], zhang_fei: [2,5], jian_yong: [1,5], sun_qian: [3,7], mi_zhu: [1,4] } } ],
+};
+function deployVarFor(stageId, cycle) {
+  if (cycle < 2 || (stageId + cycle) % 3 !== 2) return null; // 거점사수 슬롯
+  if (DEFENSE_POINTS[stageId]) return null; // 거점이 있는 전투는 거점사수 유지
+  const vs = DEPLOY_VARIANTS[stageId];
+  return (vs && vs.length) ? vs[(stageId + cycle) % vs.length] : null;
+}
+
 const TACTICS = {
   fire:  { name: '화계', mp: 12, power: 45, range: 3, area: 1, kind: 'damage' },
   cheer: { name: '고무', mp: 8,  power: 20, range: 2, area: 1, kind: 'morale' },
