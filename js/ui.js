@@ -793,14 +793,18 @@ const Game = {
       this.stageIndex++;
       this.save();
       setTimeout(() => {
+        const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
         document.getElementById('result-title').textContent = '승리!';
-        document.getElementById('result-text').textContent = `${b.over.reason} 보상: ${r.gold}골드, ${r.items.map(i => ITEMS[i].name).join(', ')}`;
+        document.getElementById('result-text').innerHTML =
+          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length} · 생존: ${surv}</span><br>` +
+          `보상: ${r.gold}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
       setTimeout(() => {
         document.getElementById('result-title').textContent = '패배...';
-        document.getElementById('result-text').textContent = b.over.reason + ' 다시 도전하세요.';
+        document.getElementById('result-text').innerHTML =
+          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length}</span><br>다시 도전하세요.`;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     }
