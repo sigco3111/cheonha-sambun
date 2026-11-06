@@ -387,11 +387,17 @@ const Game = {
     wrap.scrollLeft = 0; wrap.scrollTop = 0;
     if (!this._viewInit) {
       this._viewInit = true;
-      wrap.addEventListener('scroll', () => {
-        const hint = document.getElementById('target-hint');
-        if (hint.style.display === 'block') hint.style.top = (wrap.scrollTop + 6) + 'px';
-      });
+      wrap.addEventListener('scroll', () => this.positionHint());
     }
+  },
+
+  positionHint() { // 힌트를 배틀 뷰포트(보이는 영역) 상단에 고정 — 팬/줌과 무관하게 전체 문장 표시
+    const hint = document.getElementById('target-hint');
+    if (hint.style.display !== 'block') return;
+    const wrap = document.getElementById('battle-wrap');
+    hint.style.left = (wrap.scrollLeft + 6) + 'px';
+    hint.style.top = (wrap.scrollTop + 6) + 'px';
+    hint.style.width = Math.max(120, wrap.clientWidth - 12) + 'px';
   },
 
   setZoom(z, keepCenter = true) {
@@ -411,6 +417,7 @@ const Game = {
     }
     if (this.menuFor) { this.closeMenu(); this.menuFor = null; this.restoreMenuButtons(); }
     this.updateZoomLabel();
+    this.positionHint();
     try {
       const prev = JSON.parse(localStorage.getItem('cheonha3_view') || '{}') || {};
       prev.zoom = z;
@@ -733,6 +740,7 @@ const Game = {
       const critPct = b.forecastAttack(u, targets[0]).critPct; // 회심률은 공격자 사기 기준으로 모든 대상 동일
       hintEl.textContent = `대상 선택 — 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격?은 조건부`;
       hintEl.style.display = 'block';
+      this.positionHint();
       this.renderBattle(); // 예측 프리뷰 표시
       return;
     }
@@ -767,6 +775,7 @@ const Game = {
           const hintEl = document.getElementById('target-hint');
           hintEl.textContent = '대상을 선택하세요';
           hintEl.style.display = 'block';
+          this.positionHint();
           this.renderBattle(); // 디밍 표시
         } else {
           this.doTactic(u, tid, validFactions[0].x, validFactions[0].y);
