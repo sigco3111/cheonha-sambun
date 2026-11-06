@@ -173,7 +173,7 @@ const Game = {
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
     const sell = document.createElement('div');
     sell.id = 'base-sell';
-    sell.innerHTML = '<b>판매</b> ';
+    sell.innerHTML = '<b>판매</b> <span class="dim">1회 1개 · 가격은 기본가의 50% · 강화비는 돌려받지 못합니다</span> ';
     const SELL_EXCLUDE = new Set(['manual']);
     const groups = {};
     this.inventory.forEach((e, i) => { const k = e.id + '|' + (e.up || 0); (groups[k] = groups[k] || []).push(i); });
@@ -184,7 +184,7 @@ const Game = {
       const it = ITEMS[id];
       const price = Math.floor(it.price / 2);
       const btn = document.createElement('button');
-      btn.textContent = `${it.name}${+up ? '+' + up : ''} (${groups[k].length}개) +${price}골드`;
+      btn.textContent = `${it.name}${+up ? '+' + up : ''} 1개 판매 +${price}골드 (보유 ${groups[k].length})`;
       btn.onclick = () => {
         const i = this.inventory.findIndex(e => e.id === id && (e.up || 0) === +up);
         if (i < 0) return;
