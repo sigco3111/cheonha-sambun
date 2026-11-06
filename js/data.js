@@ -85,6 +85,7 @@ const STAGES = [
     id: 1, name: '제1전 · 탁현의 맹세', maxTurns: 20,
     briefing: '황건의 난이 일어났다. 도원에서 의를 맺은 유비·관우·장비가 의병을 이끌고 탁현 밖 황건적 선봉을 맞는다. 첫 전투, 전열을 가다듬어라.',
     victory: '적 전멸', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 5, gold: 250 },
     map: [
       'MMMMMMMMMMMM',
       'M..FF....WWM',
@@ -155,6 +156,7 @@ const STAGES = [
     id: 3, name: '제3전 · 사수관의 화웅', maxTurns: 26,
     briefing: '반동탁 연합군이 결성됐다. 관문 앞을 지키는 맹장 화웅이 연합군 선봉을 연파하고 있다. 유비 일행이 돌파구를 연다.',
     victory: '화웅 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'hua_xiong',
+    fastWin: { turns: 6, gold: 600 },
     map: [
       'MMMMMMMMMMMMMM',
       'MM..FF..W.GMMM',
