@@ -382,7 +382,11 @@ const Game = {
     this.updateHud();
     document.getElementById('battle-log').innerHTML = '';
     this.log(this.battle.stage.briefing);
-    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''}${this.battle.pendingReinforce ? ` · 증원 예고: ${this.battle.pendingReinforce.atTurn}턴` : ''}${this.battle.defense ? ` · 방어: ${this.battle.defense.name}` : ''} · 아군 턴 1`);
+    const bp = [this.battle.stage.name];
+    if (this.battle.weather) bp.push('날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')');
+    if (this.battle.pendingReinforce) bp.push(`증원 예고: ${this.battle.pendingReinforce.atTurn}턴`);
+    if (this.battle.defense) bp.push(`방어: ${this.battle.defense.name}`);
+    this.showBanner(bp.join(' · ') + ' · 아군 턴 1');
     if (this.auto) this.autoLoop();
   },
 
@@ -542,7 +546,7 @@ const Game = {
         const e = a.equip[s];
         return e ? `${ITEMS[e.id].name}${e.up ? '+' + e.up : ''}` : '-';
       }).join(' / ');
-      const promo = CLASSES[a.cls].promoTo;
+      const promoList = promoOptions(a.cls);
       const es = equipStats(a);
       const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [], perk: a.perk };
       const cardSprite = CHAR_SPRITES.includes(id) ? `char_${id}` : (SPRITE_FILE[CLASSES[a.cls].sprite] || CLASSES[a.cls].sprite);
@@ -551,7 +555,13 @@ const Game = {
         <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 공+${es.atk} 방+${es.def})` : ''}</span><br>
         <span class="dim">${eq}</span>
         <span class="unit-trait">${this.traitText(pseudo)}</span>
-        ${promo ? `<br><span class="dim promo-hint">전직 → ${CLASSES[promo].name}: Lv.${CLASSES[a.cls].promoLevel} + 전직 지침서 (${a.level >= CLASSES[a.cls].promoLevel ? (this.inventory.some(i => i.id === 'manual') ? '가능' : '지침서 부족') : '레벨 부족'})</span>` : ''}</div></div>`;
+        ${promoList.length ? `<br><span class="dim promo-hint">${promoList.length > 1 ? '전직 선택' : '전직'} → ${promoList.map(p => {
+          const tb = { ...PROMO_BONUS_DEFAULT, ...(CLASSES[p].promoBonus || {}) };
+          const diffs = [`공+${tb.atk}`, `방+${tb.def}`, `HP+${tb.hp}`, `MP+${tb.mp}`];
+          if (CLASSES[p].move !== CLASSES[a.cls].move) diffs.push(`이동 ${CLASSES[p].move}`);
+          if (CLASSES[p].rMin !== CLASSES[a.cls].rMin || CLASSES[p].rMax !== CLASSES[a.cls].rMax) diffs.push(`사거리 ${CLASSES[p].rMin}~${CLASSES[p].rMax}`);
+          return `${CLASSES[p].name}(${diffs.join(' ')})`;
+        }).join(' / ')}: Lv.${CLASSES[a.cls].promoLevel} + 전직 지침서 (${a.level >= CLASSES[a.cls].promoLevel ? (this.inventory.some(i => i.id === 'manual') ? '가능' : '지침서 부족') : '레벨 부족'})</span>` : ''}</div></div>`;
       // 성장 특기: Lv.3부터 1회 선택(변경 불가) — 카드 정보 아래 전폭 행, 확정/취소 2단계로 오조작 방지
       const perkRow = document.createElement('div');
       perkRow.className = 'perk-row';
@@ -599,14 +609,18 @@ const Game = {
       const btnUp = document.createElement('button'); btnUp.textContent = '강화';
       btnUp.onclick = () => this.renderUpgrade(id);
       actions.appendChild(btnUp);
-      if (promo && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
-        const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[promo].name}`;
-        btnP.onclick = () => {
-          this.inventory.splice(this.inventory.findIndex(i => i.id === 'manual'), 1);
-          a.cls = promo; a.atk += 3; a.def += 3; a.maxHp += 10; a.maxMp += 5;
-          this.save(); this.renderBase();
-        };
-        actions.appendChild(btnP);
+      if (promoList.length && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
+        for (const p of promoList) {
+          const tb = { ...PROMO_BONUS_DEFAULT, ...(CLASSES[p].promoBonus || {}) };
+          const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[p].name}`;
+          btnP.onclick = () => {
+            if (promoList.length > 1 && !confirm(`${CLASSES[p].name}(으)로 전직합니다. 되돌릴 수 없습니다.`)) return; // 분기 선택은 확정 확인
+            this.inventory.splice(this.inventory.findIndex(i => i.id === 'manual'), 1);
+            a.cls = p; a.atk += tb.atk; a.def += tb.def; a.maxHp += tb.hp; a.maxMp += tb.mp;
+            this.save(); this.renderBase();
+          };
+          actions.appendChild(btnP);
+        }
       }
       div.appendChild(actions);
       list.appendChild(div);
