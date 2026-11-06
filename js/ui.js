@@ -516,9 +516,9 @@ const Game = {
       ctx.fillStyle = u.side === 'player' ? '#4c4' : '#e55';
       ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40 * (u.hp / u.maxHp), 5);
       // 사기 (우상단 배지 — 스프라이트와 겹침 최소화)
-      ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+29, u.y*TILE+2, 17, 11);
-      ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(u.morale, u.x*TILE+37.5, u.y*TILE+11);
+      ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+29, u.y*TILE+2, 19, 11);
+      ctx.fillStyle = '#fd4'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(u.morale, u.x*TILE+38.5, u.y*TILE+11);
       ctx.textAlign = 'left';
       if (u.commander || u.boss) { ctx.fillStyle = '#000b'; ctx.fillRect(u.x*TILE+2, u.y*TILE+2, 22, 11); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+4, u.y*TILE+11); }
     }
@@ -541,7 +541,7 @@ const Game = {
         const bx = v.x * TILE, by = v.y * TILE;
         ctx.fillStyle = 'rgba(20,20,30,0.88)';
         ctx.fillRect(bx + 1, by + 1, TILE - 2, 14);
-        ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
         ctx.fillStyle = color;
         ctx.fillText(txt, bx + TILE / 2, by + 11);
         ctx.textAlign = 'left';
@@ -556,9 +556,9 @@ const Game = {
         ctx.fillStyle = 'rgba(20,20,30,0.88)';
         ctx.fillRect(bx + 1, by + 1, TILE - 2, bh);
         ctx.textAlign = 'center';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.font = 'bold 11px sans-serif';
         ctx.fillStyle = f.mu > 0 ? '#9ae6a0' : f.mu < 0 ? '#ff9a9a' : '#ffe08a';
-        ctx.fillText(`${f.mu > 0 ? '▲' : f.mu < 0 ? '▼' : ''}${f.min}~${f.max}`, bx + TILE / 2, by + 11);
+        ctx.fillText(`${f.mu > 0 ? '▲' : f.mu < 0 ? '▼' : ''}${f.min}~${f.max}`, bx + TILE / 2, by + 12);
         if (f.counter) {
           ctx.font = 'bold 8px sans-serif';
           ctx.fillStyle = f.counter.certain ? '#ff9a9a' : '#ffc46b';
