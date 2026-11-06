@@ -841,7 +841,13 @@ const Game = {
         if (tc.kind === 'damage' && t.side !== u.side) txt = `${tc.name} 피해 ${tacticDamage(u, t)}`;
         else if (tc.kind === 'heal' && t.side === u.side) txt = `${tc.name} 회복 +${Math.min(t.maxHp - t.hp, tc.power + u.int)}`;
         else if (tc.kind === 'morale' && t.side === u.side) txt = `${tc.name} 사기 +${Math.min(100 - t.morale, tc.power)}`;
-        else if (tc.kind === 'demoralize' && t.side !== u.side) txt = `${tc.name} 사기 -${Math.min(t.morale, tc.power)}${t.morale <= tc.power && !t.boss ? ' (퇴각)' : ''}`;
+        else if (tc.kind === 'demoralize' && t.side !== u.side) {
+          const isBoss = this.battle.stage.bossChar === t.charId; // 실제 퇴각 면역 술어와 동일
+          const delta = Math.min(t.morale, tc.power);
+          txt = delta > 0 ? `${tc.name} 사기 -${delta}` : `${tc.name} 효과 없음(사기 0)`;
+          if (isBoss) txt += ' (보스 퇴각 면역)';
+          else if (t.morale <= tc.power && delta > 0) txt += ' (퇴각)';
+        }
         if (!txt) continue;
         row.innerHTML = `<b>${t.name}</b> — ${txt}`;
       } else continue;
