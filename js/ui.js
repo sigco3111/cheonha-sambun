@@ -90,6 +90,19 @@ const Game = {
 
   startBattle() {
     this.battle = new Battle(STAGES[this.stageIndex], this.army);
+    // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
+    this.battle.autoItem = (u) => {
+      const cand = this.inventory.map((it, i) => ({ it, i }))
+        .filter(x => ITEMS[x.it.id].use && ITEMS[x.it.id].use.hp);
+      if (!cand.length) return false;
+      const missing = u.maxHp - u.hp;
+      cand.sort((a, b) => ITEMS[a.it.id].use.hp - ITEMS[b.it.id].use.hp);
+      const pick = cand.find(x => ITEMS[x.it.id].use.hp >= missing) || cand[cand.length - 1];
+      this.inventory.splice(pick.i, 1);
+      this.battle.useItem(u, pick.it.id, u);
+      this.log(this.battle.log[this.battle.log.length - 1]);
+      return true;
+    };
     this.selected = null; this.moveTiles = [];
     this.show('screen-battle');
     this.setupCanvas();
