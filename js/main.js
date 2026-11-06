@@ -44,13 +44,7 @@ window.addEventListener('load', () => {
       ev.currentTarget.disabled = true;
       Game.cycle++; Game.stageIndex = 0;
       Game._cycleBonus = [];
-      if (typeof startBonusFor === 'function') { // 구 data 혼합 폴백: 함수 없으면 보상 생략
-        for (const g of startBonusFor(Game.records && Game.records.ach)) {
-          if (g.gold) Game.gold += g.gold;
-          if (g.items) for (const it of g.items) Game.inventory.push({ id: it, up: 0 });
-          Game._cycleBonus.push(g.label);
-        }
-      }
+      if (typeof Game.applyCycleBonus === 'function') Game.applyCycleBonus(); // 회차별 지급 이력으로 1회 보장(구 ui 혼합 시 생략. 전파 후 브리핑에서 보완)
       Game.save(); Game.renderBriefing();
     };
 
