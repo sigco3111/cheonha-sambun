@@ -256,7 +256,7 @@ class Battle {
         if (v.hp <= 0) { this.kill(v, u); msg += ' 격파!'; }
         else if (v.morale <= 0 && !this.isBossUnit(v)) { v.routed = true; this.kills.push(v.charId); if (v.side === 'enemy') this.foeKills.push(v.charId); msg += ` ${v.name} 퇴각!`; }
       } else if (t.kind === 'heal' && v.side === u.side) {
-        v.hp = Math.min(v.maxHp, v.hp + t.power + u.int);
+        v.hp = Math.min(v.maxHp, v.hp + Math.round(t.power + u.int)); // 지력 성장분이 소수라 회복량도 정수로 고정 (표시·예측과 같은 Math.round)
         msg += ` ${v.name} 회복`;
       } else if (t.kind === 'demoralize' && v.side !== u.side) {
         const dm = Math.min(v.morale, t.power);
