@@ -5,12 +5,14 @@ const TILE = 48;
 const IMG = { terrain: {}, units: {} };
 const TERRAIN_KEYS = Object.keys(TERRAIN);
 const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry','enemy_cavalry','enemy_archer','enemy_strategist'];
+// Sprite files renamed on GitHub (web UI upload prefixed them); map sprite keys to actual file basenames.
+const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist'};
 
 function loadImages(cb) {
   let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + 3; let done = 0;
   const check = () => { if (++done >= total) cb(); };
   for (const k of TERRAIN_KEYS) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/terrain/${k}.png`; IMG.terrain[k] = im; }
-  for (const k of UNIT_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/${k}_0_0.png`; IMG.units[k] = im; }
+  for (const k of UNIT_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/${SPRITE_FILE[k] || k}_0_0.png`; IMG.units[k] = im; }
   for (let i = 0; i < 3; i++) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/infantry_1_${i}.png`; (IMG.units.walk ||= {})[i] = im; }
 }
 
@@ -167,7 +169,7 @@ const Game = {
       const promo = CLASSES[a.cls].promoTo;
       const es = equipStats(a);
       const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [] };
-      div.innerHTML = `<img class="card-sprite" src="assets/units/${CLASSES[a.cls].sprite}_0_0.png" alt="">
+      div.innerHTML = `<img class="card-sprite" src="assets/units/${SPRITE_FILE[CLASSES[a.cls].sprite] || CLASSES[a.cls].sprite}_0_0.png" alt="">
         <div class="card-body"><b>${CHARS[id].name}</b> Lv.${a.level} ${CLASSES[a.cls].name}<br>
         <span class="dim">HP ${a.maxHp} 공 ${Math.round(a.atk + es.atk)} 방 ${Math.round(a.def + es.def)} 지 ${Math.round(a.int)} 속 ${Math.round(a.spd)}${es.atk || es.def ? ` (장비 공+${es.atk} 방+${es.def})` : ''}</span><br>
         <span class="dim">${eq}</span>
