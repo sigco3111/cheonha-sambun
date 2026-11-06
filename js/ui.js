@@ -269,7 +269,7 @@ const Game = {
     // 회차 시작 자원 해금 표시(회차 시작 또는 누락분 보완으로 이번 세션에 실제 지급된 보상)
     let bn = document.getElementById('brief-bonus');
     if (!bn && jn && jn.parentNode) { bn = document.createElement('div'); bn.id = 'brief-bonus'; jn.parentNode.insertBefore(bn, jn.nextSibling); }
-    if (bn) bn.innerHTML = (this._cycleBonus && this._cycleBonus.length) ? (this.stageIndex === 0 ? `<b>업적 시작 보상</b> · ${this._cycleBonus.join(' / ')}` : `<b>업적 시작 보상 · 누락분 보완 지급</b> · ${this._cycleBonus.join(' / ')}`) : ''; // _cycleBonus는 이번 세션에서 실제 지급된 때만 설정(트랜지언트) — 회차 도중 보완도 내역을 표시
+    if (bn) bn.innerHTML = (this._cycleBonus && this._cycleBonus.length) ? (this.stageIndex === 0 ? `<b>업적 시작 보상</b> · ${this._cycleBonus.join(' / ')}` : `<b>회차 보상 추가 지급</b> · ${this._cycleBonus.join(' / ')}`) : ''; // _cycleBonus는 이번 세션에서 실제 지급된 때만 설정(트랜지언트) — 회차 도중 보완도 내역을 표시
     // 출전 편성: 보유 장수 중 스테이지 슬롯 수만큼 사용자가 직접 선택. 유비는 지휘관 슬롯 고정. 기본=기존 고정 순서(미선택 시 기존과 동일한 전투)
     const dp = document.getElementById('brief-deploy');
     if (dp) {
