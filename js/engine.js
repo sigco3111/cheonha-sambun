@@ -115,9 +115,9 @@ class Battle {
         u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; u.perk = saved.perk; }
       this.units.push(u);
     }
-    // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 회차 기준값 25% + 군단 평균 75% 부분 추종(하한은 회차 기준값) — 완전 추종(52c)은 성장 체감을 지우고(격리 비교 r55: 평균±10 레벨이 결과를 그대로 재생), 고정값(원방침)은 고회차에서 붕괴(격리 비교: 적 25 vs 군단 67 무사상 속승). 부분 추종은 성장 우위가 서서히 벌어지게 유지
-    const ids = Object.keys(army);
-    const avgLv = cycle > 1 && ids.length ? Math.round(ids.reduce((s, k) => s + army[k].level, 0) / ids.length) : 0;
+    // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 회차 기준값 25% + 출전 군단 평균 75% 부분 추종(하한은 회차 기준값) — 출전 평균 기준(r60): 벤치 장수가 적 강함을 바꾸지 못하게 — 완전 추종(52c)은 성장 체감을 지우고(격리 비교 r55: 평균±10 레벨이 결과를 그대로 재생), 고정값(원방침)은 고회차에서 붕괴(격리 비교: 적 25 vs 군단 67 무사상 속승). 부분 추종은 성장 우위가 서서히 벌어지게 유지
+    const depIds = stage.players.map(p => p.char).filter(id => army[id]); // 실제 출전 유닛 집합 기준(편성 매핑 후) — 벤치 장수는 적 강함에 영향 없음
+    const avgLv = cycle > 1 && depIds.length ? Math.round(depIds.reduce((s, k) => s + army[k].level, 0) / depIds.length) : 0;
     const baseLv = stage.id + (cycle - 1) * 4;
     const anchorLv = Math.max(baseLv, Math.round((baseLv + 3 * avgLv) / 4)); // avgLv=0(1회차)이면 Math.max가 baseLv 보장
     for (const e of stage.enemies) {
