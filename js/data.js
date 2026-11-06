@@ -90,6 +90,7 @@ const CHARS = {
   // 합류 장수(오리지널 IF 설정 — 실제 역사의 합류 전례가 아니라 이 게임의 가상 분기)
   guan_hai: { name: '관해', cls: 'infantry',   hp: 98, mp: 15, atk: 29, def: 21, int: 9,  spd: 18, morale: 95 },
   taishi_ci:{ name: '태사자', cls: 'archer',    hp: 86, mp: 15, atk: 29, def: 14, int: 10, spd: 24, morale: 90 }, // 손건과 교환관계: 공+3·속+2 vs 방-3·지-8·MP-10·사기-10(단순 상위호환 아님)
+  zhou_cang:{ name: '주창', cls: 'cavalry',     hp: 100, mp: 20, atk: 30, def: 23, int: 14, spd: 22, morale: 95 }, // 장비와 교환관계: 방+1·지+4·속+3·MP+5 vs HP-10·공-4·사기-5(단순 상위호환 아님)
   // 적 장수
   cheng:    { name: '정원지', cls: 'infantry',   hp: 95, mp: 10, atk: 25, def: 18, int: 8,  spd: 14, morale: 90 },
   deng:     { name: '등무',   cls: 'infantry',   hp: 88, mp: 10, atk: 22, def: 16, int: 8,  spd: 13, morale: 85 },
