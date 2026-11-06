@@ -256,7 +256,11 @@ const Game = {
     { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
     { const rf = reinforceFor(st.id, this.cycle); if (rf) document.getElementById('brief-conditions').textContent += ` / 증원 예고: ${rf.atTurn}턴째 적 ${rf.units.length}기 ${rf.dir}에서 도착`; }
     { const df = defenseFor(st.id, this.cycle); if (df) document.getElementById('brief-conditions').textContent += ` / 방어 목표: ${df.name} 사수(적 점거 시 패배)`; }
-    { const dv = (typeof deployVarFor === 'function') ? deployVarFor(st.id, this.cycle) : null; if (dv) document.getElementById('brief-conditions').textContent += ` / 배치 변주: ${dv.name}(아군 초기 배치 변형)`; }
+    { const dep = this.deploySelection();
+      const effective = { ...st, players: st.players.map((p,i) => ({ ...p, char: dep.sel[i] })) };
+      const dv = dep.valid && typeof deploymentFor === 'function' ? deploymentFor(effective, this.army, this.cycle).variant : null;
+      if (dv) document.getElementById('brief-conditions').textContent += ` / 배치 변주: ${dv.name}(아군 초기 배치 변형)`;
+    }
     // 회차별 시작 보상 이력 보정: 구 main 인라인 지급 흔적(_cycleBonus 설정됨)은 이력만 보존해 중복 방지, 아니면 미지급 회차 1회 보완(신구 혼합 창 누락 포함)
     if (this._cycleBonus && this._cycleBonus.length && (this.bonusCycle || 0) !== this.cycle) this.bonusCycle = this.cycle;
     else this.applyCycleBonus();
