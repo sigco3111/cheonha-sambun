@@ -8,6 +8,19 @@ window.addEventListener('load', () => {
     Game.renderTitle();
 
     document.getElementById('btn-new').onclick = () => {
+      // 손상 세이브 감지 상태에서의 새 게임은 원본 덮어쓰기 — 확인/취소 1회 (정상 신규는 확인 없음)
+      if (Game._corruptSave && !document.getElementById('title-overwrite-confirm')) {
+        const div = document.createElement('div');
+        div.id = 'title-overwrite-confirm';
+        div.innerHTML = '<span class="dim">기존 저장(불완전) 위에 덮어씁니다. 되돌릴 수 없습니다.</span> ';
+        const ok = document.createElement('button'); ok.textContent = '덮어쓰고 새 게임';
+        const no = document.createElement('button'); no.textContent = '취소';
+        no.onclick = () => div.remove();
+        ok.onclick = () => { div.remove(); Game._corruptSave = false; Game.initArmy(); Game.stageIndex = 0; Game.save(); Game.renderBriefing(); };
+        div.appendChild(ok); div.appendChild(no);
+        document.getElementById('screen-title').appendChild(div);
+        return;
+      }
       Game.initArmy();
       Game.stageIndex = 0;
       Game.save();
