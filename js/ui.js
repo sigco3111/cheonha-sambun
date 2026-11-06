@@ -631,6 +631,8 @@ const Game = {
     }
     if (this.selected && this.moveTiles.some(([tx, ty]) => tx === x && ty === y)) {
       this.selected.x = x; this.selected.y = y;
+      this.battle.checkTreasure(this.selected);
+      if (this.battle.log[this.battle.log.length - 1].includes('보물창고')) this.log(this.battle.log[this.battle.log.length - 1]);
       this.moveTiles = [];
       this.renderBattle();
       await this.delay(120);
@@ -904,6 +906,14 @@ const Game = {
       }
       // 격파한 적 드랍: 철광석 확률
       for (const k of b.foeKills) if (Math.random() < 0.5) this.inventory.push({ id: 'ore', up: 0 });
+      // 보물창고 점령 전리품 (승리 시에만 지급 — 패배·재도전 중복 지급 방지)
+      let lootText = '';
+      if (b.lootClaimed && b.stage.treasure) {
+        const t = b.stage.treasure;
+        this.gold += t.gold || 0;
+        for (const id of (t.items || [])) this.inventory.push({ id, up: 0 });
+        lootText = ` + 보물창고 전리품(${t.gold || 0}골드${(t.items || []).length ? ' · ' + t.items.map(i => ITEMS[i].name).join(', ') : ''})`;
+      }
       this.stageIndex++;
       this.save();
       setTimeout(() => {
@@ -912,7 +922,7 @@ const Game = {
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
-          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
+          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
