@@ -586,6 +586,7 @@ const Game = {
         if (tc.kind === 'damage' && v.side !== this.menuFor.side) { txt = `${tc.name} ${tacticDamage(this.menuFor, v)}`; color = '#ffb08a'; }
         else if (tc.kind === 'heal' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(v.maxHp - v.hp, tc.power + this.menuFor.int)}`; color = '#a8e0a8'; }
         else if (tc.kind === 'morale' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(100 - v.morale, tc.power)}`; color = '#a8c8ff'; }
+        else if (tc.kind === 'demoralize' && v.side !== this.menuFor.side) { txt = `${tc.name} 사기-${Math.min(v.morale, tc.power)}`; color = '#e8a0e8'; }
         if (!txt) continue;
         const bx = v.x * TILE, by = v.y * TILE;
         ctx.fillStyle = 'rgba(20,20,30,0.88)';
@@ -840,6 +841,7 @@ const Game = {
         if (tc.kind === 'damage' && t.side !== u.side) txt = `${tc.name} 피해 ${tacticDamage(u, t)}`;
         else if (tc.kind === 'heal' && t.side === u.side) txt = `${tc.name} 회복 +${Math.min(t.maxHp - t.hp, tc.power + u.int)}`;
         else if (tc.kind === 'morale' && t.side === u.side) txt = `${tc.name} 사기 +${Math.min(100 - t.morale, tc.power)}`;
+        else if (tc.kind === 'demoralize' && t.side !== u.side) txt = `${tc.name} 사기 -${Math.min(t.morale, tc.power)}${t.morale <= tc.power && !t.boss ? ' (퇴각)' : ''}`;
         if (!txt) continue;
         row.innerHTML = `<b>${t.name}</b> — ${txt}`;
       } else continue;
@@ -895,15 +897,16 @@ const Game = {
         // 사거리 내 대상 선택
         const foes = this.battle.units.filter(v => v.hp > 0 && !v.routed &&
           Math.abs(v.x - u.x) + Math.abs(v.y - u.y) <= t.range);
-        const validFactions = t.kind === 'damage' ? foes.filter(v => v.side !== u.side) : foes.filter(v => v.side === u.side);
+        const validFactions = (t.kind === 'damage' || t.kind === 'demoralize') ? foes.filter(v => v.side !== u.side) : foes.filter(v => v.side === u.side);
         if (!validFactions.length) { this.log('대상이 없습니다.'); this.closeMenu(); this.menuFor = null; return; }
-        if (t.kind === 'damage' || validFactions.length > 1) {
+        if (t.kind === 'damage' || t.kind === 'demoralize' || validFactions.length > 1) {
           this.pendingTargets = validFactions; this.pendingKind = 'tactic:' + tid;
           this.closeMenuKeep();
           this.log('대상을 선택하세요.');
           const hintEl = document.getElementById('target-hint');
           const areaTxt = t.area > 0 ? `클릭 중심 십자 ${t.area}칸 범위` : '단일 대상';
           const sideTxt = t.kind === 'damage' ? '의 적 피해 · 아군 피해 없음 · 표시는 해당 대상 기준'
+            : t.kind === 'demoralize' ? '의 적 사기 감소 · 사기 0이면 퇴각(보스 제외) · 표시는 해당 대상 기준'
             : t.kind === 'morale' ? '의 아군 사기 상승 · 표시는 해당 대상 기준' : ' 회복';
           hintEl.textContent = `대상 선택 — ${t.name}: ${areaTxt}${sideTxt}`;
           hintEl.style.display = 'block';
