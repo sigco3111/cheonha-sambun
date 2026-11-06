@@ -102,6 +102,7 @@ class Battle {
     this.kills = [];
     this.foeKills = []; // 적 격파/퇴각만 (결과 표시·드랍 보상용)
     this.lootClaimed = false; // 보물창고 점령 여부 (전리품은 승리 시에만 지급)
+    this.weather = weatherFor(stage.id, cycle); // 전투 변형(날씨) — 결정론 배정
     for (const p of stage.players) {
       const saved = army[p.char];
       const u = makeUnit(p.char, p.x, p.y, 'player', {
@@ -168,6 +169,12 @@ class Battle {
     return out;
   }
 
+  rngOf(u) { // 실효 사거리 — 비가 오면 궁병 상한 -1(최소 미만으로는 안 내려감). 예측·실제·AI·표시 모두 이 헬퍼로 통일
+    const c = classOf(u);
+    if (this.weather === 'rain' && c.cat === 'archer') return [c.rMin, Math.max(c.rMin, c.rMax - 1)];
+    return [c.rMin, c.rMax];
+  }
+
   inRange(att, def_, rMin, rMax) {
     const d = Math.abs(att.x - def_.x) + Math.abs(att.y - def_.y);
     return d >= rMin && d <= rMax;
@@ -178,7 +185,8 @@ class Battle {
     const critMax = Math.round(f.max * 1.5); // 회심 포함 최대
     let counter = null;
     const cd = classOf(def_);
-    if (def_.hp > f.min && cd.counter && this.inRange(def_, att, cd.rMin, cd.rMax)) {
+    const rd = this.rngOf(def_);
+    if (def_.hp > f.min && cd.counter && this.inRange(def_, att, rd[0], rd[1])) {
       // 반격은 피격 후 사기로 계산: 비회심 피격 -10, 회심 피격 -18. 두 분기를 모두 포함하는 보증 범위(비회심 반격 기준)를 표시.
       const lo = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 18) }), att, this.map).min;
       const hi = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 10) }), att, this.map).max;
@@ -190,8 +198,8 @@ class Battle {
   }
 
   targetsFor(u) {
-    const c = classOf(u);
-    return this.alive(u.side === 'player' ? 'enemy' : 'player').filter(e => this.inRange(u, e, c.rMin, c.rMax));
+    const [r0, r1] = this.rngOf(u);
+    return this.alive(u.side === 'player' ? 'enemy' : 'player').filter(e => this.inRange(u, e, r0, r1));
   }
 
   attack(att, def_) {
@@ -204,7 +212,7 @@ class Battle {
       this.kill(def_, att); msg += ` ${def_.name} 격파!`;
     } else {
       if (def_.morale <= 0 && !this.isBossUnit(def_)) { def_.routed = true; msg += ` ${def_.name} 사기 붕괴로 퇴각!`; this.gainExp(att, 20); this.kills.push(def_.charId); if (def_.side === 'enemy') this.foeKills.push(def_.charId); }
-      else if (classOf(def_).counter && this.inRange(def_, att, classOf(def_).rMin, classOf(def_).rMax)) {
+      else if (classOf(def_).counter && (([a, b]) => this.inRange(def_, att, a, b))(this.rngOf(def_))) {
         const r = computeDamage(def_, att, this.map);
         const cmul = 1 + (equipStats(def_).counter || 0); // 백병도 등 반격 특성
         if (cmul > 1) r.dmg = Math.max(1, Math.round(r.dmg * cmul));
@@ -243,6 +251,7 @@ class Battle {
 
   useTactic(u, tid, tx, ty) {
     const t = TACTICS[tid];
+    if (this.weather === 'rain' && tid === 'fire') { this.log.push('비가 내려 화계가 통하지 않는다!'); return []; } // MP·행동 소비 없이 차단
     if (u.mp < t.mp) return [];
     u.mp -= t.mp;
     const targets = [];
@@ -344,7 +353,7 @@ class Battle {
     let targets = this.targetsFor(u);
     // 주군 보호: 아군 오토에서 유비는 위협 범위 밖에 머묾 (다른 아군이 있을 때만)
     const isLord = u.side === 'player' && u.charId === 'liu_bei' && friends.length > 1;
-    const reach = f => { const cf = classOf(f); return cf.move + cf.rMax; };
+    const reach = f => { const cf = classOf(f); return cf.move + this.rngOf(f)[1]; };
     const safeAt = (x, y) => foes.every(f => Math.abs(x - f.x) + Math.abs(y - f.y) > reach(f));
     if (!targets.length && isLord && safeAt(u.x, u.y)) return;
     if (!targets.length) {
@@ -381,8 +390,8 @@ class Battle {
             const dmin = Math.min(...foes.map(f => Math.abs(x - f.x) + Math.abs(y - f.y)));
             score = -dmin * 100 + d;
           } else {
-            const c = classOf(u);
-            score = (d >= c.rMin && d <= c.rMax) ? -100 + d : d;
+            const [r0, r1] = this.rngOf(u);
+            score = (d >= r0 && d <= r1) ? -100 + d : d;
           }
           if (score < bestScore) { bestScore = score; best = [x, y]; }
         }
@@ -392,7 +401,7 @@ class Battle {
     }
     if (targets.length) {
       // 책략 사용 판단 (모사, 범위 밖이거나 강적 상대)
-      if (u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp && catOf(u) === 'strategist') {
+      if (this.weather !== 'rain' && u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp && catOf(u) === 'strategist') { // 비: AI 화계 후보 배제(실패 행동 반복 방지)
         const t = targets[0];
         const d = Math.abs(t.x - u.x) + Math.abs(t.y - u.y);
         if (d <= TACTICS.fire.range && (t.boss || t.hp > u.atk * 2)) { this.useTactic(u, 'fire', t.x, t.y); return; }
