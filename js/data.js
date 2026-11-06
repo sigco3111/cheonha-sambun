@@ -45,6 +45,7 @@ const ITEMS = {
   iron_armor:{ name: '철 갑옷',    slot: 'armor',  def: 6,  price: 700,  maxUp: 5 },
   jade:      { name: '옥패',       slot: 'acc',    morale: 10, price: 400, maxUp: 0 },
   scroll:    { name: '족자',       slot: 'acc',    mp: 10,  price: 400,  maxUp: 0 },
+  amulet:    { name: '호신부',      slot: 'acc',    regen: 0.08, price: 600,  maxUp: 0 },
   bean:      { name: '콩',         use: { hp: 30 },  price: 50 },
   rice:      { name: '쌀',         use: { hp: 80 },  price: 120 },
   meat:      { name: '고기',       use: { hp: 150 }, price: 250 },
@@ -154,8 +155,9 @@ const STAGES = [
   },
   {
     id: 3, name: '제3전 · 사수관의 화웅', maxTurns: 26,
-    briefing: '반동탁 연합군이 결성됐다. 관문 앞을 지키는 맹장 화웅이 연합군 선봉을 연파하고 있다. 유비 일행이 돌파구를 연다.',
+    briefing: '반동탁 연합군이 결성됐다. 관문 앞을 지키는 맹장 화웅이 연합군 선봉을 연파하고 있다. 유비 일행이 돌파구를 연다. 화웅을 쓰러뜨리면 장신구 호신부(턴 시작 HP 회복)를 얻는다.',
     victory: '화웅 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'hua_xiong',
+    bossDrop: 'amulet',
     fastWin: { turns: 6, gold: 600 },
     map: [
       'MMMMMMMMMMMMMM',
