@@ -20,18 +20,27 @@ const TERRAIN = {
 
 const CLASSES = {
   infantry:   { name: '단병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: 'infantry2',   promoLevel: 10, sprite: 'infantry' },
-  infantry2:  { name: '장병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: 'infantry3',   promoLevel: 20, sprite: 'infantry' },
+  infantry2:  { name: '장병',   cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: ['infantry3', 'infantry3b'], promoLevel: 20, sprite: 'infantry' },
   infantry3:  { name: '근위병', cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'infantry' },
   cavalry:    { name: '경기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: 'cavalry2',    promoLevel: 10, sprite: 'cavalry' },
-  cavalry2:   { name: '중기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: 'cavalry3',    promoLevel: 20, sprite: 'cavalry' },
+  cavalry2:   { name: '중기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: ['cavalry3', 'cavalry3b'], promoLevel: 20, sprite: 'cavalry' },
   cavalry3:   { name: '정예기병', cat: 'cavalry',  move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: null, sprite: 'cavalry' },
   archer:     { name: '궁수',   cat: 'archer',     move: 4, rMin: 2, rMax: 3, counter: false, promoTo: 'archer2',     promoLevel: 10, sprite: 'archer' },
-  archer2:    { name: '장궁병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: 'archer3',     promoLevel: 20, sprite: 'archer' },
+  archer2:    { name: '장궁병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: ['archer3', 'archer3b'], promoLevel: 20, sprite: 'archer' },
   archer3:    { name: '연노병', cat: 'archer',     move: 4, rMin: 2, rMax: 4, counter: false, promoTo: null, sprite: 'archer' },
   strategist: { name: '모사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist2', promoLevel: 10, sprite: 'strategist' },
   strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist3', promoLevel: 20, sprite: 'strategist' },
   strategist3:{ name: '책사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
+  // 3단계 분기 전직(보병·기병·궁병): promoBonus 없는 클래스는 PROMO_BONUS_DEFAULT 적용.
+  // 롤백 구조: 이 클래스 정의들은 영구 유지(기존 저장의 cls 참조 보존). 롤백은 promoTo 단일화로 선택지만 닫는다.
+  infantry3b: { name: '돌격병', cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, promoBonus: { atk: 6, def: 1, hp: 14, mp: 3 }, sprite: 'infantry' },
+  cavalry3b:  { name: '철기병', cat: 'cavalry',    move: 6, rMin: 1, rMax: 1, counter: true,  promoTo: null, promoBonus: { atk: 1, def: 6, hp: 16, mp: 3 }, sprite: 'cavalry' },
+  archer3b:   { name: '대궁수', cat: 'archer',     move: 3, rMin: 2, rMax: 5, counter: false, promoTo: null, promoBonus: { atk: 4, def: 0, hp: 0, mp: 0 }, sprite: 'archer' },
 };
+
+const PROMO_BONUS_DEFAULT = { atk: 3, def: 3, hp: 10, mp: 5 };
+// 전직 선택지: 문자열|배열 모두 허용(하위호환)
+function promoOptions(clsId) { const p = CLASSES[clsId] && CLASSES[clsId].promoTo; return p ? (Array.isArray(p) ? p : [p]) : []; }
 
 // 전투 변형(날씨): 2회차부터 결정론 배정 — 같은 회차·같은 전투는 항상 같은 날씨, 저장 없이 파생
 function weatherFor(stageId, cycle) { return (cycle >= 2 && (stageId + cycle) % 3 === 0) ? 'rain' : null; }
