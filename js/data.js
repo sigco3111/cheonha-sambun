@@ -222,8 +222,9 @@ const STAGES = [
   },
   {
     id: 5, name: '제5전 · 낙양 공성전', maxTurns: 30,
-    briefing: '호로관이 무너지고 동탁은 낙양에서 최후의 저항을 준비한다. 성벽을 관문으로 돌파하고, 성내의 이점을 지닌 동탁을 꺾어라.',
+    briefing: '호로관이 무너지고 동탁은 낙양에서 최후의 저항을 준비한다. 성벽을 관문으로 돌파하고, 성내의 이점을 지닌 동탁을 꺾어라. 보물창고를 점령하면 추가 전리품을 얻는다(승리 시 획득).',
     victory: '동탁 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'dong_zhuo',
+    treasure: { x: 12, y: 2, gold: 800, items: ['jade'] },
     map: [
       'MMMMMMMMMMMMMM',
       'M..FF....W#CCM',
