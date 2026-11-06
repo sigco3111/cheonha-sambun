@@ -213,7 +213,7 @@ const Game = {
   initView() {
     const wrap = document.getElementById('battle-wrap');
     const fitW = (wrap.clientWidth - 4) / this.canvas.width;
-    const fitH = (wrap.clientHeight - 4) / this.canvas.height;
+    const fitH = (this.availHeight(wrap) - 4) / this.canvas.height;
     let z = this.readView();
     if (!z) {
       // 좁은 화면(모바일)은 전체 축소 대신 100% 타일 + 패닝으로 시작
@@ -250,10 +250,15 @@ const Game = {
     try { localStorage.setItem('cheonha3_view', JSON.stringify({ zoom: z })); } catch (e) {}
   },
 
+  availHeight(wrap) {
+    const mh = parseFloat(getComputedStyle(wrap).maxHeight);
+    return isFinite(mh) ? mh : wrap.clientHeight;
+  },
+
   fitZoom() {
     const wrap = document.getElementById('battle-wrap');
     const fitW = (wrap.clientWidth - 4) / this.canvas.width;
-    const fitH = (wrap.clientHeight - 4) / this.canvas.height;
+    const fitH = (this.availHeight(wrap) - 4) / this.canvas.height;
     this.setZoom(Math.min(fitW, fitH), false);
     wrap.scrollLeft = 0; wrap.scrollTop = 0;
   },
