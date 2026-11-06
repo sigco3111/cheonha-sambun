@@ -35,7 +35,7 @@ const Game = {
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
   stageIndex: 0, cycle: 1, battlesCleared: 0,
-  records: { wins: 0, bestTurns: {}, noDeath: {} }, // 명예 기록(보상 없음): 누적 승리·전투별 최단 턴·무사망 횟수
+  records: { wins: 0, bestTurns: {}, noDeath: {}, grades: {} }, // 명예 기록(보상 없음): 누적 승리·전투별 최단 턴·무사망·최고 등급
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
@@ -63,7 +63,7 @@ const Game = {
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
-    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {} } : { wins: 0, bestTurns: {}, noDeath: {} };
+    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {} } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {} };
     return true;
   },
 
@@ -87,7 +87,7 @@ const Game = {
 
   resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
-    this.records = { wins: 0, bestTurns: {}, noDeath: {} };
+    this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {} };
   },
 
   show(id) {
@@ -227,8 +227,9 @@ const Game = {
       STAGES.map(st => {
         const bt = rc.bestTurns[st.id];
         const nd = rc.noDeath[st.id] || 0;
+        const gd = (rc.grades || {})[st.id];
         const btTxt = bt == null ? '—' : (typeof bt === 'object' ? `${bt.t}턴(${bt.c}회차)` : `${bt}턴`);
-        return `${esc(st.name)} — 최단 ${btTxt} · 무사망 ${nd}회`;
+        return `${esc(st.name)} — 등급 ${gd ? gd.g + '(' + gd.c + '회차)' : '—'} · 최단 ${btTxt} · 무사망 ${nd}회`;
       }).join('<br>');
     list.appendChild(recDiv);
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
@@ -1223,6 +1224,14 @@ const Game = {
       if (prevT == null || b.turn < prevT) this.records.bestTurns[sidRec] = { t: b.turn, c: this.cycle }; // 회차별 적 레벨이 달라 달성 회차를 함께 보존
       const deadCnt = b.units.filter(u => u.side === 'player' && (u.hp <= 0 || u.routed)).length;
       if (deadCnt === 0) this.records.noDeath[sidRec] = (this.records.noDeath[sidRec] || 0) + 1;
+      // 클리어 등급(다회차 장치 뼈대, 명예 전용·보상 없음): S=무사망+신속목표 내, A=무사망 또는 신속목표 내, B=사망 2 이하, C=그 외
+      if (!this.records.grades) this.records.grades = {};
+      const fwT = b.stage.fastWin ? b.stage.fastWin.turns : null;
+      const grade = (deadCnt === 0 && fwT != null && b.turn <= fwT) ? 'S' : (deadCnt === 0 || (fwT != null && b.turn <= fwT)) ? 'A' : deadCnt <= 2 ? 'B' : 'C';
+      const GRANK = { S: 3, A: 2, B: 1, C: 0 };
+      const prevG = this.records.grades[sidRec];
+      if (!prevG || GRANK[grade] > GRANK[prevG.g]) this.records.grades[sidRec] = { g: grade, c: this.cycle };
+      b.clearGrade = grade;
       this.save();
       setTimeout(() => {
         const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
@@ -1231,6 +1240,7 @@ const Game = {
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
+          `<b>클리어 등급 ${b.clearGrade}</b> <span class="dim">(무사망+신속 S · 보상 없는 명예)</span><br>` +
           `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText + dropText;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
