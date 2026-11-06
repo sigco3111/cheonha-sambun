@@ -115,8 +115,11 @@ class Battle {
         u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; u.perk = saved.perk; }
       this.units.push(u);
     }
+    // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 고정값과 군단 평균 레벨 중 큰 쪽 — 잘 자란 군단은 회차가 올라도 맞상대, 느린 군단은 기존과 동일
+    const ids = Object.keys(army);
+    const avgLv = cycle > 1 && ids.length ? Math.round(ids.reduce((s, k) => s + army[k].level, 0) / ids.length) : 0;
     for (const e of stage.enemies) {
-      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: stage.id + (cycle - 1) * 4 + (e.boss ? 2 : 0) }));
+      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: Math.max(stage.id + (cycle - 1) * 4, avgLv) + (e.boss ? 2 : 0) }));
     }
   }
 
