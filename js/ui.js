@@ -182,11 +182,19 @@ const Game = {
   // ----- 정비 화면 -----
   renderBase() {
     this.show('screen-base');
+    // 정비 진입 시점에도 업적 평가 — 강화 +5·2회차 진입처럼 전투 밖 행동의 업적이 다음 승리까지 지연되지 않게
+    const baseNewAch = this.checkAchievements();
     document.getElementById('base-gold').textContent = this.gold;
     const ore = this.inventory.filter(i => i.id === 'ore').length;
     document.getElementById('base-ore').textContent = ore;
     const list = document.getElementById('base-units');
     list.innerHTML = '';
+    if (baseNewAch.length) { // innerHTML 초기화 이후에 넣어야 배너가 지워지지 않음
+      const banner = document.createElement('div');
+      banner.id = 'ach-banner';
+      banner.innerHTML = '<b>업적 달성: ' + baseNewAch.map(a => a.name).join(', ') + '</b> <span class="dim">(보상 없는 명예)</span>';
+      list.prepend(banner);
+    }
     // 소지품 한눈에 보기
     const inv = document.createElement('div');
     inv.id = 'inv-list';
