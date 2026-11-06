@@ -255,6 +255,22 @@ const Game = {
       const btnUp = document.createElement('button'); btnUp.textContent = '강화';
       btnUp.onclick = () => this.renderUpgrade(id);
       div.appendChild(btnUp);
+      // 성장 특기: Lv.3부터 1회 선택(변경 불가) — 물리 피해 +8% 또는 받는 물리 피해 -8%
+      if (a.perk) {
+        const perkSpan = document.createElement('span');
+        perkSpan.className = 'dim';
+        perkSpan.textContent = ` 특기: ${a.perk === 'atk' ? '공격(물리 피해 +8%)' : '수비(받는 물리 피해 -8%)'}`;
+        div.appendChild(perkSpan);
+      } else if (a.level >= 3) {
+        const mkPerk = (pid, label) => { const pb = document.createElement('button'); pb.textContent = label; pb.onclick = () => { a.perk = pid; this.save(); this.renderBase(); }; return pb; };
+        div.appendChild(mkPerk('atk', '특기 공격(물리 피해+8%)'));
+        div.appendChild(document.createTextNode(' '));
+        div.appendChild(mkPerk('def', '특기 수비(받는 물리피해-8%)'));
+        const perkNote = document.createElement('span');
+        perkNote.className = 'dim';
+        perkNote.textContent = ' 1회 선택 · 변경 불가';
+        div.appendChild(perkNote);
+      }
       if (promo && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
         const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[promo].name}`;
         btnP.onclick = () => {
