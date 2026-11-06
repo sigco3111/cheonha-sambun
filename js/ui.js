@@ -546,7 +546,9 @@ const Game = {
         const e = a.equip[s];
         return e ? `${ITEMS[e.id].name}${e.up ? '+' + e.up : ''}` : '-';
       }).join(' / ');
-      const promoList = promoOptions(a.cls);
+      const _po = (typeof promoOptions === 'function') ? promoOptions : (id) => { const p = CLASSES[id] && CLASSES[id].promoTo; return p ? (Array.isArray(p) ? p : [p]) : []; }; // 구 data 혼합 폴백
+      const _pbd = (typeof PROMO_BONUS_DEFAULT !== 'undefined') ? PROMO_BONUS_DEFAULT : { atk: 3, def: 3, hp: 10, mp: 5 };
+      const promoList = _po(a.cls);
       const es = equipStats(a);
       const pseudo = { cls: a.cls, tactics: CHARS[id].tactics || [], perk: a.perk };
       const cardSprite = CHAR_SPRITES.includes(id) ? `char_${id}` : (SPRITE_FILE[CLASSES[a.cls].sprite] || CLASSES[a.cls].sprite);
@@ -556,7 +558,7 @@ const Game = {
         <span class="dim">${eq}</span>
         <span class="unit-trait">${this.traitText(pseudo)}</span>
         ${promoList.length ? `<br><span class="dim promo-hint">${promoList.length > 1 ? '전직 선택' : '전직'} → ${promoList.map(p => {
-          const tb = { ...PROMO_BONUS_DEFAULT, ...(CLASSES[p].promoBonus || {}) };
+          const tb = { ..._pbd, ...(CLASSES[p].promoBonus || {}) };
           const diffs = [`공+${tb.atk}`, `방+${tb.def}`, `HP+${tb.hp}`, `MP+${tb.mp}`];
           if (CLASSES[p].move !== CLASSES[a.cls].move) diffs.push(`이동 ${CLASSES[p].move}`);
           if (CLASSES[p].rMin !== CLASSES[a.cls].rMin || CLASSES[p].rMax !== CLASSES[a.cls].rMax) diffs.push(`사거리 ${CLASSES[p].rMin}~${CLASSES[p].rMax}`);
@@ -611,7 +613,7 @@ const Game = {
       actions.appendChild(btnUp);
       if (promoList.length && a.level >= CLASSES[a.cls].promoLevel && this.inventory.some(i => i.id === 'manual')) {
         for (const p of promoList) {
-          const tb = { ...PROMO_BONUS_DEFAULT, ...(CLASSES[p].promoBonus || {}) };
+          const tb = { ..._pbd, ...(CLASSES[p].promoBonus || {}) };
           const btnP = document.createElement('button'); btnP.textContent = `전직 → ${CLASSES[p].name}`;
           btnP.onclick = () => {
             if (promoList.length > 1 && !confirm(`${CLASSES[p].name}(으)로 전직합니다. 되돌릴 수 없습니다.`)) return; // 분기 선택은 확정 확인
