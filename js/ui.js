@@ -883,6 +883,8 @@ const Game = {
 
   finishBattle() {
     const b = this.battle;
+    if (b._finished) return; // 중복 호출 가드 (자동전투 적 페이즈 종료 시 autoLoop 경유 이중 호출 방지)
+    b._finished = true;
     this.log(b.over.reason);
     if (b.over.win) {
       // 보상
