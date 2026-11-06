@@ -79,6 +79,7 @@ const CHARS = {
   soldier_i:{ name: '황건 보병', cls: 'infantry', hp: 70, mp: 5, atk: 19, def: 14, int: 5, spd: 12, morale: 80 },
   soldier_a:{ name: '황건 궁수', cls: 'archer',   hp: 62, mp: 5, atk: 20, def: 12, int: 5, spd: 14, morale: 80 },
   soldier_c:{ name: '동탁 기병', cls: 'cavalry',  hp: 85, mp: 5, atk: 25, def: 18, int: 5, spd: 17, morale: 85 },
+  dong_elite:{ name: '동탁 친위병', cls: 'infantry', hp: 95, mp: 5, atk: 28, def: 22, int: 5, spd: 14, morale: 88 },
 };
 
 // 스테이지: 오리지널 맵/배치/대사. 맵 문자 -> TERRAIN 키
@@ -265,6 +266,45 @@ const STAGES = [
       { char: 'soldier_a', x: 12, y: 5, ai: 'hold' },
     ],
     rewards: { gold: 3000, items: ['iron_armor','ore','ore','ore','meat','meat','manual'], exp: 120 },
+  },
+  {
+    id: 6, name: '제6전 · 왕성 탈환', maxTurns: 28,
+    briefing: '동탁이 쓰러진 뒤, 잔당 이각·곽사가 친위병을 모아 왕성을 점거했다. 두 관문을 돌파해 성내로 진입하고, 보물창고를 확보한 뒤 이각을 토벌하라.',
+    victory: '이각 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'li_jue',
+    bossDrop: 'scroll',
+    fastWin: { turns: 12, gold: 800 },
+    treasure: { x: 12, y: 2, gold: 1000, items: ['amulet'] },
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M,,..~~~..#CCM',
+      'M,,..~=~..#CTM',
+      'M.FF.~=~..GCCM',
+      'M.FF.~~~..#CCM',
+      'M,...===..#CCM',
+      'M..S......GCCM',
+      'MW...FF...#CCM',
+      'MM....WW..#CCM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 2, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 0, y: 4 },
+      { char: 'sun_qian', x: 1, y: 6 },
+      { char: 'mi_zhu', x: 1, y: 3 },
+    ],
+    enemies: [
+      { char: 'li_jue', x: 12, y: 4, boss: true, ai: 'guard' },
+      { char: 'guo_si', x: 11, y: 2, ai: 'guard' },
+      { char: 'li_ru', x: 12, y: 5, ai: 'hold' },
+      { char: 'dong_elite', x: 11, y: 3, ai: 'aggressive' },
+      { char: 'dong_elite', x: 11, y: 6, ai: 'aggressive' },
+      { char: 'soldier_c', x: 11, y: 5, ai: 'aggressive' },
+      { char: 'soldier_c', x: 12, y: 6, ai: 'aggressive' },
+      { char: 'soldier_a', x: 11, y: 1, ai: 'hold' },
+    ],
+    rewards: { gold: 3500, items: ['rice','rice','ore','ore','tonic','manual'], exp: 150 },
   },
 ];
 
