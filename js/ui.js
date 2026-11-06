@@ -758,6 +758,37 @@ const Game = {
     document.getElementById('menu-tactic').disabled = u.tactics.length === 0;
   },
 
+
+  renderTargetDetail() { // 캔버스 밖 상세 예측 패널: 큰 글씨 + 행 탭으로 대상 선택(터치 보조)
+    const el = document.getElementById('target-detail');
+    if (!this.pendingTargets || !this.menuFor) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const u = this.menuFor, b = this.battle;
+    el.innerHTML = '';
+    for (const t of this.pendingTargets) {
+      const row = document.createElement('div');
+      row.className = 'td-row';
+      if (this.pendingKind === 'attack') {
+        const f = b.forecastAttack(u, t);
+        const muTxt = f.mu > 0 ? '<span class="td-mu-up">▲상성우세</span> ' : f.mu < 0 ? '<span class="td-mu-down">▼상성열세</span> ' : '';
+        const ctr = f.counter
+          ? `반격 ${f.counter.min}~${f.counter.max}${f.counter.certain ? '(확정)' : '(조건부)'}`
+          : '반격 없음(최소 피해로 격파 가능)';
+        row.innerHTML = `<b>${t.name}</b> ${muTxt}— 피해 <b>${f.min}~${f.max}</b> · 회심 시 최대 ${f.critMax} · 회심률 ${f.critPct}% · ${ctr}`;
+      } else if (this.pendingKind && this.pendingKind.startsWith('tactic:')) {
+        const tid = this.pendingKind.slice(7), tc = TACTICS[tid];
+        let txt = null;
+        if (tc.kind === 'damage' && t.side !== u.side) txt = `${tc.name} 피해 ${tacticDamage(u, t)}`;
+        else if (tc.kind === 'heal' && t.side === u.side) txt = `${tc.name} 회복 +${Math.min(t.maxHp - t.hp, tc.power + u.int)}`;
+        else if (tc.kind === 'morale' && t.side === u.side) txt = `${tc.name} 사기 +${Math.min(100 - t.morale, tc.power)}`;
+        if (!txt) continue;
+        row.innerHTML = `<b>${t.name}</b> — ${txt}`;
+      } else continue;
+      row.onclick = () => this.onTargetClick(t.x, t.y);
+      el.appendChild(row);
+    }
+    el.style.display = el.children.length ? 'block' : 'none';
+  },
+
   closeMenu() { this.menuFor = null; document.getElementById('action-menu').style.display = 'none'; },
 
   async menuAction(kind) {
@@ -779,6 +810,7 @@ const Game = {
       hintEl.style.display = 'block';
       this.positionHint();
       this.renderBattle(); // 예측 프리뷰 표시
+      this.renderTargetDetail();
       return;
     }
     if (kind === 'tactic') {
@@ -817,6 +849,7 @@ const Game = {
           hintEl.style.display = 'block';
           this.positionHint();
           this.renderBattle(); // 디밍 표시
+          this.renderTargetDetail();
         } else {
           this.doTactic(u, tid, validFactions[0].x, validFactions[0].y);
         }
@@ -872,6 +905,7 @@ const Game = {
     const t = this.pendingTargets.find(v => v.x === x && v.y === y);
     if (!t || !u) return;
     document.getElementById('target-hint').style.display = 'none';
+    document.getElementById('target-detail').style.display = 'none';
     if (this.pendingKind === 'attack') this.doAttack(u, t);
     else if (this.pendingKind.startsWith('tactic:')) this.doTactic(u, this.pendingKind.slice(7), t.x, t.y);
     this.pendingTargets = null; this.pendingKind = null;
