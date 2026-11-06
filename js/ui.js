@@ -6,7 +6,7 @@ const IMG = { terrain: {}, units: {} };
 const TERRAIN_KEYS = Object.keys(TERRAIN);
 const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry','enemy_cavalry','enemy_archer','enemy_strategist'];
 // Sprite files renamed on GitHub (web UI upload prefixed them); map sprite keys to actual file basenames.
-const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist'};
+const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist', infantry:'new_infantry', enemy_infantry:'new_enemy_infantry'};
 // Individual commander sprites (allied officers); fallback to class sprite when absent.
 const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu'];
 
