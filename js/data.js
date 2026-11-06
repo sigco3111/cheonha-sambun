@@ -69,6 +69,8 @@ const CHARS = {
   jian_yong:{ name: '간옹',   cls: 'strategist', hp: 78, mp: 55, atk: 14, def: 15, int: 30, spd: 16, morale: 100, tactics: ['fire','heal'] },
   sun_qian: { name: '손건',   cls: 'archer',     hp: 84, mp: 25, atk: 26, def: 17, int: 18, spd: 22, morale: 100 },
   mi_zhu:   { name: '미축',   cls: 'strategist', hp: 76, mp: 50, atk: 13, def: 14, int: 28, spd: 15, morale: 100, tactics: ['heal','cheer'] },
+  // 합류 장수(오리지널 IF 설정 — 실제 역사의 합류 전례가 아니라 이 게임의 가상 분기)
+  guan_hai: { name: '관해', cls: 'infantry',   hp: 98, mp: 15, atk: 29, def: 21, int: 9,  spd: 18, morale: 95 },
   // 적 장수
   cheng:    { name: '정원지', cls: 'infantry',   hp: 95, mp: 10, atk: 25, def: 18, int: 8,  spd: 14, morale: 90 },
   deng:     { name: '등무',   cls: 'infantry',   hp: 88, mp: 10, atk: 22, def: 16, int: 8,  spd: 13, morale: 85 },
