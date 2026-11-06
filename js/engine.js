@@ -40,6 +40,15 @@ function equipStats(u) {
 }
 
 function effMorale(u) { return Math.min(100, u.morale + equipStats(u).morale); } // 장비 사기 포함 유효 사기(상한 100)
+
+// 병종 상성: 기병>보병>궁병>기병, 모사 중립. 우세 ×1.15 / 열세 ×0.85
+const MATCHUP = { cavalry: 'infantry', infantry: 'archer', archer: 'cavalry' };
+function matchupMod(att, def_) {
+  const a = catOf(att), d = catOf(def_);
+  if (MATCHUP[a] === d) return 1.15;
+  if (MATCHUP[d] === a) return 0.85;
+  return 1;
+}
 function moraleFactor(u) { return 0.75 + (effMorale(u) / 100) * 0.5; } // 0.75~1.25
 
 function computeDamage(att, def_, map) {
@@ -48,7 +57,7 @@ function computeDamage(att, def_, map) {
   const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
   const terMod = 1 - (ter.def / 100);
   const variance = 0.9 + Math.random() * 0.2;
-  let dmg = Math.round(base * terMod * variance);
+  let dmg = Math.round(base * matchupMod(att, def_) * terMod * variance);
   const crit = Math.random() < (effMorale(att) / 100) * 0.15 + 0.03;
   if (crit) dmg = Math.round(dmg * 1.5);
   return { dmg: Math.max(1, dmg), crit };
@@ -59,9 +68,10 @@ function forecastDamage(att, def_, map) { // 예상 피해(무작위 없이 결�
   const ter = TERRAIN[map[def_.y][def_.x]];
   const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
   const terMod = 1 - (ter.def / 100);
+  const mu = matchupMod(att, def_);
   return {
-    min: Math.max(1, Math.round(base * terMod * 0.9)),
-    max: Math.max(1, Math.round(base * terMod * 1.1)),
+    min: Math.max(1, Math.round(base * mu * terMod * 0.9)),
+    max: Math.max(1, Math.round(base * mu * terMod * 1.1)),
     critPct: Math.round(((effMorale(att) / 100) * 0.15 + 0.03) * 100),
   };
 }
@@ -162,7 +172,8 @@ class Battle {
       const hi = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 10) }), att, this.map).max;
       counter = { min: lo, max: hi, certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
     }
-    return { ...f, critMax, counter };
+    const muSign = matchupMod(att, def_) > 1 ? 1 : matchupMod(att, def_) < 1 ? -1 : 0;
+    return { ...f, critMax, counter, mu: muSign };
   }
 
   targetsFor(u) {
@@ -381,4 +392,4 @@ class Battle {
       this.aiAct(u);
     }
   }
-        }
+}
