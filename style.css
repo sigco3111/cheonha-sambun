@@ -40,15 +40,19 @@ button.primary:hover { background: #8d6d3a; }
 #battle-log { font-size: 12px; line-height: 1.55; background: #26221d; border-radius: 6px; padding: 10px; max-height: 46vh; overflow-y: auto; color: #cfc6b8; }
 
 .unit-card { background: #26221d; border: 1px solid #3a352e; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; }
-.unit-card { display: flex; gap: 10px; align-items: flex-start; }
-.unit-card .card-body { flex: 1; }
+.unit-card { display: block; width: 100%; }
+.unit-card .card-top { display: flex; gap: 10px; align-items: flex-start; }
+.unit-card .card-body { flex: 1; min-width: 0; }
+.unit-card .card-actions, .unit-card .perk-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.unit-card .perk-row .perk-note { font-size: 12px; }
+#base-units, #base-shop, #base-sell { width: 100%; }
 .card-sprite { width: 48px; height: 48px; border-radius: 4px; background: #1c1a17; image-rendering: auto; flex: 0 0 48px; }
 #inv-list { font-size: 13px; color: #cfc6b8; background: #26221d; border-radius: 6px; padding: 10px; width: 100%; }
 #inv-list b { color: #ece5da; }
 .equip-row { margin-bottom: 10px; line-height: 2; }
 .equip-row select { max-width: 260px; }
 .upgrade-note { color: #a89f93; font-size: 12px; margin-left: 6px; }
-.unit-card button { margin: 6px 6px 0 0; padding: 6px 12px; font-size: 13px; }
+.unit-card button { padding: 6px 12px; font-size: 13px; }
 #base-units select { background: #2e2a25; color: #ece5da; border: 1px solid #575046; border-radius: 4px; padding: 4px; font-family: inherit; }
 #test-result { position: fixed; bottom: 0; left: 0; background: #000; color: #0f0; font-size: 11px; z-index: 99; }
 
