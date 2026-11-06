@@ -616,6 +616,12 @@ const Game = {
     const u = b.unitAt(x, y);
     if (this.menuFor) return; // 메뉴 처리는 버튼이
     if (u && u.side === 'player' && !u.done) {
+      if (this.selected === u) { // 제자리 행동: 선택된 유닛을 다시 누르면 메뉴 오픈
+        this.moveTiles = [];
+        this.renderBattle();
+        this.openMenu(u);
+        return;
+      }
       this.selected = u;
       this.moveTiles = b.moveRange(u);
       this.showUnitInfo(u);
@@ -894,7 +900,7 @@ const Game = {
         }
       }
       // 격파한 적 드랍: 철광석 확률
-      for (const k of b.kills) if (Math.random() < 0.5) this.inventory.push({ id: 'ore', up: 0 });
+      for (const k of b.foeKills) if (Math.random() < 0.5) this.inventory.push({ id: 'ore', up: 0 });
       this.stageIndex++;
       this.save();
       setTimeout(() => {
@@ -902,7 +908,7 @@ const Game = {
         document.getElementById('result-title').textContent = '승리!';
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
-          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length} · 생존: ${surv}</span><br>` +
+          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
           `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
@@ -910,7 +916,7 @@ const Game = {
       setTimeout(() => {
         document.getElementById('result-title').textContent = '패배...';
         document.getElementById('result-text').innerHTML =
-          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length}</span><br>다시 도전하세요.`;
+          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length}</span><br>다시 도전하세요.`;
         document.getElementById('btn-result-next').textContent = '브리핑으로 돌아가기';
         this.show('screen-result');
       }, this.auto ? 100 : 800);
