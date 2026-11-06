@@ -908,6 +908,8 @@ const Game = {
   },
 
   renderComplete() {
+    const nc = document.getElementById('btn-next-cycle');
+    if (nc) nc.disabled = false;
     document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
     document.getElementById('complete-text').textContent =
       `4개 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 더 강해진 적과 ${this.cycle + 1}회차를 시작할 수 있습니다.`;
