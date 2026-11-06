@@ -115,6 +115,7 @@ const Game = {
     this.setupCanvas();
     this.renderBattle();
     this.updateHud();
+    document.getElementById('battle-log').innerHTML = '';
     this.log(this.battle.stage.briefing);
     this.showBanner(`${this.battle.stage.name} · 아군 턴 1`);
     if (this.auto) this.autoLoop();
