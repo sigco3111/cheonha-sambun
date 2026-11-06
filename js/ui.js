@@ -572,6 +572,7 @@ const Game = {
     if (it.def) parts.push(`방+${it.def + up * 2}`);
     if (it.morale) parts.push(`사기+${it.morale}`);
     if (it.mp) parts.push(`MP+${it.mp}`);
+    if (it.regen) parts.push(`턴 시작 HP ${Math.round(it.regen * 100)}% 회복`);
     if (it.use && it.use.hp) parts.push(`HP${it.use.hp} 회복`);
     if (it.use && it.use.mp) parts.push(`MP${it.use.mp} 회복`);
     if (it.use && it.use.promo) parts.push('전직용');
@@ -916,6 +917,12 @@ const Game = {
         for (const id of (t.items || [])) this.inventory.push({ id, up: 0 });
         lootText = ` + 보물창고 전리품(${lootGold}골드${(t.items || []).length ? ' · ' + t.items.map(i => ITEMS[i].name).join(', ') : ''})`;
       }
+      // 보스 드랍: 해당 스테이지 보스 격파 시 장신구 1개 (승리 분기 1회 지급)
+      let dropText = '';
+      if (b.stage.bossDrop) {
+        this.inventory.push({ id: b.stage.bossDrop, up: 0 });
+        dropText = ` + 보스 드랍(${ITEMS[b.stage.bossDrop].name})`;
+      }
       // 신속 승리 보너스: 목표 턴 내 승리 시 추가 골드 (미달 불이익 없음, 승리 분기 1회 지급)
       let fastText = '';
       if (b.stage.fastWin && b.turn <= b.stage.fastWin.turns) {
@@ -932,7 +939,7 @@ const Game = {
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
-          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText;
+          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText + dropText;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
