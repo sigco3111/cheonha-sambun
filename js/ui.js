@@ -134,6 +134,13 @@ const Game = {
         .map(([k, n]) => `${ITEMS[k.replace(/\+\d+$/, '')].name}${k.includes('+') ? k.slice(k.indexOf('+')) : ''}×${n}`)
         .join(' · ');
     } else inv.innerHTML = '<b>소지품</b> 없음';
+    const autoBtn = document.createElement('button');
+    autoBtn.id = 'btn-autoequip';
+    autoBtn.textContent = '자동 장착';
+    autoBtn.title = '보유 장비를 능력치 순으로 자동 배정';
+    autoBtn.onclick = () => this.autoEquip();
+    inv.appendChild(document.createTextNode(' '));
+    inv.appendChild(autoBtn);
     list.appendChild(inv);
     for (const id of Object.keys(this.army)) {
       const a = this.army[id];
@@ -168,6 +175,49 @@ const Game = {
       }
       list.appendChild(div);
     }
+  },
+
+  autoEquip() {
+    const ids = Object.keys(this.army);
+    // 1) 장착 중인 것까지 전부 풀에 모으기
+    const pool = [];
+    for (const id of ids) {
+      const a = this.army[id];
+      for (const sl of ['weapon', 'armor', 'acc']) {
+        if (a.equip[sl]) { pool.push(a.equip[sl]); a.equip[sl] = null; }
+      }
+    }
+    pool.push(...this.inventory.filter(e => ITEMS[e.id].slot));
+    this.inventory = this.inventory.filter(e => !ITEMS[e.id].slot);
+    const val = (e) => { const it = ITEMS[e.id]; return (it.atk || it.def || 0) + (e.up || 0) * 2; };
+    // 2) 무기·방어구: 해당 능력치 높은 장수부터 좋은 장비 배정
+    for (const slot of ['weapon', 'armor']) {
+      const stat = slot === 'weapon' ? 'atk' : 'def';
+      const units = ids.map(id => this.army[id]).sort((a, b) => b[stat] - a[stat]);
+      const items = pool.filter(e => ITEMS[e.id].slot === slot).sort((x, y) => val(y) - val(x));
+      for (let i = 0; i < Math.min(units.length, items.length); i++) {
+        units[i].equip[slot] = items[i];
+        pool.splice(pool.indexOf(items[i]), 1);
+      }
+    }
+    // 3) 장신구: 모사는 MP 족자 우선, 나머지는 남은 것 순서대로
+    const accs = pool.filter(e => ITEMS[e.id].slot === 'acc');
+    const take = (pred, unit) => {
+      const i = accs.findIndex(pred);
+      if (i >= 0) { unit.equip.acc = accs[i]; pool.splice(pool.indexOf(accs[i]), 1); accs.splice(i, 1); }
+    };
+    for (const id of ids) {
+      const a = this.army[id];
+      if (CLASSES[a.cls].cat === 'strategist') take(e => !!ITEMS[e.id].mp, a);
+    }
+    for (const id of ids) {
+      const a = this.army[id];
+      if (!a.equip.acc) take(() => true, a);
+    }
+    // 4) 남은 것은 소지품으로
+    this.inventory.push(...pool);
+    this.save();
+    this.renderBase();
   },
 
   renderEquip(charId) {
