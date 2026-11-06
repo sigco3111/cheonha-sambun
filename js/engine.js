@@ -25,7 +25,7 @@ function classOf(u) { return CLASSES[u.cls]; }
 function catOf(u) { return CLASSES[u.cls].cat; }
 
 function equipStats(u) {
-  let atk = 0, def = 0, morale = 0, mp = 0;
+  let atk = 0, def = 0, morale = 0, mp = 0, counter = 0, tacDef = 0, exp = 0;
   for (const slot of ['weapon', 'armor', 'acc']) {
     const e = u.equip[slot];
     if (!e) continue;
@@ -35,8 +35,11 @@ function equipStats(u) {
     if (it.def) def += it.def + up * 2;
     if (it.morale) morale += it.morale;
     if (it.mp) mp += it.mp;
+    if (it.counter) counter += it.counter;
+    if (it.tacDef) tacDef += it.tacDef;
+    if (it.exp) exp += it.exp;
   }
-  return { atk, def, morale, mp };
+  return { atk, def, morale, mp, counter, tacDef, exp };
 }
 
 function effMorale(u) { return Math.min(100, u.morale + equipStats(u).morale); } // 장비 사기 포함 유효 사기(상한 100)
@@ -78,7 +81,9 @@ function forecastDamage(att, def_, map) { // 예상 피해(무작위 없이 결�
 
 function tacticDamage(caster, target) {
   const es = equipStats(caster);
-  return Math.round(30 + (caster.int + es.atk) * 1.4 - target.def * 0.5);
+  const raw = Math.round(30 + (caster.int + es.atk) * 1.4 - target.def * 0.5);
+  const red = equipStats(target).tacDef || 0; // 철벽갑 등 책략 피해 감소
+  return Math.max(1, Math.round(raw * (1 - Math.min(0.8, red))));
 }
 
 class Battle {
@@ -170,7 +175,8 @@ class Battle {
       // 반격은 피격 후 사기로 계산: 비회심 피격 -10, 회심 피격 -18. 두 분기를 모두 포함하는 보증 범위(비회심 반격 기준)를 표시.
       const lo = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 18) }), att, this.map).min;
       const hi = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 10) }), att, this.map).max;
-      counter = { min: lo, max: hi, certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
+      const cmul = 1 + (equipStats(def_).counter || 0); // 반격 특성 반영(표시 범위가 실제를 포함하도록)
+      counter = { min: Math.max(1, Math.round(lo * cmul)), max: Math.max(1, Math.round(hi * cmul)), certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
     }
     const muSign = matchupMod(att, def_) > 1 ? 1 : matchupMod(att, def_) < 1 ? -1 : 0;
     return { ...f, critMax, counter, mu: muSign };
@@ -193,6 +199,8 @@ class Battle {
       if (def_.morale <= 0 && !this.isBossUnit(def_)) { def_.routed = true; msg += ` ${def_.name} 사기 붕괴로 퇴각!`; this.gainExp(att, 20); this.kills.push(def_.charId); if (def_.side === 'enemy') this.foeKills.push(def_.charId); }
       else if (classOf(def_).counter && this.inRange(def_, att, classOf(def_).rMin, classOf(def_).rMax)) {
         const r = computeDamage(def_, att, this.map);
+        const cmul = 1 + (equipStats(def_).counter || 0); // 백병도 등 반격 특성
+        if (cmul > 1) r.dmg = Math.max(1, Math.round(r.dmg * cmul));
         att.hp = Math.max(0, att.hp - r.dmg);
         att.morale = Math.max(0, att.morale - 6);
         msg += ` / 반격 ${r.dmg}`;
@@ -216,6 +224,7 @@ class Battle {
 
   gainExp(u, n) {
     if (u.side !== 'player') return;
+    n = Math.round(n * (1 + (equipStats(u).exp || 0))); // 수련패 등 경험치 특성
     u.exp += n;
     while (u.exp >= 100) {
       u.exp -= 100; u.level++;
