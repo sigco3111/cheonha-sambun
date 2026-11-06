@@ -60,7 +60,8 @@ function computeDamage(att, def_, map) {
   const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
   const terMod = 1 - (ter.def / 100);
   const variance = 0.9 + Math.random() * 0.2;
-  let dmg = Math.round(base * matchupMod(att, def_) * terMod * variance);
+  const perkMod = (att.perk === 'atk' ? 1.08 : 1) * (def_.perk === 'def' ? 0.92 : 1); // 성장 특기(물리만)
+  let dmg = Math.round(base * matchupMod(att, def_) * terMod * variance * perkMod);
   const crit = Math.random() < (effMorale(att) / 100) * 0.15 + 0.03;
   if (crit) dmg = Math.round(dmg * 1.5);
   return { dmg: Math.max(1, dmg), crit };
@@ -72,9 +73,10 @@ function forecastDamage(att, def_, map) { // 예상 피해(무작위 없이 결�
   const base = Math.max(1, (att.atk + es.atk) * moraleFactor(att) - (def_.def + ds.def) * moraleFactor(def_) * 0.8);
   const terMod = 1 - (ter.def / 100);
   const mu = matchupMod(att, def_);
+  const perkMod = (att.perk === 'atk' ? 1.08 : 1) * (def_.perk === 'def' ? 0.92 : 1); // computeDamage와 동일 계수
   return {
-    min: Math.max(1, Math.round(base * mu * terMod * 0.9)),
-    max: Math.max(1, Math.round(base * mu * terMod * 1.1)),
+    min: Math.max(1, Math.round(base * mu * terMod * 0.9 * perkMod)),
+    max: Math.max(1, Math.round(base * mu * terMod * 1.1 * perkMod)),
     critPct: Math.round(((effMorale(att) / 100) * 0.15 + 0.03) * 100),
   };
 }
@@ -110,7 +112,7 @@ class Battle {
         equip: saved ? saved.equip : undefined,
       });
       if (saved) { u.maxHp = saved.maxHp; u.hp = saved.maxHp; u.maxMp = saved.maxMp; u.mp = saved.maxMp;
-        u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; }
+        u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; u.perk = saved.perk; }
       this.units.push(u);
     }
     for (const e of stage.enemies) {
