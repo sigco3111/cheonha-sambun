@@ -115,11 +115,13 @@ class Battle {
         u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; u.perk = saved.perk; }
       this.units.push(u);
     }
-    // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 고정값과 군단 평균 레벨 중 큰 쪽 — 잘 자란 군단은 회차가 올라도 맞상대, 느린 군단은 기존과 동일
+    // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 회차 기준값 25% + 군단 평균 75% 부분 추종(하한은 회차 기준값) — 완전 추종(52c)은 성장 체감을 지우고(격리 비교 r55: 평균±10 레벨이 결과를 그대로 재생), 고정값(원방침)은 고회차에서 붕괴(격리 비교: 적 25 vs 군단 67 무사상 속승). 부분 추종은 성장 우위가 서서히 벌어지게 유지
     const ids = Object.keys(army);
     const avgLv = cycle > 1 && ids.length ? Math.round(ids.reduce((s, k) => s + army[k].level, 0) / ids.length) : 0;
+    const baseLv = stage.id + (cycle - 1) * 4;
+    const anchorLv = Math.max(baseLv, Math.round((baseLv + 3 * avgLv) / 4)); // avgLv=0(1회차)이면 Math.max가 baseLv 보장
     for (const e of stage.enemies) {
-      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: Math.max(stage.id + (cycle - 1) * 4, avgLv) + (e.boss ? 2 : 0) }));
+      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: anchorLv + (e.boss ? 2 : 0) }));
     }
   }
 
