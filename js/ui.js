@@ -439,13 +439,16 @@ const Game = {
       const cost = 150 * ((e.up || 0) + 1);
       const statName = it.atk ? '공' : '방';
       const statNow = (it.atk || it.def) + (e.up || 0) * 2;
-      row.innerHTML = `<b>${it.name}${e.up ? '+'+e.up : ''}</b> ${statName}+${statNow} → +${statNow + 2} (${cost}골드 + 철광석 1) `;
+      const maxed = (e.up || 0) >= it.maxUp;
+      row.innerHTML = maxed
+        ? `<b>${it.name}${e.up ? '+'+e.up : ''}</b> ${statName}+${statNow} (최대 강화) ` // 최대치에서 불가능한 다음 단계 미리보기·비용을 보이지 않음
+        : `<b>${it.name}${e.up ? '+'+e.up : ''}</b> ${statName}+${statNow} → +${statNow + 2} (${cost}골드 + 철광석 1) `;
       const btn = document.createElement('button');
       btn.textContent = '강화';
       const oreIdx = this.inventory.findIndex(i => i.id === 'ore');
       btn.disabled = (e.up || 0) >= it.maxUp || this.gold < cost || oreIdx < 0;
-      if (btn.disabled) {
-        const why = (e.up || 0) >= it.maxUp ? '최대 강화' : (this.gold < cost ? '골드 부족' : '철광석 부족');
+      if (btn.disabled && !maxed) { // 최대 강화는 본문에 이미 표기 — 사유는 골드/철광석 부족만
+        const why = this.gold < cost ? '골드 부족' : '철광석 부족';
         row.insertAdjacentHTML('beforeend', `<span class="upgrade-note">${why}</span>`);
       }
       btn.onclick = () => {
