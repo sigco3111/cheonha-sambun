@@ -928,6 +928,7 @@ const Game = {
       setTimeout(() => {
         const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
         document.getElementById('result-title').textContent = '승리!';
+        document.getElementById('btn-retry').style.display = 'none'; // 승리 후에는 재도전 없음 (다음 전투로 진행)
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
@@ -937,6 +938,7 @@ const Game = {
     } else {
       setTimeout(() => {
         document.getElementById('result-title').textContent = '패배...';
+        document.getElementById('btn-retry').style.display = '';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length}</span><br>다시 도전하세요.`;
         document.getElementById('btn-result-next').textContent = '브리핑으로 돌아가기';
