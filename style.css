@@ -26,7 +26,7 @@ button.primary:hover { background: #8d6d3a; }
 #battle-main { display: flex; gap: 12px; width: 100%; align-items: flex-start; }
 #battle-wrap { position: relative; overflow: auto; flex: 1 1 auto; min-width: 0; max-height: 78vh; border: 1px solid #575046; border-radius: 4px; touch-action: pan-x pan-y; overscroll-behavior: contain; background: #14120f; }
 #battle-wrap.dragging { cursor: grabbing; user-select: none; }
-#battle-canvas { display: block; }
+#battle-canvas { display: block; margin: 0 auto; }
 #action-menu { display: none; position: absolute; flex-direction: column; gap: 4px; background: #26221d; border: 1px solid #575046; border-radius: 6px; padding: 6px; z-index: 5; }
 #action-menu button { padding: 7px 12px; font-size: 13px; text-align: left; white-space: nowrap; }
 #target-hint { display: none; position: absolute; top: 6px; left: 50%; transform: translateX(-50%); background: #7a5c2e; padding: 4px 12px; border-radius: 4px; font-size: 13px; z-index: 6; white-space: nowrap; }
