@@ -759,11 +759,19 @@ const Game = {
   },
 
 
+
+  cancelTargeting() { // 대상 선택 모드 해제: 힌트·상세 패널·보류 상태 모두 제거
+    this.pendingTargets = null; this.pendingKind = null;
+    const hint = document.getElementById('target-hint');
+    if (hint) hint.style.display = 'none';
+    const td = document.getElementById('target-detail');
+    if (td) { td.style.display = 'none'; td.innerHTML = ''; }
+  },
   renderTargetDetail() { // 캔버스 밖 상세 예측 패널: 큰 글씨 + 행 탭으로 대상 선택(터치 보조)
     const el = document.getElementById('target-detail');
     if (!this.pendingTargets || !this.menuFor) { el.style.display = 'none'; el.innerHTML = ''; return; }
     const u = this.menuFor, b = this.battle;
-    el.innerHTML = '';
+    el.innerHTML = '<div class="td-head">대상 행을 누르면 바로 실행됩니다</div>';
     for (const t of this.pendingTargets) {
       const row = document.createElement('div');
       row.className = 'td-row';
@@ -904,11 +912,10 @@ const Game = {
     const u = this.menuFor;
     const t = this.pendingTargets.find(v => v.x === x && v.y === y);
     if (!t || !u) return;
-    document.getElementById('target-hint').style.display = 'none';
-    document.getElementById('target-detail').style.display = 'none';
-    if (this.pendingKind === 'attack') this.doAttack(u, t);
-    else if (this.pendingKind.startsWith('tactic:')) this.doTactic(u, this.pendingKind.slice(7), t.x, t.y);
-    this.pendingTargets = null; this.pendingKind = null;
+    const kind = this.pendingKind;
+    this.cancelTargeting();
+    if (kind === 'attack') this.doAttack(u, t);
+    else if (kind.startsWith('tactic:')) this.doTactic(u, kind.slice(7), t.x, t.y);
   },
 
   async doAttack(u, t) {
@@ -957,6 +964,7 @@ const Game = {
   async runEnemyPhase() {
     const b = this.battle;
     if (b.over || b.phase !== 'player') return;
+    this.cancelTargeting();
     b.endPhase(); // -> enemy
     this.updateHud(); this.renderBattle();
     this.showBanner(`적군 턴`);
@@ -981,6 +989,7 @@ const Game = {
 
   async autoLoop() {
     const b = this.battle;
+    this.cancelTargeting();
     while (!b.over) {
       // 플레이어 페이즈 자동
       for (const u of b.alive('player')) {
