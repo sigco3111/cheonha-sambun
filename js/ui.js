@@ -169,6 +169,29 @@ const Game = {
       shop.appendChild(btn);
       shop.appendChild(document.createTextNode(' '));
     }
+    // 특별 품목 로테이션: 전투·회차마다 1종씩 교체 (규칙적 — 다음 품목 예고)
+    const ROT = ['jade', 'scroll', 'amulet', 'manual'];
+    const rotIdx = (this.stageIndex + this.cycle) % ROT.length;
+    const spId = ROT[rotIdx], nextId = ROT[(rotIdx + 1) % ROT.length];
+    const sp = ITEMS[spId];
+    const spBtn = document.createElement('button');
+    spBtn.textContent = `${sp.name} (${this.itemStatText({ id: spId, up: 0 })}) ${sp.price}골드`;
+    spBtn.disabled = this.gold < sp.price;
+    spBtn.onclick = () => {
+      if (this.gold < sp.price) return;
+      this.gold -= sp.price;
+      this.inventory.push({ id: spId, up: 0 });
+      this.save(); this.renderBase();
+    };
+    const spLine = document.createElement('div');
+    spLine.appendChild(document.createTextNode('특별 품목(전투마다 교체): '));
+    spLine.appendChild(spBtn);
+    const spNote = document.createElement('span');
+    spNote.className = 'dim';
+    spNote.textContent = ` 다음: ${ITEMS[nextId].name}`;
+    spLine.appendChild(document.createTextNode(' '));
+    spLine.appendChild(spNote);
+    shop.appendChild(spLine);
     list.appendChild(shop);
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
     const sell = document.createElement('div');
