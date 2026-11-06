@@ -103,6 +103,7 @@ class Battle {
     this.foeKills = []; // 적 격파/퇴각만 (결과 표시·드랍 보상용)
     this.lootClaimed = false; // 보물창고 점령 여부 (전리품은 승리 시에만 지급)
     this.weather = weatherFor(stage.id, cycle); // 전투 변형(날씨) — 결정론 배정
+    this.deployVar = (typeof deployVarFor === 'function') ? deployVarFor(stage.id, cycle) : null; // 전투 변형(배치 변주) — 구 data 혼합 가드
     for (const p of stage.players) {
       const saved = army[p.char];
       const u = makeUnit(p.char, p.x, p.y, 'player', {
@@ -114,6 +115,11 @@ class Battle {
       });
       if (saved) { u.maxHp = saved.maxHp; u.hp = saved.maxHp; u.maxMp = saved.maxMp; u.mp = saved.maxMp;
         u.atk = saved.atk; u.def = saved.def; u.int = saved.int; u.spd = saved.spd; u.perk = saved.perk; }
+      if (this.deployVar && this.deployVar.players && this.deployVar.players[p.char]) { // 배치 변주 적용: 실제 배치 유닛 병종 기준 통행 가능·미점유만, 부적합 시 이 유닛만 v1 좌표 유지
+        const vp = this.deployVar.players[p.char];
+        const tk = this.map[vp[1]] && this.map[vp[1]][vp[0]];
+        if (tk && (TERRAIN[tk].costs[catOf(u)] ?? 1) > 0 && !this.unitAt(vp[0], vp[1])) { u.x = vp[0]; u.y = vp[1]; }
+      }
       this.units.push(u);
     }
     // 반복 난이도: 1회차는 고정(stage.id), 2회차부터는 회차 기준값 25% + 출전 군단 평균 75% 부분 추종(하한은 회차 기준값) — 출전 평균 기준(r60): 벤치 장수가 적 강함을 바꾸지 못하게 — 완전 추종(52c)은 성장 체감을 지우고(격리 비교 r55: 평균±10 레벨이 결과를 그대로 재생), 고정값(원방침)은 고회차에서 붕괴(격리 비교: 적 25 vs 군단 67 무사상 속승). 부분 추종은 성장 우위가 서서히 벌어지게 유지
