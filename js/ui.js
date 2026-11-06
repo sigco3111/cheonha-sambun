@@ -387,7 +387,7 @@ const Game = {
     const stageEff = dep.sel.every((id, i) => st0.players[i] && st0.players[i].char === id) ? st0
       : { ...st0, players: st0.players.map((slot, i) => ({ ...slot, char: dep.sel[i] })) }; // 기본 편성이면 원본 그대로(기존 동작과 완전 동일)
     this._autoNote = null; this._equipBackup = null;
-    this.battle = new Battle(stageEff, this.army, this.cycle);
+    this.battle = new Battle(stageEff, this.army, this.cycle, { deploymentVariant: true });
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
     this.battle.autoItem = (u) => {
       const cand = this.inventory.map((it, i) => ({ it, i }))
