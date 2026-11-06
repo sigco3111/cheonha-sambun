@@ -24,7 +24,9 @@ window.addEventListener('load', () => {
       Game.renderBriefing();
     };
     document.getElementById('btn-retry').onclick = () => Game.startBattle();
-    document.getElementById('btn-next-cycle').onclick = () => {
+    document.getElementById('btn-next-cycle').onclick = (ev) => {
+      if (ev.currentTarget.disabled) return;
+      ev.currentTarget.disabled = true;
       Game.cycle++; Game.stageIndex = 0; Game.save(); Game.renderBriefing();
     };
 
