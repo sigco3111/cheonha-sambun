@@ -33,6 +33,7 @@ const TACTICS = {
   fire:  { name: '화계', mp: 12, power: 45, range: 3, area: 1, kind: 'damage' },
   cheer: { name: '고무', mp: 8,  power: 20, range: 2, area: 1, kind: 'morale' },
   heal:  { name: '치유', mp: 10, power: 60, range: 2, area: 0, kind: 'heal' },
+  intimidate: { name: '위협', mp: 15, power: 15, range: 2, area: 1, kind: 'demoralize' },
 };
 
 const ITEMS = {
@@ -64,7 +65,7 @@ const ITEMS = {
 const CHARS = {
   liu_bei:  { name: '유비',   cls: 'infantry',   hp: 92, mp: 30, atk: 24, def: 20, int: 22, spd: 18, morale: 100, tactics: ['cheer'] },
   guan_yu:  { name: '관우',   cls: 'cavalry',    hp: 105, mp: 20, atk: 32, def: 24, int: 16, spd: 20, morale: 100 },
-  zhang_fei:{ name: '장비',   cls: 'cavalry',    hp: 110, mp: 15, atk: 34, def: 22, int: 10, spd: 19, morale: 100 },
+  zhang_fei:{ name: '장비',   cls: 'cavalry',    hp: 110, mp: 15, atk: 34, def: 22, int: 10, spd: 19, morale: 100, tactics: ['intimidate'] },
   jian_yong:{ name: '간옹',   cls: 'strategist', hp: 78, mp: 55, atk: 14, def: 15, int: 30, spd: 16, morale: 100, tactics: ['fire','heal'] },
   sun_qian: { name: '손건',   cls: 'archer',     hp: 84, mp: 25, atk: 26, def: 17, int: 18, spd: 22, morale: 100 },
   mi_zhu:   { name: '미축',   cls: 'strategist', hp: 76, mp: 50, atk: 13, def: 14, int: 28, spd: 15, morale: 100, tactics: ['heal','cheer'] },
