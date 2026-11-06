@@ -628,7 +628,7 @@ const Game = {
       for (const v of this.pendingTargets) {
         let txt = null, color = '#ffe08a';
         if (tc.kind === 'damage' && v.side !== this.menuFor.side) { txt = `${tc.name} ${tacticDamage(this.menuFor, v)}`; color = '#ffb08a'; }
-        else if (tc.kind === 'heal' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(v.maxHp - v.hp, tc.power + this.menuFor.int)}`; color = '#a8e0a8'; }
+        else if (tc.kind === 'heal' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(v.maxHp - v.hp, Math.round(tc.power + this.menuFor.int))}`; color = '#a8e0a8'; }
         else if (tc.kind === 'morale' && v.side === this.menuFor.side) { txt = `${tc.name} +${Math.min(100 - v.morale, tc.power)}`; color = '#a8c8ff'; }
         else if (tc.kind === 'demoralize' && v.side !== this.menuFor.side) { txt = `${tc.name} 사기-${Math.min(v.morale, tc.power)}`; color = '#e8a0e8'; }
         if (!txt) continue;
@@ -892,7 +892,7 @@ const Game = {
         const tid = this.pendingKind.slice(7), tc = TACTICS[tid];
         let txt = null;
         if (tc.kind === 'damage' && t.side !== u.side) txt = `${tc.name} 피해 ${tacticDamage(u, t)}`;
-        else if (tc.kind === 'heal' && t.side === u.side) txt = `${tc.name} 회복 +${Math.min(t.maxHp - t.hp, tc.power + u.int)}`;
+        else if (tc.kind === 'heal' && t.side === u.side) txt = `${tc.name} 회복 +${Math.min(t.maxHp - t.hp, Math.round(tc.power + u.int))}`;
         else if (tc.kind === 'morale' && t.side === u.side) txt = `${tc.name} 사기 +${Math.min(100 - t.morale, tc.power)}`;
         else if (tc.kind === 'demoralize' && t.side !== u.side) {
           const isBoss = this.battle.stage.bossChar === t.charId; // 실제 퇴각 면역 술어와 동일
