@@ -84,7 +84,10 @@ window.addEventListener('load', () => {
         btn.click();
         const g = Game;
         const w = g.army.guan_yu.equip.weapon;
-        const ok = g.stageIndex === 2 && g.gold === 1150 && g.inventory.length === 11
+        const invIds = g.inventory.map(i => i.id);
+        // 광석 드롭은 난수라 정확한 개수 대신 결정적 불변조건만 검사
+        const ok = g.stageIndex === 2 && g.gold === 1150
+          && invIds.includes('spear') && !invIds.includes('iron_sword')
           && w && w.id === 'iron_sword' && w.up === 1 && g.army.guan_yu.level >= 1;
         const pre = document.createElement('pre'); pre.id='test-result';
         pre.textContent = JSON.stringify({stage:g.stageIndex, gold:g.gold, inv:g.inventory.map(i=>i.id+(i.up?'+'+i.up:'')), guan:g.army.guan_yu.equip, lv:g.army.guan_yu.level});
