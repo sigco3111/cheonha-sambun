@@ -93,20 +93,20 @@ const Game = {
   // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
   supportOptions() {
     const defs = [
-      { id: 'gold', ach: 'new_cycle', label: '군자금 800골드', apply: () => { this.gold += 800; } },
-      { id: 'ore', ach: 'smith', label: '철광석 3개', apply: () => { for (let i = 0; i < 3; i++) this.inventory.push({ id: 'ore', up: 0 }); } },
-      { id: 'food', ach: 'veteran', label: '식량 꾸러미(쌀 2·콩 2)', apply: () => { this.inventory.push({ id: 'rice', up: 0 }, { id: 'rice', up: 0 }, { id: 'bean', up: 0 }, { id: 'bean', up: 0 }); } },
-      { id: 'scroll', ach: 'first_s', label: '족자 1개(MP+10 장신구)', apply: () => { this.inventory.push({ id: 'scroll', up: 0 }); } },
+      { id: 'gold', ach: 'new_cycle', achName: '새로운 천하', label: '군자금 800골드', apply: () => { this.gold += 800; } },
+      { id: 'ore', ach: 'smith', achName: '대장의 손길', label: '철광석 3개', apply: () => { for (let i = 0; i < 3; i++) this.inventory.push({ id: 'ore', up: 0 }); } },
+      { id: 'food', ach: 'veteran', achName: '백전노장', label: '식량 꾸러미(쌀 2·콩 2)', apply: () => { this.inventory.push({ id: 'rice', up: 0 }, { id: 'rice', up: 0 }, { id: 'bean', up: 0 }, { id: 'bean', up: 0 }); } },
+      { id: 'scroll', ach: 'first_s', achName: '무결의 첫걸음', label: '족자 1개(MP+10 장신구)', apply: () => { this.inventory.push({ id: 'scroll', up: 0 }); } },
     ];
-    return defs.filter(d => (this.records.ach || {})[d.ach]);
+    return defs.map(d => ({ ...d, unlocked: !!(this.records.ach || {})[d.ach] }));
   },
 
-  supportAvailable() { return this.cycle >= 2 && this.stageIndex === 0 && !(this.records.support && this.records.support.c === this.cycle) && this.supportOptions().length > 0; },
+  supportAvailable() { return this.cycle >= 2 && this.stageIndex === 0 && !(this.records.support && this.records.support.c === this.cycle) && this.supportOptions().some(x => x.unlocked); },
 
   claimSupport(id) {
     // 원자적 수령: 조건 재검증 → 적용 → 기록 → 저장을 동기 실행으로 한 번에 (새로고침·더블클릭·브리핑 재진입 중복 지급 방지)
     if (!this.supportAvailable()) return;
-    const o = this.supportOptions().find(x => x.id === id);
+    const o = this.supportOptions().find(x => x.id === id && x.unlocked);
     if (!o) return;
     o.apply();
     this.records.support = { c: this.cycle, id };
@@ -185,14 +185,35 @@ const Game = {
           sp.innerHTML = `<span class="dim">이번 회차 지원: ${taken.id === 'none' ? '받지 않음' : (o ? o.label + ' 수령 완료' : '수령 완료')}</span>`;
         } else {
           const opts = this.supportOptions();
-          if (opts.length) {
+          if (opts.some(o => o.unlocked)) {
             sp.innerHTML = '<b>회차 시작 지원</b> <span class="dim">택1 · 이번 회차만 · 출진하면 더는 받을 수 없음</span><br>';
             for (const o of opts) {
-              const btn = document.createElement('button');
-              btn.textContent = o.label;
-              btn.onclick = () => this.claimSupport(o.id);
-              sp.appendChild(btn);
-              sp.appendChild(document.createTextNode(' '));
+              if (o.unlocked) {
+                const btn = document.createElement('button');
+                btn.textContent = o.label;
+                btn.onclick = () => { // 수령 전 1회 확인(즉시 소모 아님, 확인 시에만 획득 확정)
+                  if (document.getElementById('support-claim-confirm')) return;
+                  const div = document.createElement('div');
+                  div.id = 'support-claim-confirm';
+                  const msg = document.createElement('span'); msg.className = 'dim';
+                  msg.textContent = `「${o.label}」을(를) 받습니다. 이번 회차 다른 지원은 받을 수 없습니다.`;
+                  const yes = document.createElement('button'); yes.textContent = '받기'; yes.className = 'primary';
+                  const no = document.createElement('button'); no.textContent = '취소';
+                  no.onclick = () => div.remove();
+                  yes.onclick = () => { div.remove(); this.claimSupport(o.id); };
+                  const row = document.createElement('div'); row.className = 'btnrow';
+                  row.appendChild(yes); row.appendChild(no);
+                  div.appendChild(msg); div.appendChild(row);
+                  sp.appendChild(div);
+                };
+                sp.appendChild(btn);
+                sp.appendChild(document.createTextNode(' '));
+              } else {
+                const lock = document.createElement('div');
+                lock.className = 'dim';
+                lock.textContent = `🔒 ${o.label} — 업적 「${o.achName}」 해금 시`;
+                sp.appendChild(lock);
+              }
             }
           }
         }
