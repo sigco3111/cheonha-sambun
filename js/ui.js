@@ -241,6 +241,7 @@ const Game = {
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
     { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
     { const rf = reinforceFor(st.id, this.cycle); if (rf) document.getElementById('brief-conditions').textContent += ` / 증원 예고: ${rf.atTurn}턴째 적 ${rf.units.length}기 ${rf.dir}에서 도착`; }
+    { const df = defenseFor(st.id, this.cycle); if (df) document.getElementById('brief-conditions').textContent += ` / 방어 목표: ${df.name} 사수(적 점거 시 패배)`; }
     this.checkAchievements();
     // 합류 장수(오리지널 IF) — 해금 시 1회만 편입, 배너 표시
     const jn = document.getElementById('brief-join');
@@ -381,7 +382,7 @@ const Game = {
     this.updateHud();
     document.getElementById('battle-log').innerHTML = '';
     this.log(this.battle.stage.briefing);
-    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''}${this.battle.pendingReinforce ? ` · 증원 예고: ${this.battle.pendingReinforce.atTurn}턴` : ''} · 아군 턴 1`);
+    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''}${this.battle.pendingReinforce ? ` · 증원 예고: ${this.battle.pendingReinforce.atTurn}턴` : ''}${this.battle.defense ? ` · 방어: ${this.battle.defense.name}` : ''} · 아군 턴 1`);
     if (this.auto) this.autoLoop();
   },
 
@@ -867,6 +868,7 @@ const Game = {
       if (im && im.complete) ctx.drawImage(im, x * TILE, y * TILE, TILE, TILE);
       else { ctx.fillStyle = '#9a9'; ctx.fillRect(x * TILE, y * TILE, TILE, TILE); }
     }
+    if (b.defense) { ctx.strokeStyle = '#ffd24d'; ctx.lineWidth = 3; ctx.strokeRect(b.defense.x * TILE + 1.5, b.defense.y * TILE + 1.5, TILE - 3, TILE - 3); ctx.fillStyle = '#ffd24d'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('수', b.defense.x * TILE + 18, b.defense.y * TILE + 17); } // 거점 사수 표시
     // 이동 범위
     if (this.selected && !this.selected.done) {
       ctx.fillStyle = 'rgba(60,120,220,0.35)';
