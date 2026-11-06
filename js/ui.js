@@ -45,7 +45,7 @@ const Game = {
   save() {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
-      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared,
+      army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared, deploySel: this.deploySel,
       records: this.records,
     }));
   },
@@ -59,6 +59,7 @@ const Game = {
       return false;
     }
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
+    this.deploySel = (d.deploySel && Array.isArray(d.deploySel.picks)) ? d.deploySel : null; // 구 세이브(필드 없음)는 기본 편성
     this.cycle = d.cycle || 1;
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
@@ -88,6 +89,7 @@ const Game = {
   resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
     this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} };
+    this.deploySel = null;
   },
 
   // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
@@ -112,6 +114,47 @@ const Game = {
     this.records.support = { c: this.cycle, id };
     this.save();
     this.renderBriefing();
+  },
+
+  // 합류 장수(오리지널 IF): 업적 해금 시 1회만 군단 편입 — 합류 레벨·초기 능력·초기 장비는 편입 순간 확정 저장(재로드/화면 재진입으로 재상승 없음)
+  checkJoiners() {
+    const joined = [];
+    if ((this.records.ach || {}).nine && !this.army.guan_hai && Object.keys(this.army).length >= 6) {
+      const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+      const c = CHARS.guan_hai, g = lv - 1; // gainExp와 같은 성장 계수를 편입 시 1회만 적용
+      this.army.guan_hai = {
+        charId: 'guan_hai', cls: c.cls, level: lv, exp: 0,
+        maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+        equip: { weapon: { id: 'iron_sword', up: 0 }, armor: null, acc: null }, // 초기 장비 고정
+      };
+      joined.push('guan_hai');
+      this.save();
+    }
+    return joined;
+  },
+
+  // 편성(출전 선택): stage.players를 슬롯(좌표·지휘관) 목록으로 보고 선택 장수를 순서대로 매핑. 유비는 지휘관 슬롯 고정
+  deploySlots() { return STAGES[this.stageIndex].players; },
+  defaultDeploy() { return this.deploySlots().map(p => p.char).filter(id => this.army[id]); },
+  // 유효 선택(유비 선두 고정·보유만·슬롯 수 정확). 저장 선택이 현재 슬롯과 어긋나면 자동 보정하고 그 내용을 corrected에 돌려줌
+  deploySelection() {
+    const slots = this.deploySlots().length;
+    const def = this.defaultDeploy();
+    const stored = (this.deploySel && Array.isArray(this.deploySel.picks)) ? this.deploySel : null;
+    let corrected = false;
+    const picks = [];
+    if (!stored) { for (const id of def) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); } }
+    else {
+      for (const id of stored.picks) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); }
+      if (stored.stage !== this.stageIndex) { // 스테이지가 달라져 슬롯 수가 어긋날 때만 자동 보정(내용 표시), 같은 스테이지의 사용자 선택은 그대로 존중
+        if (picks.length > slots - 1) picks.length = slots - 1;
+        for (const id of [...def, ...Object.keys(this.army)]) { if (picks.length >= slots - 1) break; if (id !== 'liu_bei' && !picks.includes(id)) picks.push(id); }
+        corrected = true;
+      }
+    }
+    const sel = ['liu_bei', ...picks];
+    const valid = sel.length === slots && sel.every(id => this.army[id]);
+    return { sel, valid, corrected };
   },
 
   // 업적 뼈대(다회차 장치, 명예 전용·보상 없음): 조건은 전부 저장된 기록/군단 상태로 검증 — 후속 증분에서 숨겨진 장수·병종 해금의 연결점
@@ -173,6 +216,50 @@ const Game = {
     document.getElementById('brief-text').textContent = st.briefing;
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
+    this.checkAchievements();
+    // 합류 장수(오리지널 IF) — 해금 시 1회만 편입, 배너 표시
+    const jn = document.getElementById('brief-join');
+    if (jn) {
+      const joined = this.checkJoiners();
+      jn.innerHTML = joined.length ? `<b>오리지널 IF</b> · 관해가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army.guan_hai.level}로 고정 저장 · 아래 출전 편성에서 선택 가능` : '';
+    }
+    // 출전 편성: 보유 장수 중 스테이지 슬롯 수만큼 사용자가 직접 선택. 유비는 지휘관 슬롯 고정. 기본=기존 고정 순서(미선택 시 기존과 동일한 전투)
+    const dp = document.getElementById('brief-deploy');
+    if (dp) {
+      dp.innerHTML = '';
+      const dep = this.deploySelection();
+      const slots = this.deploySlots().length;
+      const head = document.createElement('div');
+      head.innerHTML = `<b>출전 편성</b> <span class="dim">${dep.sel.length}/${slots}명 · 유비 고정</span>`
+        + (dep.corrected ? ' <span class="dim">· 스테이지 규모가 달라 자동 조정됨(기본 순서로 보충/절단)</span>' : '')
+        + (!dep.valid ? ` <span style="color:#e08a8a">출전 인원이 ${slots}명이 되어야 출진할 수 있습니다</span>` : '');
+      dp.appendChild(head);
+      const fixed = document.createElement('button'); fixed.textContent = `✓ 유비 Lv${this.army.liu_bei.level} (고정)`; fixed.disabled = true; fixed.className = 'primary';
+      dp.appendChild(fixed); dp.appendChild(document.createTextNode(' '));
+      const picks = dep.sel.slice(1);
+      for (const id of Object.keys(this.army)) {
+        if (id === 'liu_bei') continue;
+        const a = this.army[id]; const on = picks.includes(id);
+        const b = document.createElement('button');
+        b.textContent = (on ? '✓ ' : '') + `${CHARS[id].name} Lv${a.level}`;
+        if (on) b.className = 'primary';
+        b.onclick = () => {
+          const cur = this.deploySelection().sel.slice(1);
+          const i = cur.indexOf(id);
+          if (i >= 0) cur.splice(i, 1);
+          else {
+            if (cur.length >= this.deploySlots().length - 1) { alert(`출전은 유비 포함 ${this.deploySlots().length}명까지입니다. 먼저 다른 장수를 빼 주세요.`); return; }
+            cur.push(id);
+          }
+          this.deploySel = { stage: this.stageIndex, picks: cur };
+          this.save(); this.renderBriefing();
+        };
+        dp.appendChild(b); dp.appendChild(document.createTextNode(' '));
+      }
+      const rst = document.createElement('button'); rst.textContent = '기본 편성으로';
+      rst.onclick = () => { this.deploySel = null; this.save(); this.renderBriefing(); };
+      dp.appendChild(rst);
+    }
     // 회차 시작 지원(택1): 업적 해금 옵션만 표시. 첫 전투 브리핑에서만 받을 수 있고 출진 시 미선택은 포기 확정
     const sp = document.getElementById('brief-support');
     if (sp) {
@@ -240,8 +327,13 @@ const Game = {
         return;
       }
     }
+    const dep = this.deploySelection();
+    if (!dep.valid) { alert(`출전 편성이 맞지 않습니다(${dep.sel.length}/${this.deploySlots().length}명). 브리핑에서 출전 인원을 맞춰 주세요.`); this.renderBriefing(); return; } // 무효 편성 출진 차단
+    const st0 = STAGES[this.stageIndex];
+    const stageEff = dep.sel.every((id, i) => st0.players[i] && st0.players[i].char === id) ? st0
+      : { ...st0, players: st0.players.map((slot, i) => ({ ...slot, char: dep.sel[i] })) }; // 기본 편성이면 원본 그대로(기존 동작과 완전 동일)
     this._autoNote = null; this._equipBackup = null;
-    this.battle = new Battle(STAGES[this.stageIndex], this.army, this.cycle);
+    this.battle = new Battle(stageEff, this.army, this.cycle);
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
     this.battle.autoItem = (u) => {
       const cand = this.inventory.map((it, i) => ({ it, i }))
@@ -271,6 +363,7 @@ const Game = {
     this.show('screen-base');
     // 정비 진입 시점에도 업적 평가 — 강화 +5·2회차 진입처럼 전투 밖 행동의 업적이 다음 승리까지 지연되지 않게
     const baseNewAch = this.checkAchievements();
+    const baseJoined = this.checkJoiners();
     document.getElementById('base-gold').textContent = this.gold;
     const ore = this.inventory.filter(i => i.id === 'ore').length;
     document.getElementById('base-ore').textContent = ore;
@@ -281,6 +374,12 @@ const Game = {
       banner.id = 'ach-banner';
       banner.innerHTML = '<b>업적 달성: ' + baseNewAch.map(a => a.name).join(', ') + '</b> <span class="dim">(보상 없는 명예)</span>';
       list.prepend(banner);
+    }
+    if (baseJoined.length) {
+      const jb = document.createElement('div');
+      jb.className = 'ach-banner';
+      jb.innerHTML = `<b>오리지널 IF · 관해 합류</b> <span class="dim">(가상 설정 · 합류 Lv ${this.army.guan_hai.level} 고정 저장 · 브리핑 출전 편성에서 선택)</span>`;
+      list.prepend(jb);
     }
     // 소지품 한눈에 보기
     const inv = document.createElement('div');
