@@ -26,6 +26,9 @@ window.addEventListener('load', () => {
     document.getElementById('btn-retry').onclick = () => Game.startBattle();
 
     document.getElementById('btn-endturn').onclick = () => Game.runEnemyPhase();
+    document.getElementById('btn-speed').onclick = () => Game.cycleSpeed();
+    Game.speed = Game.readSpeed();
+    document.getElementById('btn-speed').textContent = Game.speed + 'x';
     document.getElementById('btn-auto').onclick = () => {
       Game.auto = !Game.auto;
       Game.updateHud();
