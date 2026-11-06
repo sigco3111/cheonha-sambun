@@ -150,15 +150,16 @@ class Battle {
     return d >= rMin && d <= rMax;
   }
 
-  forecastAttack(att, def_) { // 공격 예측 프리뷰: 예상 피해·회심률·반격 가능(대상이 최소 피해로도 격파되면 반격 없음)
+  forecastAttack(att, def_) { // 공격 예측 프리뷰: 예상 피해(비회심 범위)·회심률·반격
     const f = forecastDamage(att, def_, this.map);
+    const critMax = Math.round(f.max * 1.5); // 회심 포함 최대
     let counter = null;
     const cd = classOf(def_);
     if (def_.hp > f.min && cd.counter && this.inRange(def_, att, cd.rMin, cd.rMax)) {
       const c = forecastDamage(def_, att, this.map);
-      counter = { min: c.min, max: c.max };
+      counter = { min: c.min, max: c.max, certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
     }
-    return { ...f, counter };
+    return { ...f, critMax, counter };
   }
 
   targetsFor(u) {
