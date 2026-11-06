@@ -91,7 +91,8 @@ const Game = {
     this.show('screen-briefing');
     document.getElementById('brief-title').textContent = st.name;
     document.getElementById('brief-text').textContent = st.briefing;
-    document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '');
+    document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
+      + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
   },
 
   startBattle() {
@@ -915,6 +916,13 @@ const Game = {
         for (const id of (t.items || [])) this.inventory.push({ id, up: 0 });
         lootText = ` + 보물창고 전리품(${lootGold}골드${(t.items || []).length ? ' · ' + t.items.map(i => ITEMS[i].name).join(', ') : ''})`;
       }
+      // 신속 승리 보너스: 목표 턴 내 승리 시 추가 골드 (미달 불이익 없음, 승리 분기 1회 지급)
+      let fastText = '';
+      if (b.stage.fastWin && b.turn <= b.stage.fastWin.turns) {
+        const fwGold = Math.round(b.stage.fastWin.gold * (1 + 0.5 * (this.cycle - 1)));
+        this.gold += fwGold;
+        fastText = ` + 신속 승리 보너스(${fwGold}골드)`;
+      }
       this.stageIndex++;
       this.save();
       setTimeout(() => {
@@ -923,7 +931,7 @@ const Game = {
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
-          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText;
+          `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText;
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
