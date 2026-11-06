@@ -156,10 +156,10 @@ class Battle {
     let counter = null;
     const cd = classOf(def_);
     if (def_.hp > f.min && cd.counter && this.inRange(def_, att, cd.rMin, cd.rMax)) {
-      // 실제 반격은 피격 후 사기(-10, 회심 시 -18)로 계산되므로 비회심 피격 후 사기를 가정 — 회심 피격 시 실제 반격은 이보다 약함(유리한 오차)
-      const adj = Object.assign({}, def_, { morale: Math.max(0, def_.morale - 10) });
-      const c = forecastDamage(adj, att, this.map);
-      counter = { min: c.min, max: c.max, certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
+      // 반격은 피격 후 사기로 계산: 비회심 피격 -10, 회심 피격 -18. 두 분기를 모두 포함하는 보증 범위(비회심 반격 기준)를 표시.
+      const lo = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 18) }), att, this.map).min;
+      const hi = forecastDamage(Object.assign({}, def_, { morale: Math.max(0, def_.morale - 10) }), att, this.map).max;
+      counter = { min: lo, max: hi, certain: def_.hp > critMax }; // 최소피해 격파=반격 없음, 회심최대 생존=확정, 그 사이=조건부
     }
     return { ...f, critMax, counter };
   }
