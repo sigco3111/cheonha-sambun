@@ -46,6 +46,15 @@ function reinforceFor(stageId, cycle) {
   if (cycle < 2 || (stageId + cycle) % 3 !== 1) return null; // 비는 %3==0, 변형 없음은 %3==2
   return REINFORCEMENTS[stageId] || null; // v1은 표에 있는 전투만(일부 전투 적용)
 }
+// 전투 변형(거점 사수): 2회차부터 일부 전투(v1: 제8·9전)에 방어 목표 — 적이 거점 타일을 점거하면 패배. 날씨(%3==0)·증원(%3==1)과 회전 배정해 전투당 변형 최대 1종, 결정론
+const DEFENSE_POINTS = {
+  8: { x: 1, y: 3, name: '서쪽 관문' },
+  9: { x: 2, y: 2, name: '북쪽 마을' },
+};
+function defenseFor(stageId, cycle) {
+  if (cycle < 2 || (stageId + cycle) % 3 !== 2) return null;
+  return DEFENSE_POINTS[stageId] || null; // v1은 표에 있는 전투만(일부 전투 적용)
+}
 
 const TACTICS = {
   fire:  { name: '화계', mp: 12, power: 45, range: 3, area: 1, kind: 'damage' },
