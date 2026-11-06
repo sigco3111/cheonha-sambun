@@ -32,6 +32,7 @@ const Game = {
   stageIndex: 0,
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
+  fx: [], threatTiles: null, _fxRunning: false,
   delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms)),
 
   save() {
@@ -290,13 +291,32 @@ const Game = {
           ctx.fillRect(e.x * TILE, e.y * TILE, TILE, TILE);
       }
     }
+    // 적 위협 범위 (선택된 적의 이동+공격 커버리지)
+    if (this.threatTiles) {
+      ctx.fillStyle = 'rgba(230,140,40,0.28)';
+      for (const [x, y] of this.threatTiles) ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+    }
     // 유닛
+    const now = performance.now();
     for (const u of b.units) {
       if (u.hp <= 0 || u.routed) continue;
       const im = spriteFor(u);
-      const bob = (u.done ? 0 : 0);
-      if (im && im.complete) ctx.drawImage(im, u.x * TILE, u.y * TILE + bob, TILE, TILE);
-      else { ctx.fillStyle = u.side === 'player' ? '#36c' : '#c33'; ctx.beginPath(); ctx.arc(u.x*TILE+24, u.y*TILE+24, 18, 0, 7); ctx.fill(); }
+      let ox = 0, oy = 0;
+      const lu = u._lunge;
+      if (lu) {
+        const k = Math.min(1, (now - lu.t0) / lu.dur);
+        const amp = k < 0.5 ? k * 2 : (1 - k) * 2;   // 갔다 복귀
+        ox = lu.dx * amp; oy = lu.dy * amp;
+        if (k >= 1) u._lunge = null;
+      }
+      if (im && im.complete) ctx.drawImage(im, u.x * TILE + ox, u.y * TILE + oy, TILE, TILE);
+      else { ctx.fillStyle = u.side === 'player' ? '#36c' : '#c33'; ctx.beginPath(); ctx.arc(u.x*TILE+24+ox, u.y*TILE+24+oy, 18, 0, 7); ctx.fill(); }
+      const fl = u._flash;
+      if (fl) {
+        const k = (now - fl.t0) / fl.dur;
+        if (k >= 1) u._flash = null;
+        else if (Math.floor(k * 6) % 2 === 0) { ctx.fillStyle = 'rgba(255,60,40,0.4)'; ctx.fillRect(u.x*TILE, u.y*TILE, TILE, TILE); }
+      }
       if (u.done) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(u.x*TILE, u.y*TILE, TILE, TILE); }
       // HP 바
       ctx.fillStyle = '#000a'; ctx.fillRect(u.x*TILE+4, u.y*TILE+42, 40, 5);
@@ -306,6 +326,57 @@ const Game = {
       ctx.fillStyle = '#fd4'; ctx.font = '9px sans-serif'; ctx.textAlign = 'left';
       ctx.fillText(u.morale, u.x*TILE+4, u.y*TILE+41);
       if (u.commander || u.boss) { ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(u.boss ? '적장' : '주군', u.x*TILE+14, u.y*TILE+12); }
+    }
+    // 부유 텍스트 (피해/회복/상태)
+    this.fx = this.fx.filter(f => now - f.t0 < f.dur);
+    for (const f of this.fx) {
+      const k = (now - f.t0) / f.dur;
+      ctx.globalAlpha = 1 - k * k;
+      ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 3;
+      const fy = f.y * TILE + 16 - k * 22;
+      ctx.strokeText(f.text, f.x * TILE + TILE / 2, fy);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x * TILE + TILE / 2, fy);
+      ctx.globalAlpha = 1;
+    }
+    if (this.fx.length || b.units.some(u => u._lunge || u._flash)) this.scheduleFxFrame();
+  },
+
+  scheduleFxFrame() {
+    if (this._fxRunning) return;
+    this._fxRunning = true;
+    requestAnimationFrame(() => {
+      this._fxRunning = false;
+      if (this.screen === 'screen-battle' && this.battle) this.renderBattle();
+    });
+  },
+
+  popText(x, y, text, color) {
+    this.fx.push({ x, y, text, color, t0: performance.now(), dur: this.fast || this.auto ? 500 : 900 });
+  },
+
+  unitAnim(u, kind, tx, ty) {
+    const now = performance.now();
+    if (kind === 'lunge' && tx !== undefined) {
+      const dx = Math.sign(tx - u.x), dy = Math.sign(ty - u.y);
+      u._lunge = { dx: dx * 12, dy: dy * 12, t0: now, dur: this.fast || this.auto ? 120 : 220 };
+    }
+    if (kind === 'flash') u._flash = { t0: now, dur: this.fast || this.auto ? 200 : 420 };
+  },
+
+  snapshotHp() {
+    const m = {};
+    for (const u of this.battle.units) m[u.uid || u.charId + u.x + ',' + u.y] = u.hp;
+    return m;
+  },
+
+  diffHp(before) {
+    for (const u of this.battle.units) {
+      const key = u.uid || u.charId + u.x + ',' + u.y;
+      const d = u.hp - (before[key] !== undefined ? before[key] : u.hp);
+      if (d < 0) { this.popText(u.x, u.y, String(d), '#ff6a5e'); this.unitAnim(u, 'flash'); }
+      else if (d > 0) this.popText(u.x, u.y, '+' + d, '#7de87d');
     }
   },
 
@@ -353,8 +424,29 @@ const Game = {
       this.openMenu(this.selected);
       return;
     }
-    if (u) { this.showUnitInfo(u); return; }
+    if (u) {
+      this.showUnitInfo(u);
+      if (u.side === 'enemy') this.threatTiles = this.threatRange(u);
+      else this.threatTiles = null;
+      this.renderBattle();
+      return;
+    }
+    this.threatTiles = null;
     this.selected = null; this.moveTiles = []; this.renderBattle();
+  },
+
+  threatRange(u) {
+    const b = this.battle;
+    const c = classOf(u);
+    const tiles = new Set();
+    const reach = [...b.moveRange(u), [u.x, u.y]];
+    for (const [mx, my] of reach) {
+      for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+        const d = Math.abs(x - mx) + Math.abs(y - my);
+        if (d >= c.rMin && d <= c.rMax) tiles.add(x + ',' + y);
+      }
+    }
+    return [...tiles].map(k => k.split(',').map(Number));
   },
 
   openMenu(u) {
@@ -488,7 +580,11 @@ const Game = {
   async doAttack(u, t) {
     const b = this.battle;
     this.closeMenu(); this.menuFor = null;
+    this.threatTiles = null;
+    const before = this.snapshotHp();
+    this.unitAnim(u, 'lunge', t.x, t.y);
     const evs = b.attack(u, t);
+    this.diffHp(before);
     this.log(b.log[b.log.length - 1]);
     this.flashUnit(t);
     u.done = true;
@@ -500,7 +596,10 @@ const Game = {
   async doTactic(u, tid, x, y) {
     const b = this.battle;
     this.closeMenu(); this.menuFor = null; this.restoreMenuButtons();
+    this.threatTiles = null;
+    const before = this.snapshotHp();
     b.useTactic(u, tid, x, y);
+    this.diffHp(before);
     this.log(b.log[b.log.length - 1]);
     u.done = true;
     this.renderBattle();
@@ -529,7 +628,9 @@ const Game = {
     await this.delay(250);
     for (const e of b.alive('enemy')) {
       if (b.over) break;
+      const before = this.snapshotHp();
       b.aiAct(e);
+      this.diffHp(before);
       const last = b.log[b.log.length - 1];
       if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
       this.renderBattle();
@@ -549,7 +650,9 @@ const Game = {
       for (const u of b.alive('player')) {
         if (b.over) break;
         if (u.done) continue;
+        const before = this.snapshotHp();
         b.aiAct(u);
+        this.diffHp(before);
         u.done = true;
         const last = b.log[b.log.length - 1];
         if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
