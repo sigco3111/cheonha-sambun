@@ -96,6 +96,7 @@ const Game = {
     this.renderBattle();
     this.updateHud();
     this.log(this.battle.stage.briefing);
+    this.showBanner(`${this.battle.stage.name} · 아군 턴 1`);
     if (this.auto) this.autoLoop();
   },
 
@@ -395,13 +396,37 @@ const Game = {
     while (el.children.length > 30) el.lastChild.remove();
   },
 
+  traitText(u) {
+    const c = CLASSES[u.cls];
+    const parts = [`이동 ${c.move}`, `사거리 ${c.rMin === c.rMax ? c.rMax : c.rMin + '~' + c.rMax}`];
+    parts.push(c.counter ? '반격 가능' : '반격 불가');
+    const blocked = Object.keys(TERRAIN).filter(t => t !== 'wall' && (TERRAIN[t].costs[c.cat] || 0) < 0).map(t => TERRAIN[t].name);
+    if (blocked.length) parts.push(blocked.join('·') + ' 진입 불가');
+    if (u.tactics && u.tactics.length) parts.push('책략 ' + u.tactics.map(t => TACTICS[t].name).join('·'));
+    return parts.join(' · ');
+  },
+
+  showBanner(text) {
+    const el = document.getElementById('turn-banner');
+    if (!el) return;
+    el.textContent = text;
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.classList.add('show'));
+    clearTimeout(this._bannerT);
+    this._bannerT = setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => { el.style.display = 'none'; }, 300);
+    }, this.fast || this.auto ? 500 : 1100);
+  },
+
   showUnitInfo(u) {
     const el = document.getElementById('unit-info');
     if (!u) { el.innerHTML = ''; return; }
     const es = equipStats(u);
     el.innerHTML = `<b>${u.name}</b> Lv.${u.level} ${CLASSES[u.cls].name}<br>
       HP ${u.hp}/${u.maxHp} MP ${u.mp}/${u.maxMp} 사기 ${u.morale}<br>
-      공 ${Math.round(u.atk + es.atk)} 방 ${Math.round(u.def + es.def)} 지 ${Math.round(u.int)} 속 ${Math.round(u.spd)}`;
+      공 ${Math.round(u.atk + es.atk)} 방 ${Math.round(u.def + es.def)} 지 ${Math.round(u.int)} 속 ${Math.round(u.spd)}
+      <span class="unit-trait">${this.traitText(u)}</span>`;
   },
 
   async onTileClick(x, y) {
@@ -625,6 +650,7 @@ const Game = {
     if (b.over || b.phase !== 'player') return;
     b.endPhase(); // -> enemy
     this.updateHud(); this.renderBattle();
+    this.showBanner(`적군 턴`);
     await this.delay(250);
     for (const e of b.alive('enemy')) {
       if (b.over) break;
@@ -640,6 +666,7 @@ const Game = {
     b.checkTurnLimit();
     this._lastLogged = null;
     this.updateHud(); this.renderBattle();
+    if (!b.over) this.showBanner(`아군 턴 ${b.turn}`);
     if (b.over) this.finishBattle();
   },
 
