@@ -217,6 +217,7 @@ const Game = {
     document.getElementById('brief-text').textContent = st.briefing;
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
+    { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
     this.checkAchievements();
     // 합류 장수(오리지널 IF) — 해금 시 1회만 편입, 배너 표시
     const jn = document.getElementById('brief-join');
@@ -357,7 +358,7 @@ const Game = {
     this.updateHud();
     document.getElementById('battle-log').innerHTML = '';
     this.log(this.battle.stage.briefing);
-    this.showBanner(`${this.battle.stage.name} · 아군 턴 1`);
+    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''} · 아군 턴 1`);
     if (this.auto) this.autoLoop();
   },
 
@@ -850,9 +851,9 @@ const Game = {
       // 공격 가능 적
       ctx.fillStyle = 'rgba(220,60,60,0.4)';
       const afterTiles = [...this.moveTiles, [this.selected.x, this.selected.y]];
-      const c = classOf(this.selected);
+      const [sr0, sr1] = b.rngOf(this.selected);
       for (const e of b.alive('enemy')) {
-        if (afterTiles.some(([x, y]) => Math.abs(x - e.x) + Math.abs(y - e.y) >= c.rMin && Math.abs(x - e.x) + Math.abs(y - e.y) <= c.rMax))
+        if (afterTiles.some(([x, y]) => Math.abs(x - e.x) + Math.abs(y - e.y) >= sr0 && Math.abs(x - e.x) + Math.abs(y - e.y) <= sr1))
           ctx.fillRect(e.x * TILE, e.y * TILE, TILE, TILE);
       }
     }
@@ -1038,7 +1039,8 @@ const Game = {
 
   traitText(u) {
     const c = CLASSES[u.cls];
-    const parts = [`이동 ${c.move + (u.perk === 'mob' ? 1 : 0)}`, `사거리 ${c.rMin === c.rMax ? c.rMax : c.rMin + '~' + c.rMax}`];
+    const [er0, er1] = this.battle ? this.battle.rngOf(u) : [c.rMin, c.rMax];
+    const parts = [`이동 ${c.move + (u.perk === 'mob' ? 1 : 0)}`, `사거리 ${er0 === er1 ? er1 : er0 + '~' + er1}${this.battle && this.battle.weather === 'rain' && c.cat === 'archer' ? '(비)' : ''}`];
     parts.push(c.counter ? '반격 가능' : '반격 불가');
     const blocked = Object.keys(TERRAIN).filter(t => t !== 'wall' && (TERRAIN[t].costs[c.cat] || 0) < 0).map(t => TERRAIN[t].name);
     if (blocked.length) parts.push(blocked.join('·') + ' 진입 불가');
@@ -1116,10 +1118,11 @@ const Game = {
     const c = classOf(u);
     const tiles = new Set();
     const reach = [...b.moveRange(u), [u.x, u.y]];
+    const [tr0, tr1] = b.rngOf(u);
     for (const [mx, my] of reach) {
       for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
         const d = Math.abs(x - mx) + Math.abs(y - my);
-        if (d >= c.rMin && d <= c.rMax) tiles.add(x + ',' + y);
+        if (d >= tr0 && d <= tr1) tiles.add(x + ',' + y);
       }
     }
     return [...tiles].map(k => k.split(',').map(Number));
@@ -1232,8 +1235,9 @@ const Game = {
     for (const tid of u.tactics) {
       const t = TACTICS[tid];
       const btn = document.createElement('button');
-      btn.textContent = `${t.name} (MP ${t.mp})`;
-      btn.disabled = u.mp < t.mp;
+      const rainBlocked = this.battle && this.battle.weather === 'rain' && tid === 'fire';
+      btn.textContent = `${t.name} (MP ${t.mp})` + (rainBlocked ? ' · 비로 불가' : '');
+      btn.disabled = rainBlocked || u.mp < t.mp;
       btn.onclick = () => {
         // 사거리 내 대상 선택
         const foes = this.battle.units.filter(v => v.hp > 0 && !v.routed &&
