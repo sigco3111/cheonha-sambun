@@ -218,6 +218,7 @@ const Game = {
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
     { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
+    { const rf = reinforceFor(st.id, this.cycle); if (rf) document.getElementById('brief-conditions').textContent += ` / 증원 예고: ${rf.atTurn}턴째 적 ${rf.units.length}기 ${rf.dir}에서 도착`; }
     this.checkAchievements();
     // 합류 장수(오리지널 IF) — 해금 시 1회만 편입, 배너 표시
     const jn = document.getElementById('brief-join');
@@ -358,7 +359,7 @@ const Game = {
     this.updateHud();
     document.getElementById('battle-log').innerHTML = '';
     this.log(this.battle.stage.briefing);
-    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''} · 아군 턴 1`);
+    this.showBanner(`${this.battle.stage.name}${this.battle.weather ? ' · 날씨: ' + WEATHER[this.battle.weather].name + '(' + WEATHER[this.battle.weather].note + ')' : ''}${this.battle.pendingReinforce ? ` · 증원 예고: ${this.battle.pendingReinforce.atTurn}턴` : ''} · 아군 턴 1`);
     if (this.auto) this.autoLoop();
   },
 
