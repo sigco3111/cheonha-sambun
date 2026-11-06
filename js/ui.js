@@ -900,6 +900,7 @@ const Game = {
       setTimeout(() => {
         const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
         document.getElementById('result-title').textContent = '승리!';
+        document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length} · 생존: ${surv}</span><br>` +
           `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}`;
@@ -910,6 +911,7 @@ const Game = {
         document.getElementById('result-title').textContent = '패배...';
         document.getElementById('result-text').innerHTML =
           `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.kills.length}</span><br>다시 도전하세요.`;
+        document.getElementById('btn-result-next').textContent = '브리핑으로 돌아가기';
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     }
