@@ -35,6 +35,7 @@ const Game = {
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
   stageIndex: 0, cycle: 1, battlesCleared: 0,
+  records: { wins: 0, bestTurns: {}, noDeath: {} }, // 명예 기록(보상 없음): 누적 승리·전투별 최단 턴·무사망 횟수
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
@@ -45,6 +46,7 @@ const Game = {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared,
+      records: this.records,
     }));
   },
   load() {
@@ -60,6 +62,8 @@ const Game = {
     this.cycle = d.cycle || 1;
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
+    const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
+    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {} } : { wins: 0, bestTurns: {}, noDeath: {} };
     return true;
   },
 
@@ -209,6 +213,18 @@ const Game = {
     spLine.appendChild(spNote);
     shop.appendChild(spLine);
     list.appendChild(shop);
+    // 기록: 전투별 최단 턴·무사망 클리어 (보상 없는 갱신 목표)
+    const recDiv = document.createElement('div');
+    recDiv.id = 'base-records';
+    const rc = this.records || { wins: 0, bestTurns: {}, noDeath: {} };
+    const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 보상 없는 명예 기록</span><br>` +
+      STAGES.map(st => {
+        const bt = rc.bestTurns[st.id];
+        const nd = rc.noDeath[st.id] || 0;
+        return `${esc(st.name)} — 최단 ${bt != null ? bt + '턴' : '—'} · 무사망 ${nd}회`;
+      }).join('<br>');
+    list.appendChild(recDiv);
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
     const sell = document.createElement('div');
     sell.id = 'base-sell';
@@ -1192,6 +1208,13 @@ const Game = {
       }
       this.stageIndex++;
       this.battlesCleared++; // 승리 분기 1회 — 패배·재도전 시 불변
+      // 명예 기록 갱신(승리 분기 1회): 최단 턴은 최소값, 무사망은 전원 생존 시에만
+      if (!this.records) this.records = { wins: 0, bestTurns: {}, noDeath: {} };
+      this.records.wins++;
+      const sidRec = b.stage.id;
+      this.records.bestTurns[sidRec] = this.records.bestTurns[sidRec] == null ? b.turn : Math.min(this.records.bestTurns[sidRec], b.turn);
+      const deadCnt = b.units.filter(u => u.side === 'player' && (u.hp <= 0 || u.routed)).length;
+      if (deadCnt === 0) this.records.noDeath[sidRec] = (this.records.noDeath[sidRec] || 0) + 1;
       this.save();
       setTimeout(() => {
         const surv = b.alive('player').map(u => `${u.name}(${u.hp}/${u.maxHp})`).join(' · ');
