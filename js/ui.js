@@ -91,7 +91,7 @@ const Game = {
     this.show('screen-briefing');
     document.getElementById('brief-title').textContent = st.name;
     document.getElementById('brief-text').textContent = st.briefing;
-    document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴`;
+    document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '');
   },
 
   startBattle() {
