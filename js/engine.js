@@ -59,8 +59,9 @@ function tacticDamage(caster, target) {
 }
 
 class Battle {
-  constructor(stage, army) {
+  constructor(stage, army, cycle = 1) {
     this.stage = stage;
+    this.cycle = cycle;
     this.map = buildMap(stage.map);
     this.h = this.map.length; this.w = this.map[0].length;
     this.units = [];
@@ -83,7 +84,7 @@ class Battle {
       this.units.push(u);
     }
     for (const e of stage.enemies) {
-      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, level: stage.id + (e.boss ? 2 : 0) }));
+      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, level: stage.id + (cycle - 1) * 4 + (e.boss ? 2 : 0) }));
     }
   }
 
