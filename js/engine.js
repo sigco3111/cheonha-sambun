@@ -91,6 +91,7 @@ class Battle {
 
   unitAt(x, y) { return this.units.find(u => !u.routed && u.hp > 0 && u.x === x && u.y === y); }
   alive(side) { return this.units.filter(u => u.side === side && u.hp > 0 && !u.routed); }
+  isBossUnit(u) { return !!(this.stage.bossChar && u.charId === this.stage.bossChar); } // 보스는 사기 0이어도 퇴각하지 않음(위력만 저하)
 
   terrainCost(u, x, y) {
     const row = this.map[y];
@@ -145,7 +146,7 @@ class Battle {
     if (def_.hp <= 0) {
       this.kill(def_, att); msg += ` ${def_.name} 격파!`;
     } else {
-      if (def_.morale <= 0) { def_.routed = true; msg += ` ${def_.name} 사기 붕괴로 퇴각!`; this.gainExp(att, 20); this.kills.push(def_.charId); if (def_.side === 'enemy') this.foeKills.push(def_.charId); }
+      if (def_.morale <= 0 && !this.isBossUnit(def_)) { def_.routed = true; msg += ` ${def_.name} 사기 붕괴로 퇴각!`; this.gainExp(att, 20); this.kills.push(def_.charId); if (def_.side === 'enemy') this.foeKills.push(def_.charId); }
       else if (classOf(def_).counter && this.inRange(def_, att, classOf(def_).rMin, classOf(def_).rMax)) {
         const r = computeDamage(def_, att, this.map);
         att.hp = Math.max(0, att.hp - r.dmg);
@@ -153,7 +154,7 @@ class Battle {
         msg += ` / 반격 ${r.dmg}`;
         events.push({ type: 'attack', att: def_.uid, def: att.uid, dmg: r.dmg, crit: r.crit });
         if (att.hp <= 0) { this.kill(att, def_); msg += ` ${att.name} 격파!`; }
-        if (att.morale <= 0 && att.hp > 0) { att.routed = true; this.kills.push(att.charId); if (att.side === 'enemy') this.foeKills.push(att.charId); }
+        if (att.morale <= 0 && att.hp > 0 && !this.isBossUnit(att)) { att.routed = true; this.kills.push(att.charId); if (att.side === 'enemy') this.foeKills.push(att.charId); }
       }
     }
     this.gainExp(att, def_.hp <= 0 ? 25 : 8);
@@ -198,7 +199,7 @@ class Battle {
         v.morale = Math.max(0, v.morale - 12);
         msg += ` ${v.name} ${dmg}`;
         if (v.hp <= 0) { this.kill(v, u); msg += ' 격파!'; }
-        else if (v.morale <= 0) { v.routed = true; this.kills.push(v.charId); if (v.side === 'enemy') this.foeKills.push(v.charId); msg += ` ${v.name} 퇴각!`; }
+        else if (v.morale <= 0 && !this.isBossUnit(v)) { v.routed = true; this.kills.push(v.charId); if (v.side === 'enemy') this.foeKills.push(v.charId); msg += ` ${v.name} 퇴각!`; }
       } else if (t.kind === 'heal' && v.side === u.side) {
         v.hp = Math.min(v.maxHp, v.hp + t.power + u.int);
         msg += ` ${v.name} 회복`;
