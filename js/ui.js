@@ -90,6 +90,18 @@ const Game = {
     this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {} };
   },
 
+  showTerrainInfo(x, y) { // 탭한 타일의 지형 정보(이름·방어 보정·회복) — 이동 비용은 병종마다 달라 유닛 선택 시 이동 범위로 이미 표시
+    const el = document.getElementById('hud-terrain');
+    if (!el || !this.battle) return;
+    const key = this.battle.map[y] && this.battle.map[y][x];
+    const t = key && TERRAIN[key];
+    if (!t) { el.textContent = ''; return; }
+    const parts = [t.name];
+    if (t.def) parts.push(`방어 ${t.def > 0 ? '+' : ''}${t.def}`);
+    if (t.heal) parts.push(`매턴 회복 ${Math.round(t.heal * 100)}%`);
+    el.textContent = parts.join(' · ');
+  },
+
   show(id) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
     document.getElementById(id).style.display = 'flex';
@@ -832,7 +844,9 @@ const Game = {
 
   async onTileClick(x, y) {
     const b = this.battle;
-    if (!b || b.over || b.phase !== 'player' || this.auto) return;
+    if (!b || b.over) return;
+    this.showTerrainInfo(x, y);
+    if (b.phase !== 'player' || this.auto) return;
     const u = b.unitAt(x, y);
     if (this.menuFor) return; // 메뉴 처리는 버튼이
     if (u && u.side === 'player' && !u.done) {
