@@ -11,12 +11,11 @@ const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strat
 const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru'];
 
 function loadImages(cb) {
-  let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length + 3; let done = 0;
+  let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length; let done = 0;
   const check = () => { if (++done >= total) cb(); };
   for (const k of TERRAIN_KEYS) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/terrain/${k}.png`; IMG.terrain[k] = im; }
   for (const k of UNIT_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/${SPRITE_FILE[k] || k}_0_0.png`; IMG.units[k] = im; }
   for (const k of CHAR_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/char_${k}_0_0.png`; (IMG.chars ||= {})[k] = im; }
-  for (let i = 0; i < 3; i++) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/infantry_1_${i}.png`; (IMG.units.walk ||= {})[i] = im; }
 }
 
 function spriteFor(u) {
