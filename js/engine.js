@@ -14,7 +14,7 @@ function makeUnit(charId, x, y, side, opts = {}) {
     atk: c.atk + growth * 1.6, def: c.def + growth * 1.3,
     int: c.int + growth * 1.4, spd: c.spd + growth * 1.1,
     morale: c.morale, baseMorale: c.morale,
-    tactics: c.tactics || [], ai: opts.ai || 'aggressive',
+    tactics: c.tactics || [], ai: opts.ai || 'aggressive', holdUntil: opts.holdUntil || 0,
     commander: !!opts.commander, boss: !!opts.boss,
     equip: opts.equip || { weapon: null, armor: null, acc: null },
     done: false, routed: false,
@@ -84,7 +84,7 @@ class Battle {
       this.units.push(u);
     }
     for (const e of stage.enemies) {
-      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, level: stage.id + (cycle - 1) * 4 + (e.boss ? 2 : 0) }));
+      this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: stage.id + (cycle - 1) * 4 + (e.boss ? 2 : 0) }));
     }
   }
 
@@ -279,8 +279,8 @@ class Battle {
     if (!targets.length && isLord && safeAt(u.x, u.y)) return;
     if (!targets.length) {
       // 이동
-      if (u.ai === 'hold' && u.morale > 30) {
-        // hold: 적이 가까이 오기 전까지 대기 (3칸 이내 적 있으면 반응)
+      if (u.ai === 'hold' && u.morale > 30 && this.turn < (u.holdUntil || Infinity)) {
+        // hold: 적이 가까이 오기 전까지 대기 (4칸 이내 적 있으면 반응). holdUntil 턴 도달 시 대기 해제(돌격)
         const near = foes.filter(f => Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= 4);
         if (!near.length) return;
       }
