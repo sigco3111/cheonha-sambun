@@ -41,10 +41,13 @@ window.addEventListener('load', () => {
       else Game.onTileClick(x, y);
     });
 
-    // 보기 조작: 확대/축소/전체
-    document.getElementById('btn-zoom-in').onclick = () => Game.setZoom(Game.zoom * 1.25);
-    document.getElementById('btn-zoom-out').onclick = () => Game.setZoom(Game.zoom / 1.25);
-    document.getElementById('btn-zoom-fit').onclick = () => Game.fitZoom();
+    // 보기 조작: 확대/축소/전체 (구버전 HTML 캐시와 공존해도 게임이 깨지지 않게 가드)
+    const zin = document.getElementById('btn-zoom-in');
+    if (zin) {
+      zin.onclick = () => Game.setZoom(Game.zoom * 1.25);
+      document.getElementById('btn-zoom-out').onclick = () => Game.setZoom(Game.zoom / 1.25);
+      document.getElementById('btn-zoom-fit').onclick = () => Game.fitZoom();
+    }
 
     // 마우스 드래그 패닝 (터치는 wrap 네이티브 스크롤이 담당)
     const wrap = document.getElementById('battle-wrap');
