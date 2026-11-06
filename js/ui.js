@@ -130,6 +130,17 @@ const Game = {
       joined.push('guan_hai');
       this.save();
     }
+    if ((this.records.ach || {}).swift && !this.army.taishi_ci && Object.keys(this.army).length >= 6) {
+      const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+      const c = CHARS.taishi_ci, g = lv - 1; // 관해와 같은 1회 편입 규칙(성장 계수 편입 시 1회만)
+      this.army.taishi_ci = {
+        charId: 'taishi_ci', cls: c.cls, level: lv, exp: 0,
+        maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+        equip: { weapon: { id: 'bow', up: 0 }, armor: null, acc: null }, // 초기 장비 고정
+      };
+      joined.push('taishi_ci');
+      this.save();
+    }
     return joined;
   },
 
@@ -224,7 +235,7 @@ const Game = {
     const jn = document.getElementById('brief-join');
     if (jn) {
       const joined = this.checkJoiners();
-      jn.innerHTML = joined.length ? `<b>오리지널 IF</b> · 관해가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army.guan_hai.level}로 고정 저장 · 아래 출전 편성에서 선택 가능` : '';
+      jn.innerHTML = joined.length ? `<b>오리지널 IF</b> · ${joined.map(id => `${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ')} · 아래 출전 편성에서 선택 가능` : '';
     }
     // 출전 편성: 보유 장수 중 스테이지 슬롯 수만큼 사용자가 직접 선택. 유비는 지휘관 슬롯 고정. 기본=기존 고정 순서(미선택 시 기존과 동일한 전투)
     const dp = document.getElementById('brief-deploy');
@@ -383,7 +394,7 @@ const Game = {
     if (baseJoined.length) {
       const jb = document.createElement('div');
       jb.className = 'ach-banner';
-      jb.innerHTML = `<b>오리지널 IF · 관해 합류</b> <span class="dim">(가상 설정 · 합류 Lv ${this.army.guan_hai.level} 고정 저장 · 브리핑 출전 편성에서 선택)</span>`;
+      jb.innerHTML = `<b>오리지널 IF · ${baseJoined.map(id => CHARS[id].name).join('·')} 합류</b> <span class="dim">(가상 설정 · 합류 Lv ${baseJoined.map(id => this.army[id].level).join('/')} 고정 저장 · 브리핑 출전 편성에서 선택)</span>`;
       list.prepend(jb);
     }
     // 소지품 한눈에 보기
