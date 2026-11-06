@@ -151,6 +151,25 @@ const Game = {
     inv.appendChild(document.createTextNode(' '));
     inv.appendChild(autoBtn);
     list.appendChild(inv);
+    // 상점: 트레이드오프 장비 판매 (골드 소비처)
+    const shop = document.createElement('div');
+    shop.id = 'base-shop';
+    shop.innerHTML = '<b>상점</b> ';
+    for (const id of SHOP) {
+      const it = ITEMS[id];
+      const btn = document.createElement('button');
+      btn.textContent = `${it.name} (${this.itemStatText({ id, up: 0 })}) ${it.price}골드`;
+      btn.disabled = this.gold < it.price;
+      btn.onclick = () => {
+        if (this.gold < it.price) return;
+        this.gold -= it.price;
+        this.inventory.push({ id, up: 0 });
+        this.save(); this.renderBase();
+      };
+      shop.appendChild(btn);
+      shop.appendChild(document.createTextNode(' '));
+    }
+    list.appendChild(shop);
     if (this._autoNote) {
       const note = document.createElement('div');
       note.className = 'dim auto-note';
