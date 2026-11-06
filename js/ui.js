@@ -28,12 +28,12 @@ const Game = {
   inventory: [],     // [{id, up}]
   gold: 500,
   selected: null, moveTiles: [], menuFor: null,
-  auto: false, fast: false,
+  auto: false, fast: false, speed: 1,
   stageIndex: 0,
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
-  delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms)),
+  delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms / Game.speed)),
 
   save() {
     localStorage.setItem('cheonha3_save', JSON.stringify({
@@ -237,6 +237,26 @@ const Game = {
     return null;
   },
 
+  readSpeed() {
+    try {
+      const v = JSON.parse(localStorage.getItem('cheonha3_view') || 'null');
+      if (v && [1, 2, 3].includes(v.speed)) return v.speed;
+    } catch (e) {}
+    return 1;
+  },
+
+  cycleSpeed() {
+    this.speed = this.speed === 1 ? 2 : this.speed === 2 ? 3 : 1;
+    try {
+      const prev = JSON.parse(localStorage.getItem('cheonha3_view') || '{}') || {};
+      prev.speed = this.speed;
+      localStorage.setItem('cheonha3_view', JSON.stringify(prev));
+    } catch (e) {}
+    const b = document.getElementById('btn-speed');
+    if (b) b.textContent = this.speed + 'x';
+    this.log('전투 속도 ' + this.speed + 'x');
+  },
+
   initView() {
     const wrap = document.getElementById('battle-wrap');
     const fitW = (wrap.clientWidth - 4) / this.canvas.width;
@@ -274,7 +294,11 @@ const Game = {
     }
     if (this.menuFor) { this.closeMenu(); this.menuFor = null; this.restoreMenuButtons(); }
     this.updateZoomLabel();
-    try { localStorage.setItem('cheonha3_view', JSON.stringify({ zoom: z })); } catch (e) {}
+    try {
+      const prev = JSON.parse(localStorage.getItem('cheonha3_view') || '{}') || {};
+      prev.zoom = z;
+      localStorage.setItem('cheonha3_view', JSON.stringify(prev));
+    } catch (e) {}
   },
 
   availHeight(wrap) {
@@ -379,16 +403,16 @@ const Game = {
   },
 
   popText(x, y, text, color) {
-    this.fx.push({ x, y, text, color, t0: performance.now(), dur: this.fast || this.auto ? 500 : 900 });
+    this.fx.push({ x, y, text, color, t0: performance.now(), dur: this.fast || this.auto ? 500 : 900 / this.speed });
   },
 
   unitAnim(u, kind, tx, ty) {
     const now = performance.now();
     if (kind === 'lunge' && tx !== undefined) {
       const dx = Math.sign(tx - u.x), dy = Math.sign(ty - u.y);
-      u._lunge = { dx: dx * 12, dy: dy * 12, t0: now, dur: this.fast || this.auto ? 120 : 220 };
+      u._lunge = { dx: dx * 12, dy: dy * 12, t0: now, dur: this.fast || this.auto ? 120 : 220 / this.speed };
     }
-    if (kind === 'flash') u._flash = { t0: now, dur: this.fast || this.auto ? 200 : 420 };
+    if (kind === 'flash') u._flash = { t0: now, dur: this.fast || this.auto ? 200 : 420 / this.speed };
   },
 
   snapshotHp() {
@@ -456,7 +480,7 @@ const Game = {
     this._bannerT = setTimeout(() => {
       el.classList.remove('show');
       setTimeout(() => { el.style.display = 'none'; }, 300);
-    }, this.fast || this.auto ? 500 : 1100);
+    }, this.fast || this.auto ? 500 : 1100 / this.speed);
   },
 
   showUnitInfo(u) {
