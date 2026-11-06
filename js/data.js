@@ -54,6 +54,9 @@ const ITEMS = {
   meat:      { name: '고기',       use: { hp: 150 }, price: 250 },
   tonic:     { name: '각성제',     use: { mp: 30 },  price: 150 },
   manual:    { name: '전직 지침서', use: { promo: true }, price: 1000 },
+  counter_blade:{ name: '백병도',  slot: 'weapon', atk: 5, counter: 0.25, price: 1200, maxUp: 5 },
+  bulwark:   { name: '철벽갑',      slot: 'armor',  def: 4, tacDef: 0.3, price: 1100, maxUp: 5 },
+  training_charm:{ name: '수련패',  slot: 'acc',    exp: 0.25, price: 900, maxUp: 0 },
   ore:       { name: '철광석',     material: true, price: 100 },
 };
 
@@ -312,4 +315,4 @@ function buildMap(pattern) {
   return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
 }
 
-const SHOP = ['heavy_blade', 'famed_sword', 'plate']; // 정비 상점 판매 품목
+const SHOP = ['heavy_blade', 'famed_sword', 'plate', 'counter_blade', 'bulwark', 'training_charm']; // 정비 상점 판매 품목
