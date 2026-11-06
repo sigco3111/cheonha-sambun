@@ -46,7 +46,7 @@ const Game = {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared, deploySel: this.deploySel,
-      records: this.records,
+      records: this.records, bonusCycle: this.bonusCycle || 0,
     }));
   },
   load() {
@@ -61,11 +61,25 @@ const Game = {
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
     this.deploySel = (d.deploySel && Array.isArray(d.deploySel.picks)) ? d.deploySel : null; // 구 세이브(필드 없음)는 기본 편성
     this.cycle = d.cycle || 1;
+    this.bonusCycle = d.bonusCycle || 0; // 구세이브(필드 없음)는 0. 미지급 회차는 브리핑에서 1회 보완
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
     this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null };
     return true;
+  },
+  applyCycleBonus() { // 업적 시작 보상: 회차별 지급 이력(bonusCycle)으로 중복 없이 회차당 1회 보장. 구 data 혼합 시 보류(전파 후 자동 재시도)
+    if (typeof startBonusFor !== 'function') return false;
+    if ((this.bonusCycle || 0) === this.cycle) return false;
+    const grants = startBonusFor(this.records && this.records.ach);
+    for (const g of grants) {
+      if (g.gold) this.gold += g.gold;
+      if (g.items) for (const it of g.items) this.inventory.push({ id: it, up: 0 });
+    }
+    this._cycleBonus = grants.map(g => g.label);
+    this.bonusCycle = this.cycle;
+    this.save();
+    return grants.length > 0;
   },
 
   initArmy() {
@@ -242,6 +256,9 @@ const Game = {
     { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
     { const rf = reinforceFor(st.id, this.cycle); if (rf) document.getElementById('brief-conditions').textContent += ` / 증원 예고: ${rf.atTurn}턴째 적 ${rf.units.length}기 ${rf.dir}에서 도착`; }
     { const df = defenseFor(st.id, this.cycle); if (df) document.getElementById('brief-conditions').textContent += ` / 방어 목표: ${df.name} 사수(적 점거 시 패배)`; }
+    // 회차별 시작 보상 이력 보정: 구 main 인라인 지급 흔적(_cycleBonus 설정됨)은 이력만 보존해 중복 방지, 아니면 미지급 회차 1회 보완(신구 혼합 창 누락 포함)
+    if (this._cycleBonus && this._cycleBonus.length && (this.bonusCycle || 0) !== this.cycle) this.bonusCycle = this.cycle;
+    else this.applyCycleBonus();
     this.checkAchievements();
     // 합류 장수(오리지널 IF) — 해금 시 1회만 편입, 배너 표시
     const jn = document.getElementById('brief-join');
