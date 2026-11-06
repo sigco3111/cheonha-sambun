@@ -85,6 +85,11 @@ const Game = {
     this.gold = 500;
   },
 
+  resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
+    this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
+    this.records = { wins: 0, bestTurns: {}, noDeath: {} };
+  },
+
   show(id) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
     document.getElementById(id).style.display = 'flex';
@@ -218,11 +223,12 @@ const Game = {
     recDiv.id = 'base-records';
     const rc = this.records || { wins: 0, bestTurns: {}, noDeath: {} };
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 보상 없는 명예 기록</span><br>` +
+    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 이 기능 도입 이후 플레이부터 집계 · 보상 없는 명예 기록 · 회차마다 적 레벨이 달라 회차가 다른 최단 턴끼리는 단순 비교 불가</span><br>` +
       STAGES.map(st => {
         const bt = rc.bestTurns[st.id];
         const nd = rc.noDeath[st.id] || 0;
-        return `${esc(st.name)} — 최단 ${bt != null ? bt + '턴' : '—'} · 무사망 ${nd}회`;
+        const btTxt = bt == null ? '—' : (typeof bt === 'object' ? `${bt.t}턴(${bt.c}회차)` : `${bt}턴`);
+        return `${esc(st.name)} — 최단 ${btTxt} · 무사망 ${nd}회`;
       }).join('<br>');
     list.appendChild(recDiv);
     // 판매: 불필요 소지품을 반값에 처분 (전직 지침서는 진행 필수라 제외, 강화비는 환불 없음)
@@ -1212,7 +1218,9 @@ const Game = {
       if (!this.records) this.records = { wins: 0, bestTurns: {}, noDeath: {} };
       this.records.wins++;
       const sidRec = b.stage.id;
-      this.records.bestTurns[sidRec] = this.records.bestTurns[sidRec] == null ? b.turn : Math.min(this.records.bestTurns[sidRec], b.turn);
+      const prevBt = this.records.bestTurns[sidRec];
+      const prevT = (prevBt && typeof prevBt === 'object') ? prevBt.t : prevBt; // 구형식(숫자) 호환
+      if (prevT == null || b.turn < prevT) this.records.bestTurns[sidRec] = { t: b.turn, c: this.cycle }; // 회차별 적 레벨이 달라 달성 회차를 함께 보존
       const deadCnt = b.units.filter(u => u.side === 'player' && (u.hp <= 0 || u.routed)).length;
       if (deadCnt === 0) this.records.noDeath[sidRec] = (this.records.noDeath[sidRec] || 0) + 1;
       this.save();
