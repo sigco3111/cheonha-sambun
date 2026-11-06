@@ -364,6 +364,7 @@ const Game = {
   },
 
   startBattle() {
+    if (this.stageIndex >= STAGES.length) { this.startEpilogue(); return; }
     if (!this.armyComplete(this.army)) { console.warn('[출진 차단] 군단 데이터가 불완전해 전투를 시작하지 않습니다'); this._corruptSave = !!localStorage.getItem('cheonha3_save'); this.renderTitle(); return; } // 무변경 차단
     if (this.supportAvailable()) { // 회차 지원 미수령 출진: 1회 확인 후 이번 회차 포기 확정
       const sp = document.getElementById('brief-support');
@@ -382,6 +383,7 @@ const Game = {
         return;
       }
     }
+    const ex=document.getElementById('epilogue-exit');if(ex)ex.style.display='none';
     const dep = this.deploySelection();
     if (!dep.valid) { alert(`출전 편성이 맞지 않습니다(${dep.sel.length}/${this.deploySlots().length}명). 브리핑에서 출전 인원을 맞춰 주세요.`); this.renderBriefing(); return; } // 무효 편성 출진 차단
     const st0 = STAGES[this.stageIndex];
@@ -1086,7 +1088,7 @@ const Game = {
       hint.style.cssText = 'flex-basis:100%;font-size:12px;';
       document.getElementById('battle-top').appendChild(hint);
     }
-    hint.textContent = '자동전투: HP 40% 미만 아군은 HP 회복 도구 1개를 자동 사용합니다(그 유닛의 행동 소비 · HP 도구만)';
+    hint.textContent = b.epilogueTrial ? 'IF 후일담 시험전: 수동·자동 도구 사용 불가 · 본전역 소모/성장/전투보상 없음' : '자동전투: HP 40% 미만 아군은 HP 회복 도구 1개를 자동 사용합니다(그 유닛의 행동 소비 · HP 도구만)';
   },
 
   log(msg) {
@@ -1364,6 +1366,7 @@ const Game = {
   },
 
   showItemMenu(u) {
+    if (this.battle && this.battle.epilogueTrial) { this.log('후일담 시험전에서는 도구를 쓰지 않습니다. 본전역 소지품은 보존됩니다.'); this.closeMenu(); this.menuFor = null; return; }
     const m = document.getElementById('action-menu');
     m.innerHTML = '';
     const usable = this.inventory.map((it, i) => ({ ...it, idx: i })).filter(it => ITEMS[it.id].use && !ITEMS[it.id].use.promo);
@@ -1448,6 +1451,7 @@ const Game = {
     this.updateHud(); this.renderBattle();
     this.showBanner(`적군 턴`);
     await this.delay(250);
+    if (this.battle !== b || b._finished) return;
     for (const e of b.alive('enemy')) {
       if (b.over) break;
       const before = this.snapshotHp();
@@ -1457,6 +1461,7 @@ const Game = {
       if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
       this.renderBattle();
       await this.delay(160);
+      if (this.battle !== b || b._finished) return;
     }
     b.endPhase(); // -> player, turn++
     b.checkTurnLimit();
@@ -1468,11 +1473,14 @@ const Game = {
 
   async autoLoop() {
     const b = this.battle;
+    if (!b || b._autoRunning) return;
+    b._autoRunning = true;
+    try {
     this.cancelTargeting();
-    while (!b.over) {
+    while (!b.over && this.auto && this.battle === b) {
       // 플레이어 페이즈 자동
       for (const u of b.alive('player')) {
-        if (b.over) break;
+        if (b.over || !this.auto || this.battle !== b) break;
         if (u.done) continue;
         const before = this.snapshotHp();
         b.aiAct(u);
@@ -1482,20 +1490,24 @@ const Game = {
         if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
         this.renderBattle();
         await this.delay(this.fast ? 20 : 120);
+        if (this.battle !== b || b._finished) return;
       }
-      if (b.over) break;
+      if (b.over || !this.auto || this.battle !== b) break;
       await this.runEnemyPhase();
+      if (this.battle !== b || b._finished) return;
       if (this.turnGuard++ > 200) break;
     }
-    if (b.over) this.finishBattle();
+    if (b.over && this.battle === b) this.finishBattle();
+    } finally { b._autoRunning = false; }
   },
   turnGuard: 0,
 
   finishBattle() {
     const b = this.battle;
-    if (b._finished) return; // 중복 호출 가드 (자동전투 적 페이즈 종료 시 autoLoop 경유 이중 호출 방지)
+    if (!b || !b.over || b._finished) return; // 중복 호출 가드 (자동전투 적 페이즈 종료 시 autoLoop 경유 이중 호출 방지)
     b._finished = true;
     this.log(b.over.reason);
+    if (b.epilogueTrial) { this.finishEpilogue(b); return; }
     if (b.over.win) {
       // 보상
       const r = b.stage.rewards;
@@ -1583,12 +1595,71 @@ const Game = {
     }
   },
 
+  // 선택형 IF 후일담: 본전역을 복원하지 않는다. 복제 군단으로 만든 시험전만 폐기한다.
+  startEpilogue() {
+    if (this.stageIndex !== STAGES.length || !this.armyComplete(this.army)) return;
+    if (this.battle && this.battle.epilogueTrial && !this.battle._finished && !this.battle.over) return;
+    if (!this.epilogue || this.epilogue.c !== this.cycle || this.epilogue.status !== 'ready') return;
+    const base = STAGES[8];
+    const stage = { ...base, id: 101, name: 'IF 후일담 · 하비의 탈출로',
+      briefing: '오리지널 가상 후일담: 여포 격파 뒤 남겨진 백성을 호위하기 위해 유비군이 다시 성문으로 향한다. 흩어진 잔군을 제압하고 탈출로를 연다. 실제 역사 재현이 아닌 이 게임의 가상 선택이다.',
+      victory: '잔군 전멸', defeat: '유비 전사 또는 턴 초과', bossChar: null, bossDrop: null,
+      treasure: null, fastWin: null, rewards: { gold:0, items:[], exp:0 },
+      enemies: [ { char:'lu_elite',x:10,y:4,ai:'aggressive'},{char:'lu_soldier',x:10,y:3,ai:'aggressive'},
+        {char:'lu_soldier',x:10,y:7,ai:'aggressive'},{char:'lu_archer',x:11,y:2,ai:'hold'} ],
+    };
+    const trialArmy = JSON.parse(JSON.stringify(this.army));
+    this.battle = new Battle(stage, trialArmy, this.cycle);
+    this.battle.epilogueTrial = true;
+    this.battle.weather = null; this.battle.pendingReinforce = null; this.battle.defense = null;
+    this.battle.autoItem = () => false;
+    this.turnGuard = 0; this.selected = null; this.moveTiles = [];
+    this.restoreMenuButtons(); this.show('screen-battle'); this.setupCanvas(); this.renderBattle(); this.updateHud();
+    document.getElementById('battle-log').innerHTML = '';
+    this.log(stage.briefing); this.log('소모 없는 별도 시험전: 도구 사용 불가. 본전역 성장·장비·재화·업적은 바뀌지 않습니다.');
+    this.showBanner('IF 후일담 · 소모 없는 시험전 · 아군 턴 1');
+    let exit = document.getElementById('epilogue-exit');
+    if (!exit) { exit=document.createElement('button');exit.id='epilogue-exit';document.getElementById('screen-battle').appendChild(exit); }
+    exit.textContent='후일담 중단 (소모 없음)';exit.style.display='';
+    exit.onclick=()=>{ const b=this.battle; if(!b.epilogueTrial || b._finished)return; b.over={win:false,reason:'후일담 중단'};this.finishBattle(); };
+    if (this.auto) this.autoLoop();
+  },
+  finishEpilogue(b) {
+    const exit=document.getElementById('epilogue-exit');if(exit)exit.style.display='none';
+    // 승리 일반분기의 드랍/경험치/기록/상점회전/군단반영을 전혀 호출하지 않는다.
+    const won=!!b.over.win;
+    this.epilogue={c:this.cycle,id:'escape',status:won?'cleared':'ready',last:won?'승리':b.over.reason};
+    if(won) { this.epilogueHistory=this.epilogueHistory||{};this.epilogueHistory[this.cycle]={id:'escape',turn:b.turn}; }
+    this.save();
+    document.getElementById('result-title').textContent=won?'IF 후일담 완주':'IF 후일담 종료';
+    document.getElementById('result-text').textContent=won
+      ? '탈출로가 열리고 백성들이 성을 빠져나갔다. 유비군은 정복보다 구원을 택한 기억을 남겼다. (오리지널 가상 엔딩) 보상·경험치·도구 소모 없음. 별도 후일담 기록만 저장합니다.'
+      : b.over.reason+' · 본전역은 변하지 않았습니다. 재도전하거나 공통 전역 완주로 마칠 수 있습니다. 보상·경험치·도구 소모 없음.';
+    document.getElementById('btn-retry').style.display=won?'none':'';
+    document.getElementById('btn-result-next').textContent='완주 화면으로';
+    this.show('screen-result');
+  },
   renderComplete() {
     const nc = document.getElementById('btn-next-cycle');
-    if (nc) nc.disabled = false;
+    if (nc) { nc.disabled = false; nc.textContent='다음 회차 시작 (미완주 후일담 생략)'; }
+    const current=this.epilogue&&this.epilogue.c===this.cycle?this.epilogue:null;
+    const cleared=current&&current.status==='cleared';
     document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
     document.getElementById('complete-text').textContent =
-      `${STAGES.length}개 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 더 강해진 적과 ${this.cycle + 1}회차를 시작할 수 있습니다.`;
+      `${STAGES.length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
+      +(cleared?' IF 후일담 완주: 백성의 탈출로를 연 가상 엔딩을 별도 기록했습니다.':' 공통 전역 엔딩: 하비의 싸움이 끝나고 군단은 다음 여정을 준비합니다.');
+    let panel=document.getElementById('epilogue-choice');
+    if(!panel){panel=document.createElement('div');panel.id='epilogue-choice';document.getElementById('complete-text').after(panel);}
+    panel.innerHTML='';
+    const note=document.createElement('p');note.className='dim';
+    note.textContent='선택형 IF 후일담 첫 단계(가상 설정). 소모 없는 별도 시험전: 군단은 복제본으로 출전하고 도구는 수동·자동 모두 사용 불가. 승리·실패·중단·재도전은 본전역의 골드·소지품·장비·경험치·9전 기록·업적·상점회전을 바꾸지 않습니다. 전투 중 새로고침하면 전투는 저장되지 않아 처음부터 재도전합니다. 다음 회차 시작은 미완주 후일담을 생략합니다.';
+    panel.appendChild(note);
+    if(!cleared){
+      const begin=document.createElement('button');begin.id='btn-epilogue';begin.textContent=current&&current.status==='ready'?'IF 후일담 재도전':'IF 후일담 선택 · 하비의 탈출로';
+      begin.onclick=()=>{if(this.stageIndex!==STAGES.length)return;this.epilogue={c:this.cycle,id:'escape',status:'ready'};this.save();this.startEpilogue();};panel.appendChild(begin);
+    }
+    const history=this.epilogueHistory||{};const cycles=Object.keys(history);
+    if(cycles.length){const h=document.createElement('p');h.textContent='별도 후일담 완주 기록: '+cycles.map(c=>c+'회차 '+history[c].turn+'턴').join(' / ');panel.appendChild(h);}
     this.show('screen-complete');
   },
 };
