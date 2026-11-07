@@ -89,11 +89,12 @@ function tacticDamage(caster, target) {
 }
 
 // 배치 변주: 슬롯 기준으로 선택 장수를 매핑하고 전체 배치를 먼저 검증한다.
-function deploymentFor(stage, army, cycle) {
-  const variant = typeof deployVarFor === 'function' ? deployVarFor(stage.id, cycle) : null;
+function deploymentFor(stage, army, cycle, faction) {
+  const variant = typeof deployVarFor === 'function' ? deployVarFor(stage.id, cycle, faction) : null;
   const original = stage.players.map(p => [p.x, p.y]);
   if (!variant) return { variant: null, positions: original };
-  const base = STAGES.find(s => s.id === stage.id);
+  const list = (typeof FACTIONS !== 'undefined' && FACTIONS[faction || 'liu']) ? FACTIONS[faction || 'liu'].stages : STAGES; // 세력별 전역에서 슬롯 장수 키를 찾는다(유비 id 테이블을 타 세력에 오용 금지)
+  const base = list.find(s => s.id === stage.id) || stage;
   const positions = stage.players.map((p, i) => variant.players[base.players[i].char] || original[i]);
   const occupied = new Set();
   const map = buildMap(stage.map);
@@ -123,6 +124,7 @@ class Battle {
   constructor(stage, army, cycle = 1, features = {}) {
     this.stage = stage;
     this.cycle = cycle;
+    this.faction = features.faction || 'liu'; // 전투 변형(증원/거점/배치)의 세력별 테이블 키 — 미지정은 유비(기존 동작)
     this.map = buildMap(stage.map);
     this.h = this.map.length; this.w = this.map[0].length;
     this.units = [];
@@ -134,7 +136,7 @@ class Battle {
     this.foeKills = []; // 적 격파/퇴각만 (결과 표시·드랍 보상용)
     this.lootClaimed = false; // 보물창고 점령 여부 (전리품은 승리 시에만 지급)
     this.weather = weatherFor(stage.id, cycle); // 전투 변형(날씨) — 결정론 배정
-    const deployment = features.deploymentVariant === true ? deploymentFor(stage, army, cycle) : { variant: null, positions: stage.players.map(p => [p.x, p.y]) };
+    const deployment = features.deploymentVariant === true ? deploymentFor(stage, army, cycle, this.faction) : { variant: null, positions: stage.players.map(p => [p.x, p.y]) };
     this.deployVar = deployment.variant;
     for (const [i, p] of stage.players.entries()) {
       const saved = army[p.char];
@@ -159,9 +161,9 @@ class Battle {
       this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: anchorLv + (e.boss ? 2 : 0) }));
     }
     this.anchorLv = anchorLv; // 증원 유닛도 동일 앵커(보스 가산 없음)
-    const rf = reinforceFor(stage.id, cycle);
+    const rf = reinforceFor(stage.id, cycle, this.faction);
     this.pendingReinforce = rf ? { atTurn: rf.atTurn, units: rf.units.map(u => ({ ...u })) } : null; // 전투 변형(증원) — 미출현 목록, 전멸 승리 판정에 포함하지 않음
-    this.defense = defenseFor(stage.id, cycle); // 전투 변형(거점 사수) — 적 점거 시 패배
+    this.defense = defenseFor(stage.id, cycle, this.faction); // 전투 변형(거점 사수) — 적 점거 시 패배
   }
 
   spawnReinforce() { // 증원 출현: 아군 페이즈 개시(턴 진행)와 함께 배치 — 첫 행동은 다음 적 페이즈(아군 대응 기회 보장)
@@ -179,7 +181,7 @@ class Battle {
           if (free(probe, spec.x + dx, spec.y + dy)) { spot = { x: spec.x + dx, y: spec.y + dy }; break outer; }
         }
       }
-      if (spot) { probe.x = spot.x; probe.y = spot.y; this.units.push(probe); this.log.push(`적의 증원 도착: ${probe.name}(${REINFORCEMENTS[this.stage.id].dir})`); }
+      if (spot) { probe.x = spot.x; probe.y = spot.y; this.units.push(probe); const rfT=(REINFORCEMENTS[this.faction]||{})[this.stage.id]||{}; this.log.push(`적의 증원 도착: ${probe.name}(${rfT.dir||'적 후방'})`); } // 세력별 테이블 키 — 없으면 방향 표기 생략
       else remain.push(spec);
     }
     this.pendingReinforce = remain.length ? { atTurn: this.turn + 1, units: remain } : null;
@@ -386,7 +388,7 @@ class Battle {
       if (boss && (boss.hp <= 0 || boss.routed)) { this.over = { win: true, reason: `${boss.name} 격파! 승리!` }; return; }
     } else if (this.alive('enemy').length === 0) { this.over = { win: true, reason: '적 전멸! 승리!' }; return; }
     const cmdr = this.units.find(u => u.commander);
-    if (!cmdr || cmdr.hp <= 0 || cmdr.routed) { this.over = { win: false, reason: '유비가 쓰러졌다...' }; return; }
+    if (!cmdr || cmdr.hp <= 0 || cmdr.routed) { this.over = { win: false, reason: cmdr && cmdr.name && cmdr.name !== '유비' ? `${cmdr.name}이(가) 쓰러졌다...` : '유비가 쓰러졌다...' }; return; } // 지휘관 이름 사용 — 유비군 문구는 기존과 동일 유지
     if (this.alive('player').length === 0) { this.over = { win: false, reason: '전군 궤멸...' }; }
   }
 
@@ -413,6 +415,7 @@ class Battle {
     // 이미 사거리 안 적이 있으면 공격
     let targets = this.targetsFor(u);
     // 주군 보호: 아군 오토에서 유비는 위협 범위 밖에 머묾 (다른 아군이 있을 때만)
+    // ※ commander 플래그 일반화(조조 보호)는 실측 회귀: 조조군 c1 AUTO 시도손실 증가(5회/3런)로 되돌림 — 조조군 오토는 전투 참여형이 유리
     const isLord = u.side === 'player' && u.charId === 'liu_bei' && friends.length > 1;
     const reach = f => { const cf = classOf(f); return cf.move + this.rngOf(f)[1]; };
     const safeAt = (x, y) => foes.every(f => Math.abs(x - f.x) + Math.abs(y - f.y) > reach(f));
@@ -495,3 +498,4 @@ class Battle {
     }
   }
 }
+

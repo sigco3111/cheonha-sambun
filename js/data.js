@@ -67,36 +67,57 @@ function promoOptions(clsId) { const c = CLASSES[clsId]; if (!c) return []; cons
 function weatherFor(stageId, cycle) { return (cycle >= 2 && (stageId + cycle) % 3 === 0) ? 'rain' : null; }
 const WEATHER = { rain: { name: '비', note: '화계 불가 · 궁병 사거리 -1(양측)' } };
 // 전투 변형(증원): 2회차부터 일부 전투(v1: 제2·8·9전)에 지정 턴 적 증원 출현 — 날씨(%3==0)와 회전 배정해 전투당 변형 최대 1종, 결정론(저장 추가 없음)
+// 세력별 테이블: 스테이지 id가 세력 간에 겹치므로(유비 1-9·조조 1-3) 세력 키로 분리 — 공용 의도 항목만 같은 좌표를 세력별로 복제
 const REINFORCEMENTS = {
-  2: { atTurn: 3, dir: '동쪽', units: [ { char: 'soldier_i', x: 11, y: 3 }, { char: 'soldier_i', x: 11, y: 5 } ] },
-  8: { atTurn: 3, dir: '동쪽', units: [ { char: 'soldier_i', x: 11, y: 3 }, { char: 'soldier_i', x: 12, y: 3 } ] },
-  9: { atTurn: 4, dir: '남동쪽', units: [ { char: 'lu_soldier', x: 11, y: 6 }, { char: 'lu_soldier', x: 12, y: 6 } ] },
+  liu: {
+    2: { atTurn: 3, dir: '동쪽', units: [ { char: 'soldier_i', x: 11, y: 3 }, { char: 'soldier_i', x: 11, y: 5 } ] },
+    8: { atTurn: 3, dir: '동쪽', units: [ { char: 'soldier_i', x: 11, y: 3 }, { char: 'soldier_i', x: 12, y: 3 } ] },
+    9: { atTurn: 4, dir: '남동쪽', units: [ { char: 'lu_soldier', x: 11, y: 6 }, { char: 'lu_soldier', x: 12, y: 6 } ] },
+  },
+  cao: { // 조조 ② 연주 탈환: 여포군 측 증원 — 유비 테이블의 soldier_i(황건/잡병)를 섞지 않는다
+    2: { atTurn: 3, dir: '동쪽', units: [ { char: 'lu_soldier', x: 11, y: 3 }, { char: 'lu_soldier', x: 11, y: 5 } ] },
+    4: { atTurn: 4, dir: '동쪽', units: [ { char: 'yuan_soldier', x: 12, y: 2 }, { char: 'yuan_soldier', x: 12, y: 5 } ] }, // 조조 ④ 관도: 원소군 예비대
+  },
 };
-function reinforceFor(stageId, cycle) {
+REINFORCEMENTS[2] = REINFORCEMENTS.liu[2]; REINFORCEMENTS[8] = REINFORCEMENTS.liu[8]; REINFORCEMENTS[9] = REINFORCEMENTS.liu[9]; // 구 엔진 호환 별칭: 구 engine이 REINFORCEMENTS[id]를 직접 읽어도 유비 항목으로 안전 동작(같은 객체 참조 — 이중 관리 아님). 신 엔진은 세력 네임스페이스만 읽는다
+function reinforceFor(stageId, cycle, faction) {
   if (cycle < 2 || (stageId + cycle) % 3 !== 1) return null; // 비는 %3==0, 변형 없음은 %3==2
-  return REINFORCEMENTS[stageId] || null; // v1은 표에 있는 전투만(일부 전투 적용)
+  const table = REINFORCEMENTS[faction || 'liu'] || null; // 세력 테이블 없으면 변형 없음(유비 폴백 금지 — 타 세력 전장 오염 방지)
+  return (table && table[stageId]) || null;
 }
 // 전투 변형(거점 사수): 2회차부터 일부 전투(v1: 제8·9전)에 방어 목표 — 적이 거점 타일을 점거하면 패배. 날씨(%3==0)·증원(%3==1)과 회전 배정해 전투당 변형 최대 1종, 결정론
 const DEFENSE_POINTS = {
-  8: { x: 1, y: 3, name: '서쪽 관문' },
-  9: { x: 2, y: 2, name: '북쪽 마을' },
+  liu: {
+    8: { x: 1, y: 3, name: '서쪽 관문' },
+    9: { x: 2, y: 2, name: '북쪽 마을' },
+  },
+  cao: {}, // 조조군은 공격측 전장이라 거점 사수 미적용 — 별도 설계 전까지 의도적 비움
 };
-function defenseFor(stageId, cycle) {
+function defenseFor(stageId, cycle, faction) {
   if (cycle < 2 || (stageId + cycle) % 3 !== 2) return null;
-  return DEFENSE_POINTS[stageId] || null; // v1은 표에 있는 전투만(일부 전투 적용)
+  const table = DEFENSE_POINTS[faction || 'liu'] || null;
+  return (table && table[stageId]) || null;
 }
 
 // 전투 변형(배치 변주): 2회차부터 일부 전투(v1: 제3·5·7전)에 아군 초기 배치 변형 — 거점사수 슬롯(%3==2) 중 거점 미등록 전투에만 배정해 날씨(%3==0)·증원(%3==1)과 전투당 변형 최대 1종 유지, 결정론(저장 추가 없음)
 // v1은 아군 좌표만 변형(적 배치·char 집합·commander 동일). 좌표는 전 병종 통과 가능 지형만 사용 — 선택 편성의 대체 장수 병종이 달라도 엔진이 유닛별 통행 가능·점유를 재확인하고 부적합 시 해당 유닛만 기존(v1) 좌표로 되돌림
 const DEPLOY_VARIANTS = {
-  3: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
-  5: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
-  7: [ { name: '남쪽 전개', players: { liu_bei: [1,6], guan_yu: [2,7], zhang_fei: [2,5], jian_yong: [1,5], sun_qian: [3,7], mi_zhu: [1,4] } } ],
+  liu: {
+    3: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
+    5: [ { name: '북쪽 전개', players: { liu_bei: [1,3], guan_yu: [2,2], zhang_fei: [2,4], jian_yong: [0,3], sun_qian: [0,5], mi_zhu: [1,2] } } ],
+    7: [ { name: '남쪽 전개', players: { liu_bei: [1,6], guan_yu: [2,7], zhang_fei: [2,5], jian_yong: [1,5], sun_qian: [3,7], mi_zhu: [1,4] } } ],
+  },
+  cao: { // 조조 ③ 하비 포위: 남쪽 문 돌파 축의 전개 — 좌표는 조조 ③ 맵의 평지·연결성 기준(엔진이 통행·점유 재검증, 부적합 시 원본 폴백)
+    3: [ { name: '남쪽 전개', players: { cao_cao: [1,6], xiahou_dun: [2,7], xiahou_yuan: [3,7], cao_ren: [1,7], yue_jin: [2,6], xun_yu: [1,5] } } ],
+    4: [ { name: '북쪽 전개', players: { cao_cao: [1,2], xiahou_dun: [2,1], xiahou_yuan: [3,2], cao_ren: [1,1], yue_jin: [2,2], xun_yu: [1,3] } } ], // 조조 ④ 관도: 북쪽 다리 축 선점 — 좌표는 ④ 맵의 평지 기준
+  },
 };
-function deployVarFor(stageId, cycle) {
+function deployVarFor(stageId, cycle, faction) {
   if (cycle < 2 || (stageId + cycle) % 3 !== 2) return null; // 거점사수 슬롯
-  if (DEFENSE_POINTS[stageId]) return null; // 거점이 있는 전투는 거점사수 유지
-  const vs = DEPLOY_VARIANTS[stageId];
+  const f = faction || 'liu';
+  const dp = DEFENSE_POINTS[f] || {};
+  if (dp[stageId]) return null; // 거점이 있는 전투는 거점사수 유지
+  const vs = (DEPLOY_VARIANTS[f] || {})[stageId];
   return (vs && vs.length) ? vs[(stageId + cycle) % vs.length] : null;
 }
 
@@ -144,6 +165,13 @@ const CHARS = {
   guan_hai: { name: '관해', cls: 'infantry',   hp: 98, mp: 15, atk: 29, def: 21, int: 9,  spd: 18, morale: 95 },
   taishi_ci:{ name: '태사자', cls: 'archer',    hp: 86, mp: 15, atk: 29, def: 14, int: 10, spd: 24, morale: 90 }, // 손건과 교환관계: 공+3·속+2 vs 방-3·지-8·MP-10·사기-10(단순 상위호환 아님)
   zhou_cang:{ name: '주창', cls: 'cavalry',     hp: 100, mp: 20, atk: 30, def: 23, int: 14, spd: 22, morale: 95 }, // 장비와 교환관계: 방+1·지+4·속+3·MP+5 vs HP-10·공-4·사기-5(단순 상위호환 아님)
+  // 조조군 (세력 슬라이스 — 스탯은 유비군 대응 초안, 균형 미검증. 지모·MP를 낮추고 물리 능력을 올린 방향)
+  cao_cao:    { name: '조조',   cls: 'infantry',   hp: 95, mp: 35, atk: 24, def: 21, int: 24, spd: 17, morale: 100, tactics: ['intimidate'] },
+  xiahou_dun: { name: '하후돈', cls: 'cavalry',    hp: 108, mp: 15, atk: 33, def: 23, int: 9,  spd: 21, morale: 100 },
+  xiahou_yuan:{ name: '하후연', cls: 'cavalry',    hp: 100, mp: 15, atk: 31, def: 20, int: 11, spd: 23, morale: 100 },
+  cao_ren:    { name: '조인',   cls: 'infantry',   hp: 100, mp: 20, atk: 23, def: 24, int: 14, spd: 16, morale: 100 },
+  yue_jin:    { name: '악진',   cls: 'archer',     hp: 82, mp: 25, atk: 26, def: 16, int: 12, spd: 23, morale: 100 },
+  xun_yu:     { name: '순욱',   cls: 'strategist', hp: 74, mp: 60, atk: 12, def: 13, int: 33, spd: 15, morale: 100, tactics: ['fire','heal'] },
   // 적 장수
   cheng:    { name: '정원지', cls: 'infantry',   hp: 95, mp: 10, atk: 25, def: 18, int: 8,  spd: 14, morale: 90 },
   deng:     { name: '등무',   cls: 'infantry',   hp: 88, mp: 10, atk: 22, def: 16, int: 8,  spd: 13, morale: 85 },
@@ -160,9 +188,17 @@ const CHARS = {
   soldier_c:{ name: '동탁 기병', cls: 'cavalry',  hp: 85, mp: 5, atk: 25, def: 18, int: 5, spd: 17, morale: 85 },
   dong_elite:{ name: '동탁 친위병', cls: 'infantry', hp: 95, mp: 5, atk: 28, def: 22, int: 5, spd: 14, morale: 88 },
   chen_gong:{ name: '진궁',   cls: 'strategist', hp: 90, mp: 65, atk: 16, def: 17, int: 33, spd: 15, morale: 95, tactics: ['fire','heal'] },
+  lu_bu_siege:{ name: '여포', cls: 'cavalry', hp: 150, mp: 20, atk: 36, def: 26, int: 8, spd: 26, morale: 85 }, // 하비 포위전 전용: 수공·장기 포위로 지친 상태(198 설정). 본래 스탯의 여포는 ②연주·유비 루트에서 그대로 사용
   lu_elite: { name: '여포 친위기병', cls: 'cavalry',  hp: 95, mp: 5, atk: 29, def: 21, int: 5, spd: 18, morale: 90 },
   lu_soldier:{ name: '여포군 보병', cls: 'infantry', hp: 78, mp: 5, atk: 23, def: 16, int: 5, spd: 14, morale: 85 },
   lu_archer:{ name: '여포군 궁수', cls: 'archer',   hp: 70, mp: 5, atk: 25, def: 14, int: 5, spd: 16, morale: 85 },
+  yuan_shao:{ name: '원소', cls: 'infantry',   hp: 165, mp: 30, atk: 29, def: 24, int: 20, spd: 13, morale: 100, tactics: ['cheer'] }, // 명문 출신 총대장 설정 — 실측 보스 결전이 조조-원소 소모전(조조 타격 1-6/피격 16-27, 순욱 치유 의존)으로 변동성이 커 공·방 하향
+  yan_liang:{ name: '안량', cls: 'cavalry',    hp: 135, mp: 10, atk: 35, def: 24, int: 8,  spd: 23, morale: 95 }, // 여포(44)·화웅(36) 아래의 강장 수치 — 39 초안은 문추와의 동시 집중 시 조조가 2-3라운드에 붕괴하는 실측 패턴
+  wen_chou: { name: '문추', cls: 'cavalry',    hp: 130, mp: 10, atk: 34, def: 23, int: 8,  spd: 23, morale: 95 },
+  ju_shou:  { name: '저수', cls: 'strategist', hp: 90,  mp: 65, atk: 16, def: 17, int: 34, spd: 15, morale: 95, tactics: ['heal'] }, // 관도 설정상 원소측 간언 참모 — 화계 일격에 지휘관이 무너지는 실측 패배 경로(저수 화계 70) 제거, 치유 지원형으로 보스전 지연
+  yuan_elite:{ name: '원소 친위병', cls: 'infantry', hp: 100, mp: 5, atk: 30, def: 23, int: 5, spd: 14, morale: 90 },
+  yuan_soldier:{ name: '원소군 보병', cls: 'infantry', hp: 82, mp: 5, atk: 24, def: 17, int: 5, spd: 14, morale: 85 },
+  yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
 };
 
 // 스테이지: 오리지널 맵/배치/대사. 맵 문자 -> TERRAIN 키
@@ -206,6 +242,7 @@ const STAGES = [
     id: 2, name: '제2전 · 광종 공방', maxTurns: 24,
     briefing: '황건의 본거지 광종. 강을 사이에 두고 적진이 버틴다. 다리를 확보하고 배원소의 궁수진을 무너뜨려라. 남쪽 적 보급고를 점령하면 추가 전리품을 얻는다(승리 시 획득).',
     victory: '적 전멸', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 14, gold: 400 }, // AUTO 자연 완주 9표본 9~10턴(통상 9) + 여유 — ①5턴/③6턴 사이 골드
     treasure: { x: 10, y: 8, gold: 500, items: ['ore'] },
     map: [
       'MMMMMMMMMMMMMM',
@@ -281,6 +318,7 @@ const STAGES = [
     id: 4, name: '제4전 · 호로관의 귀신', maxTurns: 28,
     briefing: '마침내 호로관. 관 앞에 선 자는 천하의 여포다. 무리한 정면 승부는 금물. 지형을 쓰고, 사기를 모으고, 귀신을 꺾어라. 관 북쪽 무기고를 점령하면 추가 전리품을 얻는다(승리 시 획득).',
     victory: '여포 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'lu_bu',
+    fastWin: { turns: 6, gold: 700 }, // AUTO 자연 완주 9표본 3~4턴(통상 3) + 여유 — ③600/⑥800 사이 골드
     treasure: { x: 10, y: 1, gold: 600, items: ['manual'] },
     map: [
       'MMMMMMMMMMMMMM',
@@ -317,6 +355,7 @@ const STAGES = [
     id: 5, name: '제5전 · 낙양 공성전', maxTurns: 30,
     briefing: '호로관이 무너지고 동탁은 낙양에서 최후의 저항을 준비한다. 성벽을 관문으로 돌파하고, 성내의 이점을 지닌 동탁을 꺾어라. 보물창고를 점령하면 추가 전리품을 얻는다(승리 시 획득).',
     victory: '동탁 격파', defeat: '유비 전사 또는 턴 초과', bossChar: 'dong_zhuo',
+    fastWin: { turns: 12, gold: 700 }, // AUTO 자연 완주 9표본 통상 6~8턴(드문 정체 17턴 1회) + 여유 — ⑥⑦과 동일 목표
     treasure: { x: 12, y: 2, gold: 800, items: ['jade'] },
     map: [
       'MMMMMMMMMMMMMM',
@@ -506,9 +545,179 @@ const STAGES = [
     rewards: { gold: 5000, items: ['meat','ore','ore','tonic','manual'], exp: 210 },
   },
 ];
+// 조조군 전역 3전 (세력 슬라이스). 전투 자체는 실제 역사(192 연주 황건 토벌·194~195 연주 탈환·198 하비)를 근거로 하되, 맵·배치·목표·대사는 창작.
+// ③하비 포위는 유비군 제9전과 같은 전투를 조조군 측 시점으로 다루며, 맵 지형은 공유하고 배치·브리핑만 조조군 기준으로 작성.
+const CAO_STAGES = [
+  {
+    id: 1, name: '제1전 · 연주 황건 토벌', maxTurns: 20,
+    briefing: '192년, 연주로 밀려든 황건 잔당 수십만을 조조가 토벌에 나선다. 이들을 격파하고 항복을 받아내면 정예 청주병의 씨앗이 된다. 강줄기를 건너 적진을 와해하라.',
+    victory: '적 전멸', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 6, gold: 250 },
+    map: [
+      'MMMMMMMMMMMM',
+      'M..FF....WWM',
+      'M..FF..~~~.M',
+      ',,...~~~~..M',
+      ',,.~~~~..F.M',
+      ',,.~~...FF.M',
+      'M...~..F...M',
+      'M.W......V.M',
+      'M.WW...F...M',
+      'MMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'cao_cao', x: 1, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 2, y: 3 },
+      { char: 'xiahou_yuan', x: 2, y: 5 },
+      { char: 'cao_ren', x: 1, y: 3 },
+      { char: 'yue_jin', x: 1, y: 5 },
+      { char: 'xun_yu', x: 0, y: 4 },
+    ],
+    enemies: [
+      { char: 'cheng', x: 9, y: 4, boss: true, ai: 'hold' },
+      { char: 'deng', x: 8, y: 3, ai: 'aggressive' },
+      { char: 'soldier_i', x: 8, y: 5, ai: 'aggressive' },
+      { char: 'soldier_a', x: 9, y: 6, ai: 'hold' },
+      { char: 'soldier_i', x: 7, y: 4, ai: 'aggressive' },
+      { char: 'soldier_a', x: 9, y: 2, ai: 'hold' },
+    ],
+    rewards: { gold: 500, items: ['bean','ore','manual'], exp: 30 },
+  },
+  {
+    id: 2, name: '제2전 · 연주 탈환', maxTurns: 24,
+    briefing: '195년, 진궁·장막의 배반으로 연주 대부분이 여포에게 넘어갔다. 서주 원정에서 되돌아온 조조가 복양 들판에서 여포군과 맞붙는다. 기병의 기동을 살려 측면을 찌르고 진궁의 계략을 끊어라.',
+    victory: '적 전멸', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 7, gold: 400 },
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M...F....B...M',
+      'M....FF..FF..M',
+      ',,..F..~~..F.M',
+      ',,....~~==...M',
+      'M..FF..~~..B.M',
+      'M....FF..FF..M',
+      'M.V...~~.F...M',
+      'M.....~~..F..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'cao_cao', x: 1, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 2, y: 3 },
+      { char: 'xiahou_yuan', x: 2, y: 5 },
+      { char: 'cao_ren', x: 1, y: 3 },
+      { char: 'yue_jin', x: 1, y: 5 },
+      { char: 'xun_yu', x: 0, y: 4 },
+    ],
+    enemies: [ // 여포는 5턴까지 진영 유지(복양에서 출진하는 설정) — 3전 전역의 초반 성장 곡선에서 AUTO조차 지휘관이 4턴에 무너지는 것을 실측으로 확인하고 조정
+      { char: 'lu_bu', x: 10, y: 4, boss: true, ai: 'hold', holdUntil: 5 },
+      { char: 'chen_gong', x: 11, y: 4, ai: 'hold' },
+      { char: 'lu_elite', x: 9, y: 3, ai: 'aggressive' },
+      { char: 'lu_elite', x: 9, y: 5, ai: 'aggressive' },
+      { char: 'lu_soldier', x: 10, y: 2, ai: 'aggressive' },
+      { char: 'lu_archer', x: 10, y: 6, ai: 'hold' },
+      { char: 'lu_archer', x: 11, y: 2, ai: 'hold' },
+    ],
+    rewards: { gold: 800, items: ['rice','ore','iron_sword'], exp: 45 },
+  },
+  {
+    id: 3, name: '제3전 · 하비 포위', maxTurns: 30,
+    briefing: '198년, 조조는 유비와 손잡고 여포가 웅거한 하비를 포위했다. 기수와 사수의 물을 끌어와 성을 적시는 수공이 시작된다. 서쪽 관문이나 남쪽 문을 돌파해 성으로 밀고 들어가 천하의 귀신을 끝장내라. 남쪽 보급고를 점령하면 추가 전리품을 얻는다(선택, 승리 시 획득).',
+    victory: '여포 격파', defeat: '조조 전사 또는 턴 초과', bossChar: 'lu_bu_siege',
+    bossDrop: 'plate',
+    fastWin: { turns: 14, gold: 1200 },
+    treasure: { x: 10, y: 6, gold: 1600, items: ['manual'] },
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M...F....#CC#M',
+      'M.V..~~..#CC#M',
+      'M....~~..GCC#M',
+      'M.FF.==..#CC#M',
+      'M.FF.~~..##G#M',
+      'M....~~...T..M',
+      'M..B.....FF..M',
+      'M......FF....M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [
+      { char: 'cao_cao', x: 2, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 3, y: 3 },
+      { char: 'xiahou_yuan', x: 3, y: 5 },
+      { char: 'cao_ren', x: 1, y: 3 },
+      { char: 'yue_jin', x: 2, y: 6 },
+      { char: 'xun_yu', x: 1, y: 5 },
+    ],
+    enemies: [ // 유비군 제9전보다 수비대 축소(8→6) + 여포는 4턴 대기: 수공으로 성이 물러질 때까지의 시간을 두는 설정 — 3전 전역의 성장 곡선에 맞춘 난이도 조정
+      { char: 'lu_bu_siege', x: 10, y: 2, boss: true, ai: 'hold', holdUntil: 4 },
+      { char: 'chen_gong', x: 11, y: 1, ai: 'hold' },
+      { char: 'lu_elite', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'lu_soldier', x: 10, y: 3, ai: 'aggressive' },
+      { char: 'lu_archer', x: 11, y: 2, ai: 'hold' },
+      { char: 'lu_soldier', x: 10, y: 7, ai: 'hold', holdUntil: 6 },
+    ],
+    rewards: { gold: 3000, items: ['meat','ore','tonic','manual'], exp: 150 },
+  },
+  {
+    id: 4, name: '제4전 · 관도 대전', maxTurns: 28,
+    briefing: '200년, 북중원의 패자 원소가 대군을 이끌고 남하해 관도에서 조조군과 맞선다. 병력은 절대 열세. 선봉 안량·문추의 돌격을 꺾고 북쪽 보급고를 빼앗아 원소 본대의 허를 찔러라. 보급고 점령은 선택이며 승리 시 전리품을 얻는다.',
+    victory: '원소군 격퇴', defeat: '조조 전사 또는 턴 초과', bossChar: 'yuan_shao',
+    bossDrop: 'bulwark',
+    fastWin: { turns: 16, gold: 1500 },
+    treasure: { x: 11, y: 3, gold: 2500, items: ['rice','rice'] }, // 오소 보급기지 습격(200)의 전과를 반영한 선택 목표
+    map: [
+      'MMMMMMMMMMMMMM',
+      'M..F...~~..BBM',
+      'M....V.~~..B.M',
+      'M.....~~...T.M',
+      'M.BB.~~=~~...M',
+      'M.BB.~~...FF.M',
+      'M.....~~..F..M',
+      'M..FF.~~..V..M',
+      'M.V...~~...F.M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 서쪽 관도 진지의 조조군
+      { char: 'cao_cao', x: 1, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 3, y: 3 },
+      { char: 'xiahou_yuan', x: 2, y: 6 },
+      { char: 'cao_ren', x: 1, y: 5 },
+      { char: 'yue_jin', x: 1, y: 6 },
+      { char: 'xun_yu', x: 1, y: 3 },
+    ],
+    enemies: [ // 10만 대군 설정: 적 7 vs 아군 6의 수적 열세(초안 8기는 친위병 2기째가 조조 집중 타격 과다로 축소 — ③ 하비의 수비대 축소 조정과 같은 실측 근거). 안량·문추 선봉 돌격은 백마 전투 전초전을 관도 전역에 압축한 게임 처리(브리핑 문구와 함께 설계 문서에 명시)
+      { char: 'yan_liang', x: 9, y: 3, ai: 'aggressive' }, // 선봉 즉시 돌격(백마 압축 설정)
+      { char: 'wen_chou', x: 9, y: 6, ai: 'aggressive' },
+      { char: 'yuan_elite', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'yuan_archer', x: 11, y: 4, ai: 'hold' },
+      { char: 'yuan_archer', x: 12, y: 6, ai: 'hold' },
+      { char: 'ju_shou', x: 12, y: 3, ai: 'hold' },
+      { char: 'yuan_shao', x: 12, y: 4, boss: true, ai: 'hold', holdUntil: 5 }, // 본진 대기 — 선봉이 먼저 부딪히는 설정
+    ],
+    rewards: { gold: 4000, items: ['meat','ore','tonic','manual'], exp: 200 },
+  },
+];
+
 
 function buildMap(pattern) {
   return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
 }
 
 const SHOP = ['heavy_blade', 'famed_sword', 'plate', 'counter_blade', 'bulwark', 'training_charm', 'bean', 'rice', 'meat', 'tonic']; // 정비 상점 판매 품목 (장비 + 소모품 — 회복 도구의 구매 경로)
+
+
+// 세력 정의. 새 세력 추가 시 need(필수 군단)·stages(전역 목록)·roster(초기 편성)를 함께 정의.
+const FACTIONS = {
+  liu: {
+    name: '유비군',
+    need: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], // 손상 가드 기준 필수 장수
+    roster: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], // 새 게임 초기 군단
+    stages: STAGES, // 기존 9전 그대로
+    initEquip: { liu_bei: 'iron_sword', guan_yu: 'spear', zhang_fei: 'spear', sun_qian: 'bow', jian_yong: 'fan' }, // 새 게임 초기 장비 (미축은 무장 없음 — 기존 동작 유지)
+  },
+  cao: {
+    name: '조조군',
+    need: ['cao_cao', 'xiahou_dun', 'xiahou_yuan', 'cao_ren', 'yue_jin', 'xun_yu'],
+    roster: ['cao_cao', 'xiahou_dun', 'xiahou_yuan', 'cao_ren', 'yue_jin', 'xun_yu'],
+    stages: CAO_STAGES, // 조조군 전역 4전
+    initEquip: { cao_cao: { weapon: 'iron_sword', armor: 'leather' }, xiahou_dun: 'spear', xiahou_yuan: 'spear', yue_jin: 'bow', xun_yu: 'fan' }, // 유비군과 동일 규칙: 지휘관 검·기병 창·궁수 활·모사 부채, 조인은 무장 없음(미축 대응) + 조조군 전용: 지휘관 가죽 갑옷 — 3전 단축 전역은 ③에서 강적이 바로 나와 무장만으로는 지휘관 생존이 불안정(실측 패배 경로 = 무방비 지휘관 전사). 유비군 규칙은 변경하지 않음
+  },
+};

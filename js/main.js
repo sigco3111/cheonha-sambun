@@ -7,6 +7,30 @@ window.addEventListener('load', () => {
   loadImages(() => {
     Game.renderTitle();
 
+    const startNewGame = (fId) => { Game.initArmy(fId); Game.resetRun(); Game.save(); Game.renderBriefing(); };
+    const pickFaction = () => {
+      // 세력 선택은 새 게임 경로에서만 — 이어하기·전투 중에는 세력을 바꾸지 않는다
+      if (document.getElementById('title-faction-pick')) return;
+      const div = document.createElement('div');
+      div.id = 'title-faction-pick';
+      const head = document.createElement('div');
+      head.innerHTML = '<b>세력 선택</b>';
+      div.appendChild(head);
+      for (const fId of Object.keys(FACTIONS)) {
+        const f = FACTIONS[fId];
+        const b = document.createElement('button');
+        b.className = 'primary'; b.id = 'btn-faction-' + fId;
+        b.style.wordBreak = 'keep-all'; // 한글 어절 중간 줄바꿈 방지 (장수명 갈라짐)
+        b.textContent = `${f.name} · ${f.stages.length}전 (${f.roster.map(id => CHARS[id].name).join('·')})`;
+        b.onclick = () => { div.remove(); startNewGame(fId); };
+        div.appendChild(b); div.appendChild(document.createTextNode(' '));
+      }
+      const no = document.createElement('button'); no.textContent = '취소';
+      no.style.wordBreak = 'keep-all';
+      no.onclick = () => div.remove();
+      div.appendChild(no);
+      document.getElementById('screen-title').appendChild(div);
+    };
     document.getElementById('btn-new').onclick = () => {
       // 손상 세이브 감지 상태에서의 새 게임은 원본 덮어쓰기 — 확인/취소 1회 (정상 신규는 확인 없음)
       if (Game._corruptSave && !document.getElementById('title-overwrite-confirm')) {
@@ -16,17 +40,14 @@ window.addEventListener('load', () => {
         const ok = document.createElement('button'); ok.textContent = '덮어쓰고 새 게임'; ok.className = 'primary';
         const no = document.createElement('button'); no.textContent = '취소';
         no.onclick = () => div.remove();
-        ok.onclick = () => { div.remove(); Game._corruptSave = false; Game.initArmy(); Game.resetRun(); Game.save(); Game.renderBriefing(); };
+        ok.onclick = () => { div.remove(); Game._corruptSave = false; pickFaction(); };
         const row = document.createElement('div'); row.className = 'btnrow';
         row.appendChild(ok); row.appendChild(no);
         div.appendChild(row);
         document.getElementById('screen-title').appendChild(div);
         return;
       }
-      Game.initArmy();
-      Game.resetRun();
-      Game.save();
-      Game.renderBriefing();
+      pickFaction();
     };
     document.getElementById('btn-continue').onclick = () => {
       if (Game.load()) Game.renderBriefing();
@@ -43,6 +64,7 @@ window.addEventListener('load', () => {
       if (ev.currentTarget.disabled) return;
       ev.currentTarget.disabled = true;
       Game.cycle++; Game.stageIndex = 0;
+      Game.records.deaths = 0; // 회차 경계: 전사자 집계는 회차별 판정 — 새 회차는 0부터 (구 세이브 미상(undefined)도 여기서 확정 0)
       Game._cycleBonus = [];
       if (typeof Game.applyCycleBonus === 'function') Game.applyCycleBonus(); // 회차별 지급 이력으로 1회 보장(구 ui 혼합 시 생략. 전파 후 브리핑에서 보완)
       Game.save(); Game.renderBriefing();
@@ -122,7 +144,7 @@ window.addEventListener('load', () => {
     // 헤드리스 테스트: ?auto=1&battle=N&fast=1&result=1
     const q = new URLSearchParams(location.search);
     if (q.get('auto')) {
-      Game.initArmy();
+      Game.initArmy(q.get('faction') || undefined); // 테스트 전용 세력 지정 (미지정 시 기본 유비군 — 기존 동작)
       if (q.get('level')) { // 테스트용 성장 주입
         const lv = +q.get('level');
         for (const id of Object.keys(Game.army)) {

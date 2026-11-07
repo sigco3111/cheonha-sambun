@@ -1,0 +1,183 @@
+/* 천하삼분 UI 재설계 시안 (?ui=2 전용 실험 오버라이드 — 게임 규칙·로직 변경 없음)
+   방향: 전장과 장수 정보가 중심, 설명·설정은 필요할 때 여는 구조 */
+#app { padding: 6px; }
+.screen { gap: 6px; min-height: 0; }
+h2 { font-size: 18px; }
+p { line-height: 1.5; }
+.dim { font-size: 12px; }
+
+/* ── 전투: 지도 풀화면 + 플로팅 조작 ── */
+#screen-battle { height: calc(100vh - 12px); padding-bottom: 64px; overflow: hidden; }
+/* 헤더: 한 줄 슬림 (전투명 · 턴 · 지형) */
+#battle-top { gap: 4px 8px; align-items: center; font-size: 12px; flex-wrap: wrap; }
+#hud-stage { font-size: 15px; font-weight: bold; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hud-turn { font-size: 12px; color: #a89f93; flex: 0 0 auto; }
+#hud-terrain { display: none; } /* 지형 정보는 타일 탭 시 로그 스트립에서 확인 */
+#hud-terrain:empty { display: none; }
+#battle-top .dim, #battle-top > span.dim { display: none; } /* 자동전투 안내: 로그 스트립에서 확인 */
+/* 줌·속도: 지도 위 플로팅 (반투명, 44px 히트영역) */
+#battle-main { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; flex-direction: column; display: flex; padding-bottom: 60px; }
+#battle-wrap { flex: 0 0 auto; position: relative; }
+/* 줌·속도: 헤더 2행 조작 스트립(지도를 가리지 않음, 44px 터치) */
+#zoom-controls { flex: 0 0 auto; gap: 4px; padding: 0; margin-left: auto; }
+#zoom-controls button { padding: 4px 6px; font-size: 13px; min-height: 44px; min-width: 44px; }
+#zoom-label { font-size: 12px; min-width: 40px; align-self: center; text-align: center; }
+#btn-speed { flex: 0 0 auto; padding: 4px 10px; font-size: 13px; min-height: 44px; min-width: 44px; }
+/* 하단 정보층: 유닛 카드 + 로그(남은 공간 채움) */
+#battle-bottom { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; margin: 6px; width: auto; }
+#unit-info { font-size: 12px; line-height: 1.5; padding: 8px 10px; background: rgba(38,34,29,.94); border-left: 3px solid #a98c4f; border-radius: 4px; max-height: 30vh; overflow-y: auto; flex: 0 0 auto; }
+#unit-info::first-line { font-weight: bold; font-size: 14px; color: #f0d9a8; }
+#unit-info:empty { display: none; }
+#battle-log { font-size: 11px; line-height: 1.5; padding: 5px 8px; flex: 1 1 auto; min-height: 26px; overflow-y: auto; background: rgba(38,34,29,.9); cursor: pointer; }
+#battle-log.ui2-open { height: auto; max-height: 38vh; overflow-y: auto; }
+#target-detail { max-height: 30vh; overflow-y: auto; }
+#target-detail .td-row { padding: 10px; font-size: 14px; }
+/* 하단 조작 바 */
+#btn-auto, #btn-endturn { position: fixed; bottom: 8px; z-index: 30; padding: 12px 0; width: calc(50% - 12px); font-size: 15px; box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+#btn-auto { left: 6px; } #btn-endturn { right: 6px; }
+#turn-banner { padding: 6px 10px; font-size: 14px; max-width: 78vw; }
+/* 데스크톱은 기존 옆패널 유지 */
+@media (min-width: 761px) {
+  #battle-main { flex-direction: row; }
+  #battle-wrap { flex: 1 1 auto; max-height: 78vh; }
+  #battle-bottom { position: static; flex: 0 0 300px; }
+  #battle-log { height: auto; max-height: 46vh; overflow-y: auto; }
+  #zoom-controls, #btn-speed { position: static; }
+  #screen-battle { height: auto; overflow: visible; }
+  #btn-auto, #btn-endturn { position: static; width: auto; box-shadow: none; }
+}
+
+/* ── 브리핑·결과·완주: 목표 중심 + 설명 접기 + 하단 고정 조작 ── */
+#brief-text.ui2-clamp, #complete-text.ui2-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ui2-more { background: none; border: none; color: #a89f93; font-size: 12px; padding: 2px 0; text-decoration: underline; }
+#brief-conditions { background: #26221d; border-left: 3px solid #a98c4f; border-radius: 4px; padding: 8px 10px; font-size: 13px; line-height: 1.55; width: 100%; }
+#brief-conditions::before { content: '목표'; display: block; font-weight: bold; color: #f0d9a8; font-size: 12px; margin-bottom: 2px; }
+#brief-deploy { width: 100%; }
+#brief-deploy button { padding: 5px 9px; font-size: 12px; min-height: 40px; }
+#btn-deploy, #btn-next-cycle, #btn-result-next { width: 100%; padding: 13px; font-size: 16px; position: sticky; bottom: 8px; z-index: 20; box-shadow: 0 2px 10px rgba(0,0,0,.45); }
+#btn-base { width: 100%; }
+#epilogue-choice .dim.ui2-clamp, #support-box .dim.ui2-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ── 결과·완주·정비 화면 v7 ── */
+#screen-result, #screen-complete { justify-content: flex-start; padding-top: 4vh; gap: 8px; }
+#screen-result h2 { font-size: 30px; margin: 0 0 6px; }
+#result-text, #complete-text { background: #26221d; border-left: 3px solid #a98c4f; border-radius: 4px; padding: 10px 12px; font-size: 14px; line-height: 1.6; width: 100%; text-align: left; }
+#btn-result-next, #btn-next-cycle { position: sticky; bottom: 8px; }
+#btn-retry { width: 100%; padding: 12px; font-size: 14px; }
+#screen-base h2 { font-size: 20px; margin: 0 0 4px; }
+#screen-base > p { font-size: 13px; color: #a89f93; margin: 0 0 8px; }
+#base-units { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+#base-units > div { background: #26221d; border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+#btn-base-done { width: 100%; padding: 13px; font-size: 16px; margin-top: 10px; }
+
+/* 완주 화면 후일담 패널 카드화 */
+#epilogue-choice { background: #26221d; border-left: 3px solid #a98c4f; border-radius: 4px; padding: 10px 12px; width: 100%; margin-top: 4px; }
+#epilogue-choice .dim { font-size: 13px; line-height: 1.6; }
+#epilogue-choice button { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
+#screen-complete h1 { margin-top: 0; font-size: 30px; letter-spacing: 2px; }
+
+/* ── v13: 시각 밀도 + 장수 정보 중심 ── */
+/* 장수 카드: 초상 + 상태바 + 능력치 칩 */
+#unit-info { padding: 0; overflow: hidden; border-left: none; background: linear-gradient(160deg, rgba(52,44,34,.97), rgba(34,30,25,.97)); border: 1px solid #4a4034; border-radius: 8px; }
+#unit-info::first-line { font-weight: normal; font-size: inherit; color: inherit; }
+.uc { display: flex; gap: 10px; padding: 8px 10px 6px; align-items: flex-start; }
+.uc-portrait { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 6px; background: #1d1915; border: 1px solid #5a4c38; object-fit: cover; image-rendering: pixelated; }
+.uc-main { flex: 1 1 auto; min-width: 0; }
+.uc-name { font-size: 15px; font-weight: bold; color: #f0d9a8; }
+.uc-name .uc-lv { font-size: 11px; color: #a89f93; font-weight: normal; margin-left: 5px; }
+.uc-cls { display: inline-block; font-size: 10px; color: #0e0c0a; background: #a98c4f; border-radius: 3px; padding: 1px 5px; margin-left: 6px; vertical-align: 1px; }
+.uc-enemy .uc-cls { background: #8f4a3c; color: #f5e9dc; }
+.uc-enemy { border-top: 2px solid #8f4a3c; }
+.uc-ally { border-top: 2px solid #a98c4f; }
+.uc-bar { position: relative; height: 13px; background: #191512; border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.uc-bar > i { display: block; height: 100%; border-radius: 3px; }
+.uc-hp > i { background: linear-gradient(90deg, #5d8f4a, #7cb35f); }
+.uc-hp.low > i { background: linear-gradient(90deg, #a0452f, #c05a3d); }
+.uc-mp > i { background: linear-gradient(90deg, #4a6a8f, #5f87b3); }
+.uc-bar > span { position: absolute; right: 5px; top: 0; font-size: 9px; line-height: 13px; color: #f5efe6; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.uc-morale { font-size: 11px; color: #c8b89a; margin-top: 4px; }
+.uc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px 10px 4px; }
+.uc-stat { background: rgba(20,17,14,.7); border: 1px solid #3d352b; border-radius: 4px; text-align: center; padding: 3px 0 4px; }
+.uc-stat b { display: block; font-size: 14px; color: #f5efe6; }
+.uc-stat s { text-decoration: none; font-size: 9px; color: #8f857a; }
+.uc-trait { padding: 0 10px 8px; font-size: 10px; line-height: 1.5; color: #9a9084; }
+/* 행동 메뉴: 아이콘 그리드 */
+#action-menu { gap: 5px; display: flex; flex-wrap: wrap; width: 168px; background: linear-gradient(160deg, #322b22, #241f19); border: 1px solid #5a4c38; border-radius: 8px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.55); }
+#action-menu button { flex: 1 1 44%; min-height: 44px; font-size: 13px; background: rgba(58,50,40,.9); border: 1px solid #5a4c38; border-radius: 6px; }
+#menu-attack::before { content: '⚔ '; color: #d8a05a; }
+#menu-tactic::before { content: '✦ '; color: #7fa3c8; }
+#menu-item::before { content: '▣ '; color: #9ab87a; }
+#menu-wait::before { content: '⏸ '; color: #a89f93; }
+#action-menu button:disabled { opacity: .35; }
+/* 턴 배지: 진영 색 구분 */
+#hud-turn { padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+#hud-turn.ui2-ally { color: #f0d9a8; background: rgba(169,140,79,.18); border: 1px solid rgba(169,140,79,.5); }
+#hud-turn.ui2-enemy { color: #e8b0a0; background: rgba(143,74,60,.22); border: 1px solid rgba(143,74,60,.55); }
+/* 헤더·조작 스트립 밀도 */
+#screen-battle { background: radial-gradient(1200px 500px at 50% -120px, rgba(169,140,79,.08), transparent); }
+#battle-top { background: linear-gradient(180deg, rgba(38,33,27,.9), rgba(28,24,20,.6)); border-bottom: 1px solid #3d352b; border-radius: 6px; padding: 5px 8px; }
+#zoom-controls button, #btn-speed { background: rgba(52,45,36,.95); border: 1px solid #5a4c38; border-radius: 6px; }
+/* 하단 조작 바 강조 */
+#btn-auto, #btn-endturn { border-radius: 8px; border: 1px solid #5a4c38; background: linear-gradient(180deg, #4a4034, #332c23); }
+#btn-endturn { background: linear-gradient(180deg, #a98c4f, #84683a); color: #16120e; font-weight: bold; border-color: #c8ab6a; }
+/* 목표 카드·결과 카드 아이콘 */
+#brief-conditions::before { content: '⚑ 목표'; }
+#result-text b, #complete-text b { color: #f0d9a8; }
+/* 대상 상세 패널 밀도 */
+#target-detail { background: linear-gradient(160deg, rgba(52,44,34,.97), rgba(34,30,25,.97)); border: 1px solid #4a4034; border-radius: 8px; }
+#target-detail .td-head { font-size: 11px; color: #a89f93; padding: 6px 10px 0; }
+#target-detail .td-row { border-top: 1px solid #3d352b; }
+#target-detail .td-row b { color: #f0d9a8; }
+
+/* ── v14: 결과·타이틀 화면 밀도 ── */
+#screen-result { background: radial-gradient(900px 420px at 50% -80px, rgba(169,140,79,.12), transparent); }
+#result-title { font-size: 34px; letter-spacing: 3px; color: #f0d9a8; text-shadow: 0 2px 12px rgba(169,140,79,.35); margin: 0 0 4px; }
+#result-text { box-shadow: 0 2px 14px rgba(0,0,0,.35); }
+#btn-result-next { background: linear-gradient(180deg, #a98c4f, #84683a); color: #16120e; font-weight: bold; border: 1px solid #c8ab6a; border-radius: 8px; }
+#btn-retry { border-radius: 8px; }
+#screen-title h1 { font-size: 46px; letter-spacing: 8px; color: #f0d9a8; text-shadow: 0 3px 18px rgba(169,140,79,.4); margin-bottom: 2px; }
+#screen-title .dim { letter-spacing: 1px; }
+#screen-title { background: radial-gradient(1000px 500px at 50% -100px, rgba(169,140,79,.14), transparent), linear-gradient(180deg, #221d18, #14110e); }
+#screen-title button { min-height: 46px; border-radius: 8px; }
+#screen-title button.primary, #screen-title #btn-new-cao, #screen-title #btn-new { background: linear-gradient(180deg, #a98c4f, #84683a); color: #16120e; font-weight: bold; border: 1px solid #c8ab6a; }
+/* 정비 화면 카드 헤더 위계 */
+#base-units > div { border: 1px solid #3d352b; background: linear-gradient(160deg, #2c2620, #211d18); }
+#base-units .card-sprite { border-radius: 6px; border: 1px solid #5a4c38; }
+#base-units b { color: #f0d9a8; }
+/* 타이틀 수직 중앙 정렬 */
+#screen-title { justify-content: center; }
+#screen-title h1 { margin-top: 0; }
+#screen-title { min-height: calc(100vh - 12px); }
+
+/* ── v15: 편성 칩·대상 행 초상화 ── */
+#brief-deploy button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; }
+.ui2-chip-pic { width: 26px; height: 26px; border-radius: 4px; image-rendering: pixelated; background: #1d1915; border: 1px solid #5a4c38; }
+#brief-deploy button.primary .ui2-chip-pic { border-color: #e8cf9a; }
+#target-detail .td-row { display: flex; align-items: center; gap: 8px; min-height: 48px; }
+.ui2-row-pic { width: 30px; height: 30px; border-radius: 4px; image-rendering: pixelated; background: #1d1915; border: 1px solid #5a4c38; flex: 0 0 30px; }
+
+/* ── v16: 결과 성과·보상 카드 구분 ── */
+#result-text { background: none; border: none; padding: 0; }
+.rs-line { background: #26221d; border-radius: 6px; padding: 8px 12px; font-size: 13px; line-height: 1.6; margin-bottom: 6px; }
+.rs-line:first-child { font-size: 15px; font-weight: bold; color: #f0d9a8; border-left: 3px solid #a98c4f; }
+.rs-grade { display: flex; align-items: center; gap: 12px; background: #26221d; border: 1px solid #4a4034; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 15px; font-weight: bold; }
+.rs-badge { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: #16120e; font-size: 24px; font-weight: 900; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+.rs-ach { background: rgba(169,140,79,.14); border: 1px solid rgba(169,140,79,.5); border-radius: 6px; padding: 8px 12px; font-size: 13px; margin-bottom: 6px; color: #f0d9a8; }
+.rs-reward { background: #2c2620; border: 1px dashed #a98c4f; border-radius: 6px; padding: 8px 12px; font-size: 13px; line-height: 1.6; color: #e8dcc4; }
+
+/* ── v17: 전투 로그 색상 구분 ── */
+#battle-log .lg-win { color: #f0d9a8; }
+#battle-log .lg-lose { color: #e08a8a; }
+#battle-log .lg-heal { color: #9ab87a; }
+#battle-log .lg-tactic { color: #8fb0d8; }
+#battle-log .lg-morale { color: #c8b89a; }
+
+/* 정비 기록·업적 접기 */
+.ui2-rec-toggle { display:block; width:100%; min-height:44px; margin:4px 0; padding:10px 12px; border:1px solid rgba(240,217,168,.25); border-radius:10px; background:rgba(38,34,29,.9); color:#f0d9a8; font-size:13px; font-weight:700; text-align:left; cursor:pointer; }
+.ui2-rec-body { padding:4px 2px; }
+
+/* 정비 상점 밀도: 2열 그리드 */
+#base-shop { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+#base-shop>b { width:100%; }
+#base-shop>button { flex:1 1 44%; min-width:150px; margin:0; min-height:44px; font-size:12px; padding:8px 10px; }
+#base-shop>div { width:100%; }

@@ -8,7 +8,7 @@ const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry
 // Sprite files renamed on GitHub (web UI upload prefixed them); map sprite keys to actual file basenames.
 const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist', infantry:'new_infantry', enemy_infantry:'new_enemy_infantry'};
 // Individual commander sprites (allied officers); fallback to class sprite when absent.
-const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru','dong_zhuo','li_jue','guo_si'];
+const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru','dong_zhuo','li_jue','guo_si','cao_cao','xiahou_dun','xiahou_yuan','cao_ren','yue_jin','xun_yu','yuan_shao','yan_liang','wen_chou','ju_shou'];
 
 function loadImages(cb) {
   let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length; let done = 0;
@@ -35,38 +35,51 @@ const Game = {
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
   stageIndex: 0, cycle: 1, battlesCleared: 0,
+  factionId: 'liu', route: [], endingHistory: {}, // 세력·전역 분기 이력·엔딩 이력 (구 세이브는 폴백)
   records: { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} }, // 명예 기록(보상 없음): 누적 승리·최단 턴·무사망·최고 등급·업적
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
   fx: [], threatTiles: null, _fxRunning: false,
   delay: (ms) => new Promise(r => setTimeout(r, Game.fast || Game.auto ? 30 : ms / Game.speed)),
 
-  armyComplete(a) { const NEED = ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu']; return !!a && NEED.every(id => !!a[id]); }, // 정상 군단 완전성 술어 (save/load/startBattle 공통)
+  armyComplete(a, fId) { return !!a && this.faction(fId).need.every(id => !!a[id]); }, // 정상 군단 완전성 술어 (save/load/startBattle 공통) — factionId가 누락·미지값이어도 유비 기준으로 폴백해 가드 우회 불가
+  commanderId() { const st = this.stages()[this.stageIndex]; const p = st && st.players && st.players[0]; return p ? p.char : 'liu_bei'; }, // 현재 전투의 지휘관 슬롯 장수 (유비군 9전·조조군 4전 모두 players[0]이 지휘관)
+  faction(fId) { // 세력 정의 조회(기본: 현재 상태). FACTIONS 미로드(구 data 혼합)·미지 factionId 모두 유비 사양으로 폴백
+    const F = (typeof FACTIONS !== 'undefined') ? FACTIONS : null;
+    const id = (fId !== undefined) ? fId : this.factionId;
+    return (F && F[id]) || (F && F.liu) || { name: '유비군', need: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], roster: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], stages: STAGES, initEquip: { liu_bei: 'iron_sword', guan_yu: 'spear', zhang_fei: 'spear', sun_qian: 'bow', jian_yong: 'fan' } }; // FACTIONS 부재(구 data 혼합) 폴백도 initArmy에 필요한 전체 사양을 갖춤
+  },
+  stages() { return this.faction().stages; }, // 현재 세력의 전역 목록 — 기존 STAGES 직접 참조 대신 이 경로 사용
   save() {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared, deploySel: this.deploySel,
       records: this.records, bonusCycle: this.bonusCycle || 0, epilogue: this.epilogue || null, epilogueHistory: this.epilogueHistory || {},
+      factionId: this.factionId || 'liu', route: this.route || [], endingHistory: this.endingHistory || {}, // 미지 factionId는 로드 시 보존된 값이 그대로 기록됨
     }));
   },
   load() {
     const s = localStorage.getItem('cheonha3_save');
     if (!s) return false;
     const d = JSON.parse(s);
-    if (!this.armyComplete(d.army)) { // 손상 세이브: 원본을 바꾸지 않고 로드하지 않음 (자동 복구/초기화는 하지 않음)
+    const fId = d.factionId || 'liu'; // 구 세이브(필드 없음)만 'liu'. 미지 값은 변환하지 않고 보존 — 저장 시 원래 값이 그대로 기록되어 미지 세력 군단을 유비로 자동 재저장하지 않는다
+    if (!this.armyComplete(d.army, fId)) { // 손상 세이브: 원본을 바꾸지 않고 로드하지 않음 (자동 복구/초기화는 하지 않음). 검사는 세이브 자신의 세력 기준, 실패 시 현재 상태 불변
       console.warn('[load 차단] 세이브의 군단 데이터가 비어 있거나 누락됐습니다');
       this._corruptSave = true; this.renderTitle();
       return false;
     }
+    this.factionId = fId;
     this.army = d.army; this.inventory = d.inventory; this.gold = d.gold; this.stageIndex = d.stageIndex;
     this.deploySel = (d.deploySel && Array.isArray(d.deploySel.picks)) ? d.deploySel : null; // 구 세이브(필드 없음)는 기본 편성
     this.cycle = d.cycle || 1;
     this.epilogue = d.epilogue || null; this.epilogueHistory = d.epilogueHistory || {};
+    this.route = Array.isArray(d.route) ? d.route : []; this.endingHistory = (d.endingHistory && typeof d.endingHistory === 'object') ? d.endingHistory : {};
     this.bonusCycle = d.bonusCycle || 0; // 구세이브(필드 없음)는 0. 미지급 회차는 브리핑에서 1회 보완
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
-    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null };
+    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null, deaths: (typeof dr.deaths === 'number') ? dr.deaths : undefined, swiftThis: (dr.swiftThis && typeof dr.swiftThis === 'object' && typeof dr.swiftThis.c === 'number' && dr.swiftThis.ids && typeof dr.swiftThis.ids === 'object') ? dr.swiftThis : null } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null, deaths: 0 }; // swiftThis: 형태 검증 후 보존(구 세이브·오염 값은 null → 다음 승리 시 현재 회차로 재생성)
+
     return true;
   },
   applyCycleBonus() { // 업적 시작 보상: 회차별 지급 이력(bonusCycle)으로 중복 없이 회차당 1회 보장. 구 data 혼합 시 보류(전파 후 자동 재시도)
@@ -83,8 +96,11 @@ const Game = {
     return grants.length > 0;
   },
 
-  initArmy() {
-    for (const id of ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu']) {
+  initArmy(factionId) { // 명시적 새 게임 확정 경로에서만 호출 — load()는 어떤 경우에도 호출하지 않음(손상 세이브 자동 대체 금지)
+    const f = (typeof FACTIONS !== 'undefined' && FACTIONS[factionId]) ? factionId : 'liu';
+    this.factionId = f;
+    this.army = {}; // 명시적 새 게임은 이전 런의 군단(합류 IF 장수·다른 세력)을 남기지 않고 초기화 — load()는 이 경로를 거치지 않음
+    for (const id of this.faction().roster) {
       const c = CHARS[id];
       this.army[id] = {
         charId: id, cls: c.cls, level: 1, exp: 0,
@@ -92,19 +108,23 @@ const Game = {
         equip: { weapon: null, armor: null, acc: null },
       };
     }
-    this.army.liu_bei.equip.weapon = { id: 'iron_sword', up: 0 };
-    this.army.guan_yu.equip.weapon = { id: 'spear', up: 0 };
-    this.army.zhang_fei.equip.weapon = { id: 'spear', up: 0 };
-    this.army.sun_qian.equip.weapon = { id: 'bow', up: 0 };
-    this.army.jian_yong.equip.weapon = { id: 'fan', up: 0 };
+    // 초기 장비는 세력 정의(FACTIONS.initEquip)에서 가져옴. 미지 세력·구 data 혼합(FACTIONS 부재)은 유비 기준 폴백 — 기존 유비 새 게임과 동일 결과. 군단에 없는 id는 건너뜀(저장 차단 가드와 무관하게 무해)
+    const LIU_INIT_EQ = { liu_bei: 'iron_sword', guan_yu: 'spear', zhang_fei: 'spear', sun_qian: 'bow', jian_yong: 'fan' };
+    const initEq = this.faction(f).initEquip || ((typeof FACTIONS !== 'undefined' && FACTIONS.liu && FACTIONS.liu.initEquip) || LIU_INIT_EQ);
+    for (const [id, w] of Object.entries(initEq)) { // 값은 무기 id 문자열(기존) 또는 { weapon, armor } 객체 — 세력 정의 확장, 구 데이터는 문자열 그대로
+      if (!this.army[id]) continue;
+      if (typeof w === 'string') { this.army[id].equip.weapon = { id: w, up: 0 }; }
+      else { if (w.weapon) this.army[id].equip.weapon = { id: w.weapon, up: 0 }; if (w.armor) this.army[id].equip.armor = { id: w.armor, up: 0 }; if (w.acc) this.army[id].equip.acc = { id: w.acc, up: 0 }; }
+    }
     this.inventory = [{ id: 'leather', up: 0 }, { id: 'leather', up: 0 }, { id: 'bean', up: 0 }, { id: 'bean', up: 0 }, { id: 'ore', up: 0 }];
     this.gold = 500;
   },
 
   resetRun() { // 새 게임: 진행 상태 전체 초기화 — 회차/누적 승리/기록이 이전 런에서 넘어오면 적 레벨 스케일·상점 로테이션이 어긋남
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
-    this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} };
+    this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, deaths: 0 };
     this.deploySel = null; this.epilogue = null; this.epilogueHistory = {};
+    this.route = []; this.endingHistory = {}; // factionId는 새 게임 흐름이 initArmy에서 먼저 설정
   },
 
   // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
@@ -133,6 +153,7 @@ const Game = {
 
   // 합류 장수(오리지널 IF): 업적 해금 시 1회만 군단 편입 — 합류 레벨·초기 능력·초기 장비는 편입 순간 확정 저장(재로드/화면 재진입으로 재상승 없음)
   checkJoiners() {
+    if (this.factionId !== 'liu') return []; // 관해·태사자·주창 IF 합류는 유비군 전역 전용 — 다른 세력 루트에 유비 IF를 섞지 않는다
     const joined = [];
     if ((this.records.ach || {}).nine && !this.army.guan_hai && Object.keys(this.army).length >= 6) {
       const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
@@ -171,7 +192,7 @@ const Game = {
   },
 
   // 편성(출전 선택): stage.players를 슬롯(좌표·지휘관) 목록으로 보고 선택 장수를 순서대로 매핑. 유비는 지휘관 슬롯 고정
-  deploySlots() { return STAGES[this.stageIndex].players; },
+  deploySlots() { return this.stages()[this.stageIndex].players; },
   defaultDeploy() { return this.deploySlots().map(p => p.char).filter(id => this.army[id]); },
   // 유효 선택(유비 선두 고정·보유만·슬롯 수 정확). 저장 선택이 현재 슬롯과 어긋나면 자동 보정하고 그 내용을 corrected에 돌려줌
   deploySelection() {
@@ -181,16 +202,17 @@ const Game = {
     let corrected = false;
     const dropped = [], added = [];
     const picks = [];
-    if (!stored) { for (const id of def) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); } }
+    const cmd = this.commanderId(); // 지휘관 고정 슬롯(세력 공통 규칙, 유비 전용 하드코딩 아님)
+    if (!stored) { for (const id of def) { if (id !== cmd && this.army[id] && !picks.includes(id)) picks.push(id); } }
     else {
-      for (const id of stored.picks) { if (id !== 'liu_bei' && this.army[id] && !picks.includes(id)) picks.push(id); }
+      for (const id of stored.picks) { if (id !== cmd && this.army[id] && !picks.includes(id)) picks.push(id); }
       if (stored.stage !== this.stageIndex) { // 스테이지가 달라져 슬롯 수가 어긋날 때만 자동 보정(제외/보충된 장수를 이름으로 표시), 같은 스테이지의 사용자 선택은 그대로 존중
         if (picks.length > slots - 1) { dropped.push(...picks.splice(slots - 1)); }
-        for (const id of [...def, ...Object.keys(this.army)]) { if (picks.length >= slots - 1) break; if (id !== 'liu_bei' && !picks.includes(id)) { picks.push(id); added.push(id); } }
+        for (const id of [...def, ...Object.keys(this.army)]) { if (picks.length >= slots - 1) break; if (id !== cmd && !picks.includes(id)) { picks.push(id); added.push(id); } }
         corrected = true;
       }
     }
-    const sel = ['liu_bei', ...picks];
+    const sel = [cmd, ...picks];
     const valid = sel.length === slots && sel.every(id => this.army[id]);
     return { sel, valid, corrected, dropped, added };
   },
@@ -200,10 +222,10 @@ const Game = {
     if (!this.records.ach) this.records.ach = {};
     const defs = [
       { id: 'first_s', name: '무결의 첫걸음', desc: '어떤 전투든 S 등급 달성', ok: () => Object.values(this.records.grades || {}).some(g => g.g === 'S') },
-      { id: 'nine', name: '아홉 전투 정복', desc: '제1전~제9전 모두 클리어', ok: () => STAGES.every(st => (this.records.grades || {})[st.id]) },
-      { id: 'flawless', name: '불사의 군단', desc: '모든 전투를 무사망으로 클리어한 기록 보유', ok: () => STAGES.every(st => ((this.records.noDeath || {})[st.id] || 0) > 0) },
+      { id: 'nine', name: '아홉 전투 정복', desc: '제1전~제9전 모두 클리어', ok: () => this.factionId === 'liu' && this.stages().every(st => (this.records.grades || {})[st.id]) }, // 유비군 9전 전용 업적 — 다른 세력 전역 길이와 무관
+      { id: 'flawless', name: '불사의 군단', desc: '모든 전투를 무사망으로 클리어한 기록 보유', ok: () => this.stages().every(st => ((this.records.noDeath || {})[st.id] || 0) > 0) },
       { id: 'smith', name: '대장의 손길', desc: '장비 +5 강화 달성', ok: () => Object.values(this.army || {}).some(a => Object.values(a.equip || {}).some(e => e && (e.up || 0) >= 5)) },
-      { id: 'swift', name: '질풍신뢰', desc: '신속 목표 내 클리어 기록 보유', ok: () => STAGES.some(st => { const bt = (this.records.bestTurns || {})[st.id]; const t = (bt && typeof bt === 'object') ? bt.t : bt; return t != null && st.fastWin && t <= st.fastWin.turns; }) },
+      { id: 'swift', name: '질풍신뢰', desc: '신속 목표 내 클리어 기록 보유', ok: () => this.stages().some(st => { const bt = (this.records.bestTurns || {})[st.id]; const t = (bt && typeof bt === 'object') ? bt.t : bt; return t != null && st.fastWin && t <= st.fastWin.turns; }) },
       { id: 'veteran', name: '백전노장', desc: '누적 승리 20회', ok: () => (this.records.wins || 0) >= 20 },
       { id: 'new_cycle', name: '새로운 천하', desc: '2회차 진입', ok: () => this.cycle >= 2 },
     ];
@@ -247,11 +269,16 @@ const Game = {
   },
 
   renderBriefing() {
-    const st = STAGES[this.stageIndex];
+    const st = this.stages()[this.stageIndex];
     if (!st) { this.renderComplete(); return; }
     this.show('screen-briefing');
     document.getElementById('brief-title').textContent = st.name;
     document.getElementById('brief-text').textContent = st.briefing;
+    // 전역 확장 이어하기 안내: 이전 완주 기록(엔딩 이력)이 있는데 아직 남은 전투가 있으면 — 확장 전 완주 세이브가 추가 전투로 이어지는 상태. 기존 엔딩 보존을 명시
+    let ex = document.getElementById('brief-extended');
+    if (!ex) { ex = document.createElement('div'); ex.id = 'brief-extended'; ex.className = 'dim'; const bt = document.getElementById('brief-text'); bt.parentNode.insertBefore(ex, bt.nextSibling); }
+    ex.textContent = ((this.endingHistory || {})[this.cycle] && this.stageIndex < this.stages().length)
+      ? '이전 완주 이후 추가된 전투입니다. 이전 완주의 엔딩 기록은 보존되며 이번 전투 결과로 변경되지 않습니다.' : '';
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
     { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
@@ -283,17 +310,18 @@ const Game = {
       const dep = this.deploySelection();
       const slots = this.deploySlots().length;
       const head = document.createElement('div');
-      head.innerHTML = `<b>출전 편성</b> <span class="dim">${dep.sel.length}/${slots}명 · 유비 고정</span>`
+      const cmdName = CHARS[this.commanderId()].name;
+      head.innerHTML = `<b>출전 편성</b> <span class="dim">${dep.sel.length}/${slots}명 · ${cmdName} 고정</span>`
         + (dep.corrected ? ' <span class="dim">· 스테이지 규모가 달라 자동 조정됨'
           + (dep.dropped && dep.dropped.length ? ` — 제외: ${dep.dropped.map(id => CHARS[id].name).join(',')}` : '')
           + (dep.added && dep.added.length ? ` — 보충: ${dep.added.map(id => CHARS[id].name).join(',')}` : '') + '</span>' : '')
         + (!dep.valid ? ` <span style="color:#e08a8a">출전 인원이 ${slots}명이 되어야 출진할 수 있습니다</span>` : '');
       dp.appendChild(head);
-      const fixed = document.createElement('button'); fixed.textContent = `✓ 유비 Lv${this.army.liu_bei.level} (고정)`; fixed.disabled = true; fixed.className = 'primary';
+      const fixed = document.createElement('button'); fixed.textContent = `✓ ${cmdName} Lv${this.army[this.commanderId()].level} (고정)`; fixed.disabled = true; fixed.className = 'primary';
       dp.appendChild(fixed); dp.appendChild(document.createTextNode(' '));
       const picks = dep.sel.slice(1);
       for (const id of Object.keys(this.army)) {
-        if (id === 'liu_bei') continue;
+        if (id === this.commanderId()) continue;
         const a = this.army[id]; const on = picks.includes(id);
         const b = document.createElement('button');
         b.textContent = (on ? '✓ ' : '') + `${CHARS[id].name} Lv${a.level}`;
@@ -303,7 +331,7 @@ const Game = {
           const i = cur.indexOf(id);
           if (i >= 0) cur.splice(i, 1);
           else {
-            if (cur.length >= this.deploySlots().length - 1) { alert(`출전은 유비 포함 ${this.deploySlots().length}명까지입니다. 먼저 다른 장수를 빼 주세요.`); return; }
+            if (cur.length >= this.deploySlots().length - 1) { alert(`출전은 ${cmdName} 포함 ${this.deploySlots().length}명까지입니다. 먼저 다른 장수를 빼 주세요.`); return; }
             cur.push(id);
           }
           this.deploySel = { stage: this.stageIndex, picks: cur };
@@ -364,7 +392,7 @@ const Game = {
   },
 
   startBattle() {
-    if (this.stageIndex >= STAGES.length) { this.startEpilogue(); return; }
+    if (this.stageIndex >= this.stages().length) { this.startEpilogue(); return; }
     if (!this.armyComplete(this.army)) { console.warn('[출진 차단] 군단 데이터가 불완전해 전투를 시작하지 않습니다'); this._corruptSave = !!localStorage.getItem('cheonha3_save'); this.renderTitle(); return; } // 무변경 차단
     if (this.supportAvailable()) { // 회차 지원 미수령 출진: 1회 확인 후 이번 회차 포기 확정
       const sp = document.getElementById('brief-support');
@@ -386,12 +414,12 @@ const Game = {
     const ex=document.getElementById('epilogue-exit');if(ex)ex.style.display='none';
     const dep = this.deploySelection();
     if (!dep.valid) { alert(`출전 편성이 맞지 않습니다(${dep.sel.length}/${this.deploySlots().length}명). 브리핑에서 출전 인원을 맞춰 주세요.`); this.renderBriefing(); return; } // 무효 편성 출진 차단
-    const st0 = STAGES[this.stageIndex];
+    const st0 = this.stages()[this.stageIndex];
     const stageEff = dep.sel.every((id, i) => st0.players[i] && st0.players[i].char === id) ? st0
       : { ...st0, players: st0.players.map((slot, i) => ({ ...slot, char: dep.sel[i] })) }; // 기본 편성이면 원본 그대로(기존 동작과 완전 동일)
     this._autoNote = null; this._equipBackup = null;
     this.turnGuard = 0; // 전투별 안전 상한. 이전 전투의 자동 진행 횟수를 넘겨받지 않는다.
-    this.battle = new Battle(stageEff, this.army, this.cycle, { deploymentVariant: true });
+    this.battle = new Battle(stageEff, this.army, this.cycle, { deploymentVariant: true, faction: (typeof FACTIONS !== 'undefined' && FACTIONS[this.factionId]) ? this.factionId : 'liu' }); // 세력별 변형 테이블 키 — 미지/구 세이브는 유비(전역 목록 폴백과 동일 규칙)
     // 자동전투 시 HP 40% 미만 아군이 회복 도구를 스스로 사용 (부족분에 맞는 최소 도구)
     this.battle.autoItem = (u) => {
       const cand = this.inventory.map((it, i) => ({ it, i }))
@@ -513,8 +541,8 @@ const Game = {
     recDiv.id = 'base-records';
     const rc = this.records || { wins: 0, bestTurns: {}, noDeath: {} };
     const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 이 기능 도입 이후 플레이부터 집계 · 전투 기록 · 회차마다 적 레벨이 달라 회차가 다른 최단 턴끼리는 단순 비교 불가</span><br>` +
-      STAGES.map(st => {
+    recDiv.innerHTML = `<b>기록</b> <span class="dim">누적 승리 ${rc.wins} · ${this.cycle}회차 · 이 기능 도입 이후 플레이부터 집계 · 전투 기록 · 회차마다 적 레벨이 달라 회차가 다른 최단 턴끼리는 단순 비교 불가 · 신속 목표 판정은 승리한 전투의 턴만 집계(재도전 후 승리도 인정, 패배한 전투는 집계하지 않음)</span><br>` +
+      this.stages().map(st => {
         const bt = rc.bestTurns[st.id];
         const nd = rc.noDeath[st.id] || 0;
         const gd = (rc.grades || {})[st.id];
@@ -677,11 +705,13 @@ const Game = {
       equip: Object.fromEntries(ids.map(id => [id, this.army[id].equip])),
       inventory: this.inventory,
     });
-    // 1) 장착 중인 것까지 전부 풀에 모으기
+    // 1) 장착 중인 것까지 전부 풀에 모으기 — 단 지휘관의 착용 방어구는 유지(패배 조건 = 지휘관 전사라 방어구 재배정에서 지휘관이 밀리면 안 됨. 유비군은 지휘관 초기 방어구가 없어 기존 배정 결과와 동일)
     const pool = [];
+    const cmdr = this.commanderId();
     for (const id of ids) {
       const a = this.army[id];
       for (const sl of ['weapon', 'armor', 'acc']) {
+        if (id === cmdr && sl === 'armor' && a.equip[sl]) continue; // 지휘관 방어구는 풀링·재배정 제외
         if (a.equip[sl]) { pool.push(a.equip[sl]); a.equip[sl] = null; }
       }
     }
@@ -703,9 +733,14 @@ const Game = {
       u.equip.weapon = best; cnt.weapon++;
       pool.splice(pool.indexOf(best), 1);
     }
-    // 3) 방어구: 방어 높은 장수부터 좋은 갑옷
+    // 3) 방어구: 지휘관 착용 갑옷은 유지하되 상위 갑옷이 있으면 교체(구 갑옷은 풀로 — 상향 흐름 보장·소실 없음). 이후 미착용 유닛에 방어 높은 순 배정
     {
-      const units = ids.map(id => this.army[id]).sort((a, b) => b.def - a.def);
+      const cmdUnit = this.army[cmdr];
+      if (cmdUnit && cmdUnit.equip.armor) {
+        const better = pool.filter(e => ITEMS[e.id].slot === 'armor' && val(e) > val(cmdUnit.equip.armor)).sort((x, y) => val(y) - val(x))[0];
+        if (better) { const old = cmdUnit.equip.armor; cmdUnit.equip.armor = better; pool.splice(pool.indexOf(better), 1); pool.push(old); }
+      }
+      const units = ids.map(id => this.army[id]).filter(u => !u.equip.armor).sort((a, b) => b.def - a.def); // 이미 착용 중인 유닛(유지 대상 지휘관)은 건너뜀 — 덮어쓰기로 착용 갑옷이 사라지지 않게
       const items = pool.filter(e => ITEMS[e.id].slot === 'armor').sort((x, y) => val(y) - val(x));
       for (let i = 0; i < Math.min(units.length, items.length); i++) {
         units[i].equip.armor = items[i]; cnt.armor++;
@@ -1561,9 +1596,13 @@ const Game = {
       if (prevT == null || b.turn < prevT) this.records.bestTurns[sidRec] = { t: b.turn, c: this.cycle }; // 회차별 적 레벨이 달라 달성 회차를 함께 보존
       const deadCnt = b.units.filter(u => u.side === 'player' && (u.hp <= 0 || u.routed)).length;
       if (deadCnt === 0) this.records.noDeath[sidRec] = (this.records.noDeath[sidRec] || 0) + 1;
+      this.records.deaths = (this.records.deaths || 0) + deadCnt; // 이번 회차 누적 전사자 — 완주 엔딩 분기(성과) 판정용. 구 세이브(필드 없음)는 0 취급
       // 클리어 등급(다회차 장치 뼈대, 명예 전용·보상 없음): S=무사망+신속목표 내, A=무사망 또는 신속목표 내, B=사망 2 이하, C=그 외
       if (!this.records.grades) this.records.grades = {};
       const fwT = b.stage.fastWin ? b.stage.fastWin.turns : null;
+      // 신속 완주 축 회차별 누적: 이번 회차의 신속 목표 내 승리만 기록(역대 최고 기록과 무관하게 현재 회차 실제 승리로 판정)
+      if (!this.records.swiftThis || this.records.swiftThis.c !== this.cycle) this.records.swiftThis = { c: this.cycle, ids: {} };
+      if (fwT != null && b.turn <= fwT) this.records.swiftThis.ids[sidRec] = 1;
       const grade = (deadCnt === 0 && fwT != null && b.turn <= fwT) ? 'S' : (deadCnt === 0 || (fwT != null && b.turn <= fwT)) ? 'A' : deadCnt <= 2 ? 'B' : 'C';
       const GRANK = { S: 3, A: 2, B: 1, C: 0 };
       const prevG = this.records.grades[sidRec];
@@ -1598,17 +1637,30 @@ const Game = {
 
   // 선택형 IF 후일담: 본전역을 복원하지 않는다. 복제 군단으로 만든 시험전만 폐기한다.
   startEpilogue() {
-    if (this.stageIndex !== STAGES.length || !this.armyComplete(this.army)) return;
+    if (this.stageIndex !== this.stages().length || !this.armyComplete(this.army)) return;
     if (this.battle && this.battle.epilogueTrial && !this.battle._finished && !this.battle.over) return;
     if (!this.epilogue || this.epilogue.c !== this.cycle || this.epilogue.status !== 'ready') return;
-    const base = STAGES[8];
-    const stage = { ...base, id: 101, name: 'IF 후일담 · 하비의 탈출로',
+    const base = this.stages()[this.stages().length - 1]; // 세력 전역의 마지막 전투 (유비군 = 제9전 · 조조군 = 제4전)
+    const isLiu=this.factionId==='liu';
+    let stage;
+    if (isLiu) stage = { ...base, id: base.id, trialId: 101, name: 'IF 후일담 · 하비의 탈출로', // stage.id는 본전역 마지막 전투(⑨) 유지 — 적 레벨 앵커 폭주(id 101→레벨101 실측 붕괴) 방지, 구 engine 혼합 캐시에서도 동일 계산
       briefing: '오리지널 가상 후일담: 여포 격파 뒤 남겨진 백성을 호위하기 위해 유비군이 다시 성문으로 향한다. 흩어진 잔군을 제압하고 탈출로를 연다. 실제 역사 재현이 아닌 이 게임의 가상 선택이다.',
       victory: '잔군 전멸', defeat: '유비 전사 또는 턴 초과', bossChar: null, bossDrop: null,
       treasure: null, fastWin: null, rewards: { gold:0, items:[], exp:0 },
       enemies: [ { char:'lu_elite',x:10,y:4,ai:'aggressive'},{char:'lu_soldier',x:10,y:3,ai:'aggressive'},
         {char:'lu_soldier',x:10,y:7,ai:'aggressive'},{char:'lu_archer',x:11,y:2,ai:'hold'} ],
     };
+    else { // 조조군 후일담 '원소 추격' — 엔딩 기록(무결/신속)에 따라 브리핑 문구만 분기(난도·보상 동일). 원소 격파는 가상: 실제로는 관도 패전 후 도주·수습 뒤 202년 병사
+      const eh=(this.endingHistory||{})[this.cycle];
+      const perf=eh&&eh.id==='flawless'&&eh.swift?'무결·신속으로 관도를 끝낸 군단':(eh&&(eh.id==='flawless'||eh.swift)?'완주의 기세로 관도를 끝낸 군단':'관도의 승리를 거둔 군단');
+      stage = { ...base, id: base.id, trialId: 102, name: 'IF 후일담 · 원소 추격', // stage.id는 ④ 유지(위와 동일)
+      briefing: `오리지널 가상 후일담: ${perf}이 도주하는 원소를 쫓는다. 퇴로를 지키는 잔당을 뿌리치고 원소를 사로잡아 전역을 완결하라. 실제 역사 재현이 아닌 이 게임의 가상 선택이다.`,
+      victory: '원소 격파', defeat: '조조 전사 또는 턴 초과', bossChar: 'yuan_shao', bossDrop: null,
+      treasure: null, fastWin: null, rewards: { gold:0, items:[], exp:0 },
+      enemies: [ { char:'yuan_soldier',x:7,y:2,ai:'aggressive'},{char:'yuan_soldier',x:7,y:7,ai:'aggressive'}, // 선봉 보병(④ 예비대 재사용): 조조 경로가 친위병보다 선봉을 먼저 잡도록
+        {char:'yuan_elite',x:9,y:4,ai:'hold',holdUntil:3}, // 시험전은 autoItem 무효(무소모 규칙)라 ④ 친위병 2기 편성은 힐 없는 종단 군단이 감당 불가(실측 3~4턴 조조 격파) → 1기로 축소
+        {char:'yuan_archer',x:11,y:2,ai:'hold'},{char:'yuan_shao',x:12,y:4,boss:true,ai:'hold',holdUntil:5} ],
+    }; }
     const trialArmy = JSON.parse(JSON.stringify(this.army));
     this.battle = new Battle(stage, trialArmy, this.cycle);
     this.battle.epilogueTrial = true;
@@ -1629,12 +1681,15 @@ const Game = {
     const exit=document.getElementById('epilogue-exit');if(exit)exit.style.display='none';
     // 승리 일반분기의 드랍/경험치/기록/상점회전/군단반영을 전혀 호출하지 않는다.
     const won=!!b.over.win;
-    this.epilogue={c:this.cycle,id:'escape',status:won?'cleared':'ready',last:won?'승리':b.over.reason};
-    if(won) { this.epilogueHistory=this.epilogueHistory||{};this.epilogueHistory[this.cycle]={id:'escape',turn:b.turn}; }
+    this.epilogue={c:this.cycle,id:(this.epilogue&&this.epilogue.id)||'escape',status:won?'cleared':'ready',last:won?'승리':b.over.reason}; // 시험전 id 보존(세력별 이력 분리) — 미보유 구 세이브만 escape 폴백
+    if(won) { this.epilogueHistory=this.epilogueHistory||{};this.epilogueHistory[this.cycle]={id:(this.epilogue&&this.epilogue.id)||'escape',turn:b.turn}; }
     this.save();
     document.getElementById('result-title').textContent=won?'IF 후일담 완주':'IF 후일담 종료';
+    const isYuanHunt=((this.epilogue&&this.epilogue.id)||'escape')==='yuan_hunt';
     document.getElementById('result-text').textContent=won
-      ? '탈출로가 열리고 백성들이 성을 빠져나갔다. 유비군은 정복보다 구원을 택한 기억을 남겼다. (오리지널 가상 엔딩) 보상·경험치·도구 소모 없음. 별도 후일담 기록만 저장합니다.'
+      ? (isYuanHunt
+        ? '원소를 사로잡은 조조군이 전역의 마침표를 찍었다. (오리지널 가상 엔딩: 실제로 원소는 관도 패전 후 도주해 202년에 병사) 보상·경험치·도구 소모 없음. 별도 후일담 기록만 저장합니다.'
+        : '탈출로가 열리고 백성들이 성을 빠져나갔다. 유비군은 정복보다 구원을 택한 기억을 남겼다. (오리지널 가상 엔딩) 보상·경험치·도구 소모 없음. 별도 후일담 기록만 저장합니다.')
       : b.over.reason+' · 본전역은 변하지 않았습니다. 재도전하거나 공통 전역 완주로 마칠 수 있습니다. 보상·경험치·도구 소모 없음.';
     document.getElementById('btn-retry').style.display=won?'none':'';
     document.getElementById('btn-result-next').textContent='완주 화면으로';
@@ -1642,25 +1697,48 @@ const Game = {
   },
   renderComplete() {
     const nc = document.getElementById('btn-next-cycle');
-    if (nc) { nc.disabled = false; nc.textContent='다음 회차 시작 (미완주 후일담 생략)'; }
+    const isLiu = this.factionId === 'liu';
+    if (nc) { nc.disabled = false; nc.textContent = '다음 회차 시작 (미완주 후일담 생략)'; }
     const current=this.epilogue&&this.epilogue.c===this.cycle?this.epilogue:null;
     const cleared=current&&current.status==='cleared';
+    const lastName = this.stages()[this.stages().length - 1].name.split('·')[1].trim();
+    const EPI_LABEL={escape:'하비의 탈출로',yuan_hunt:'원소 추격'}; // 후일담 시험전 표시명 — 세력별 시험전(유비 escape/조조 yuan_hunt)
     document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
     document.getElementById('complete-text').textContent =
-      `${STAGES.length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
-      +(cleared?' IF 후일담 완주: 백성의 탈출로를 연 가상 엔딩을 별도 기록했습니다.':' 공통 전역 엔딩: 하비의 싸움이 끝나고 군단은 다음 여정을 준비합니다.');
+      `${this.stages().length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
+      +(cleared?` IF 후일담 완주: ${current.id==='yuan_hunt'?'원소를 사로잡은':'백성의 탈출로를 연'} 가상 엔딩을 별도 기록했습니다.`:` 공통 전역 엔딩: ${isLiu ? '하비' : lastName}의 싸움이 끝나고 군단은 다음 여정을 준비합니다.`);
+    // 성과 기반 엔딩 분기 첫 단계: 이번 회차 누적 전사자 0이면 무결 완주 — 세력 전역 엔딩 이력에 기록(분기 엔딩의 기초)
+    // 엔딩 기록: 이번 회차 누적 전사자 0이면 무결 — 단, 같은 회차에 이미 기록된 엔딩은 보존(전역 확장으로 추가된 전투를 이어가도 완료 시점에 사용자에게 표시된 기존 엔딩을 덮어쓰지 않음). deaths 미상(구 세이브)은 통상 완주 폴백 — 무결을 미검증으로 주장하지 않음
+    (this.endingHistory ||= {});
+    const prev = this.endingHistory[this.cycle];
+    if (prev && prev.id) {
+    // 구 전역 완주 기록 보유 세이브(조조군: 확장 전 3전 완주) — 새 전투 포함 무결과 구별해 '이전 완주 시점 기록 보존'으로 표시. 유비군은 이전 기록이 없어 정상 경로에서 이 분기에 오지 않음(방어적 일반 문구)
+      document.getElementById('complete-text').textContent += isLiu
+        ? ` 엔딩 기록: 이전 완주의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 이번 완주 결과로는 변경하지 않습니다.`
+        : ` 엔딩 기록: 이전 완주(제3전까지)의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 제4전을 포함한 이번 완주 결과로는 변경하지 않습니다.`;
+    } else {
+      const endingId = (typeof this.records.deaths === 'number' && this.records.deaths === 0) ? 'flawless' : 'standard';
+      const allFw = this.stages().every(st => !!st.fastWin); // 신속 목표가 정의되지 않은 전투가 있는 세력은 신속 축 비활성(미주장)
+      const swiftNow = allFw && !!(this.records.swiftThis && this.records.swiftThis.c === this.cycle) && this.stages().every(st => this.records.swiftThis.ids[st.id]);
+      this.endingHistory[this.cycle] = { faction: this.factionId, id: endingId, swift: swiftNow };
+      this.save();
+      document.getElementById('complete-text').textContent += endingId === 'flawless' ? ' 엔딩 기록: 무결 완주(승리한 전투에서 전사자 0 · 패배/재도전 전투는 집계하지 않음).' : ' 엔딩 기록: 통상 완주.';
+      if (swiftNow) document.getElementById('complete-text').textContent += ' 신속 완주 달성(이번 회차 모든 전투를 신속 목표 턴 내 승리 · 재도전 후 승리도 인정, 패배한 전투의 턴은 집계하지 않음).';
+    }
+    // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)
     let panel=document.getElementById('epilogue-choice');
     if(!panel){panel=document.createElement('div');panel.id='epilogue-choice';document.getElementById('complete-text').after(panel);}
     panel.innerHTML='';
     const note=document.createElement('p');note.className='dim';
-    note.textContent='선택형 IF 후일담 첫 단계(가상 설정). 소모 없는 별도 시험전: 군단은 복제본으로 출전하고 도구는 수동·자동 모두 사용 불가. 승리·실패·중단·재도전은 본전역의 골드·소지품·장비·경험치·9전 기록·업적·상점회전을 바꾸지 않습니다. 전투 중 새로고침하면 전투는 저장되지 않아 처음부터 재도전합니다. 다음 회차 시작은 미완주 후일담을 생략합니다.';
+    note.textContent=`선택형 IF 후일담 첫 단계(가상 설정). 소모 없는 별도 시험전: 군단은 복제본으로 출전하고 도구는 수동·자동 모두 사용 불가. 승리·실패·중단·재도전은 본전역의 골드·소지품·장비·경험치·${this.stages().length}전 기록·업적·상점회전을 바꾸지 않습니다. 전투 중 새로고침하면 전투는 저장되지 않아 처음부터 재도전합니다. 다음 회차 시작은 미완주 후일담을 생략합니다.`;
     panel.appendChild(note);
     if(!cleared){
-      const begin=document.createElement('button');begin.id='btn-epilogue';begin.textContent=current&&current.status==='ready'?'IF 후일담 재도전':'IF 후일담 선택 · 하비의 탈출로';
-      begin.onclick=()=>{if(this.stageIndex!==STAGES.length)return;this.epilogue={c:this.cycle,id:'escape',status:'ready'};this.save();this.startEpilogue();};panel.appendChild(begin);
+      const trialId=isLiu?'escape':'yuan_hunt';
+      const begin=document.createElement('button');begin.id='btn-epilogue';begin.textContent=current&&current.status==='ready'?'IF 후일담 재도전':`IF 후일담 선택 · ${EPI_LABEL[trialId]}`;
+      begin.onclick=()=>{if(this.stageIndex!==this.stages().length)return;this.epilogue={c:this.cycle,id:trialId,status:'ready'};this.save();this.startEpilogue();};panel.appendChild(begin);
     }
     const history=this.epilogueHistory||{};const cycles=Object.keys(history);
-    if(cycles.length){const h=document.createElement('p');h.textContent='별도 후일담 완주 기록: '+cycles.map(c=>c+'회차 '+history[c].turn+'턴').join(' / ');panel.appendChild(h);}
+    if(cycles.length){const h=document.createElement('p');h.textContent='별도 후일담 완주 기록: '+cycles.map(c=>c+'회차 '+(EPI_LABEL[history[c].id]||'후일담')+' '+history[c].turn+'턴').join(' / ');panel.appendChild(h);}
     this.show('screen-complete');
   },
 };
