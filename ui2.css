@@ -17,7 +17,7 @@ p { line-height: 1.5; }
 #battle-top .dim, #battle-top > span.dim { display: none; } /* 자동전투 안내: 로그 스트립에서 확인 */
 /* 줌·속도: 지도 위 플로팅 (반투명, 44px 히트영역) */
 #battle-main { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; flex-direction: column; display: flex; padding-bottom: 60px; }
-#battle-wrap { flex: 0 0 auto; position: relative; }
+#battle-wrap { flex: 0 1 auto; min-height: 160px; position: relative; overflow: auto; }
 /* 줌·속도: 헤더 2행 조작 스트립(지도를 가리지 않음, 44px 터치) */
 #zoom-controls { flex: 0 0 auto; gap: 4px; padding: 0; margin-left: auto; }
 #zoom-controls button { padding: 4px 6px; font-size: 13px; min-height: 44px; min-width: 44px; }
@@ -25,11 +25,11 @@ p { line-height: 1.5; }
 #btn-speed { flex: 0 0 auto; padding: 4px 10px; font-size: 13px; min-height: 44px; min-width: 44px; }
 /* 하단 정보층: 유닛 카드 + 로그(남은 공간 채움) */
 #battle-bottom { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-height: 0; margin: 6px; width: auto; }
-#unit-info { font-size: 12px; line-height: 1.5; padding: 8px 10px; background: rgba(38,34,29,.94); border-left: 3px solid #a98c4f; border-radius: 4px; max-height: 30vh; overflow-y: auto; flex: 0 0 auto; }
+#unit-info { font-size: 12px; line-height: 1.5; padding: 8px 10px; background: rgba(38,34,29,.94); border-left: 3px solid #a98c4f; border-radius: 4px; max-height: 30vh; overflow-y: auto; flex: 0 1 auto; min-height: 44px; }
 #unit-info::first-line { font-weight: bold; font-size: 14px; color: #f0d9a8; }
 #unit-info:empty { display: none; }
 #battle-log { font-size: 11px; line-height: 1.5; padding: 5px 8px; flex: 1 1 auto; min-height: 26px; overflow-y: auto; background: rgba(38,34,29,.9); cursor: pointer; }
-#ui2-logwrap { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+#ui2-logwrap { display: flex; flex-direction: column; flex: 0 0 auto; min-height: 0; }
 #ui2-logwrap.open { position: fixed; left: 8px; right: 8px; bottom: 64px; height: 40vh; z-index: 35; background: #191510; border: 1px solid rgba(240,217,168,.35); border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,.5); padding: 4px; }
 #ui2-logwrap.open #battle-log { flex: 1 1 auto; height: auto; max-height: none; }
 #target-detail { max-height: 30vh; overflow-y: auto; }
