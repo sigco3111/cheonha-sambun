@@ -1656,7 +1656,7 @@ const Game = {
         document.getElementById('btn-retry').style.display = 'none'; // 승리 후에는 재도전 없음 (다음 전투로 진행)
         document.getElementById('btn-result-next').textContent = '다음';
         document.getElementById('result-text').innerHTML =
-          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
+          `${b.over.reason}<br><span class="dim">턴 ${Math.min(b.turn, b.stage.maxTurns)}/${b.stage.maxTurns} · 격파 ${b.foeKills.length} · 생존: ${surv}</span><br>` +
           `<b>클리어 등급 ${b.clearGrade}</b> <span class="dim">(무사망+신속 S · S 달성은 업적 해금 조건)</span><br>` +
           ((b.newAch && b.newAch.length) ? `<b>업적 달성: ${b.newAch.map(a => a.name).join(', ')}</b><br>` : '') +
           `보상: ${goldGain}골드 · ${r.items.map(i => ITEMS[i].name).join(', ') || '없음'} · 경험치 ${r.exp}` + lootText + fastText + dropText;
@@ -1672,7 +1672,7 @@ const Game = {
         document.getElementById('result-title').textContent = '패배...';
         document.getElementById('btn-retry').style.display = '';
         document.getElementById('result-text').innerHTML =
-          `${b.over.reason}<br><span class="dim">턴 ${b.turn}/${b.stage.maxTurns} · 격파 ${b.foeKills.length}</span><br>다시 도전하세요.`;
+          `${b.over.reason}<br><span class="dim">턴 ${Math.min(b.turn, b.stage.maxTurns)}/${b.stage.maxTurns} · 격파 ${b.foeKills.length}</span><br>다시 도전하세요.`;
         document.getElementById('btn-result-next').textContent = '브리핑으로 돌아가기';
         this.show('screen-result');
       }, this.auto ? 100 : 800);
