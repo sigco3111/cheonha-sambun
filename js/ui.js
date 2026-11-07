@@ -1719,9 +1719,7 @@ const Game = {
     const prev = this.endingHistory[this.cycle];
     if (prev && prev.id) {
     // 구 전역 완주 기록 보유 세이브(조조군: 확장 전 3전 완주) — 새 전투 포함 무결과 구별해 '이전 완주 시점 기록 보존'으로 표시. 유비군은 이전 기록이 없어 정상 경로에서 이 분기에 오지 않음(방어적 일반 문구)
-      document.getElementById('complete-text').textContent += isLiu
-        ? ` 엔딩 기록: 이전 완주의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 이번 완주 결과로는 변경하지 않습니다.`
-        : ` 엔딩 기록: 이전 완주(제3전까지)의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 제4전을 포함한 이번 완주 결과로는 변경하지 않습니다.`;
+      document.getElementById('complete-text').textContent += ` 엔딩 기록: 이전 완주의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 이후 추가된 전투를 포함한 이번 완주 결과로는 변경하지 않습니다.`; // 세력 공통 일반 문구 — 확장 시점 하드코딩(제3전/제4전)은 2부 연장 뒤 낡은 서술이 되어 폐기
     } else {
       const endingId = (typeof this.records.deaths === 'number' && this.records.deaths === 0) ? 'flawless' : 'standard';
       const allFw = this.stages().every(st => !!st.fastWin); // 신속 목표가 정의되지 않은 전투가 있는 세력은 신속 축 비활성(미주장)
@@ -1730,6 +1728,18 @@ const Game = {
       this.save();
       document.getElementById('complete-text').textContent += endingId === 'flawless' ? ' 엔딩 기록: 무결 완주(승리한 전투에서 전사자 0 · 패배/재도전 전투는 집계하지 않음).' : ' 엔딩 기록: 통상 완주.';
       if (swiftNow) document.getElementById('complete-text').textContent += ' 신속 완주 달성(이번 회차 모든 전투를 신속 목표 턴 내 승리 · 재도전 후 승리도 인정, 패배한 전투의 턴은 집계하지 않음).';
+    }
+    // 조조 2부 연장 선택: 미언락(route 'cao_p2' 없음) 조조 완주 화면에만 노출 — 명시 선택 시에만 5·6전이 stages에 결합되고, 미선택 세이브는 4전 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
+    if (!isLiu && this.stageIndex === this.stages().length && !this.hasRoute('cao_p2') && typeof CAO_STAGES2 !== 'undefined' && CAO_STAGES2.length) {
+      let p2 = document.getElementById('cao-part2-choice');
+      if (!p2) { p2 = document.createElement('div'); p2.id = 'cao-part2-choice'; document.getElementById('complete-text').after(p2); }
+      p2.innerHTML = '';
+      const n2 = document.createElement('p'); n2.className = 'dim';
+      n2.textContent = '정사 실재 전투 2종(업 포위전 204 · 백랑산 결전 207). 편성·승리조건·증원 시점 등은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.';
+      p2.appendChild(n2);
+      const b2 = document.createElement('button'); b2.id = 'btn-cao-part2'; b2.textContent = '북방 원정 계속 · 2부 (제5전 업 포위 ~ 제6전 백랑산)';
+      b2.onclick = () => { this.route.push({ c: this.cycle, id: 'cao_p2' }); this.save(); this.renderBriefing(); };
+      p2.appendChild(b2);
     }
     // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)
     let panel=document.getElementById('epilogue-choice');

@@ -198,6 +198,12 @@ const CHARS = {
   ju_shou:  { name: '저수', cls: 'strategist', hp: 90,  mp: 65, atk: 16, def: 17, int: 34, spd: 15, morale: 95, tactics: ['heal'] }, // 관도 설정상 원소측 간언 참모 — 화계 일격에 지휘관이 무너지는 실측 패배 경로(저수 화계 70) 제거, 치유 지원형으로 보스전 지연
   yuan_elite:{ name: '원소 친위병', cls: 'infantry', hp: 100, mp: 5, atk: 30, def: 23, int: 5, spd: 14, morale: 90 },
   yuan_soldier:{ name: '원소군 보병', cls: 'infantry', hp: 82, mp: 5, atk: 24, def: 17, int: 5, spd: 14, morale: 85 },
+  // ── 조조 2부 · 북방 평정(204~207): 정사 실재 인물(출처 ko.wikipedia 업_전투/백랑산_전투), 스탯은 기존 동급 장수 체계 — 기존 클래스 스프라이트 재사용으로 신규 아트 없음 ──
+  shen_pei:  { name: '심배', cls: 'infantry',  hp: 150, mp: 10, atk: 33, def: 30, int: 20, spd: 13, morale: 95 }, // 5전 보스 — 정사상 업 성 수비 사령(성내 방어·회복 이점 위치 배치)
+  yuan_shang:{ name: '원상', cls: 'cavalry',   hp: 120, mp: 10, atk: 31, def: 22, int: 12, spd: 21, morale: 90 }, // 업 구원군(정사상 구원 시도 실재, 시간차 합류는 게임 각색) — 백랑산 지휘관 명단에도 포함
+  tadun:     { name: '답돈', cls: 'cavalry',   hp: 160, mp: 10, atk: 37, def: 24, int: 8,  spd: 24, morale: 95 }, // 6전 보스 — 오환 족장(정사)
+  wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
+
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
 };
 
@@ -693,6 +699,86 @@ const CAO_STAGES = [
       { char: 'yuan_shao', x: 12, y: 4, boss: true, ai: 'hold', holdUntil: 5 }, // 본진 대기 — 선봉이 먼저 부딪히는 설정
     ],
     rewards: { gold: 4000, items: ['meat','ore','tonic','manual'], exp: 200 },
+  },
+];
+
+// ═══ 조조군 2부 전역 · 북방 평정(204~207) ═══
+// 역사 구분: 두 전투 모두 정사 실재·조조 승리(출처 ko.wikipedia 업_전투·백랑산_전투, 설계 문서 /tmp/cheonha3-cao2-design.md에 URL 보존). 연의 인용 없음 — 단, 편성 규모·승리조건·구원군 합류 시점·기병 돌격 배치는 게임 각색이며 각 주석과 브리핑에 그 사실을 명시.
+// 해금: FACTIONS.cao는 4전 유지. 완주 화면의 명시 선택('북방 원정 계속')이 route 'cao_p2'를 기록할 때만 stages()가 이 배열을 결합 — 미언락 세이브는 stages 4 유지로 기존 4전 완주 의미·엔딩 기록 불변. 레벨 앵커 stage.id 5/6으로 관도(4) 직후와 자연 연결.
+const CAO_STAGES2 = [
+  {
+    id: 5, name: '제5전 · 업 포위전', maxTurns: 26,
+    briefing: '204년(건안 9년), 원소 사후 다투는 원씨 형제의 본거지 업을 포위한다(정사 실재 전투). 수비 사령 심배가 성을 굳게 지키고, 원상의 구원군이 시간차로 다가온다 — 합류 시점과 편성·승리조건은 게임 각색. 성내의 이점을 지닌 심배를 격파하라. 보물창고는 선택이며 승리 시 전리품을 얻는다.',
+    victory: '심배 격파', defeat: '조조 전사 또는 턴 초과', bossChar: 'shen_pei',
+    bossDrop: 'plate',
+    fastWin: { turns: 14, gold: 1200 },
+    treasure: { x: 12, y: 2, gold: 1500, items: ['rice','jade'] }, // 업 성내 물자(선택 목표, 게임 각색)
+    map: [ // 낙양 공성전(유비 ⑤)과 같은 성곽 구조 재사용 — 업은 정사상 견고한 성(출처 동일)
+      'MMMMMMMMMMMMMM',
+      'M..FF....W#CCM',
+      'M..FFF...W#CTM',
+      '..FFFF...WGCCM',
+      ',,...==..W#CCM',
+      ',,.~~~~..W#CCM',
+      ',..FFF...W#CCM',
+      'M....FF..WGCCM',
+      'MM...WWW.W#CCM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 서쪽 포위진의 조조군
+      { char: 'cao_cao', x: 1, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 2, y: 3 },
+      { char: 'xiahou_yuan', x: 2, y: 5 },
+      { char: 'cao_ren', x: 1, y: 5 },
+      { char: 'yue_jin', x: 1, y: 6 },
+      { char: 'xun_yu', x: 1, y: 3 },
+    ],
+    enemies: [ // 심배 성내 수비(정사상 업 수비 사령) — 편성 규모는 게임 각색
+      { char: 'shen_pei', x: 11, y: 4, boss: true, ai: 'guard' },
+      { char: 'yuan_elite', x: 11, y: 3, ai: 'guard' },
+      { char: 'yuan_elite', x: 11, y: 5, ai: 'guard' },
+      { char: 'yuan_archer', x: 12, y: 3, ai: 'hold' },
+      { char: 'yuan_soldier', x: 8, y: 4, ai: 'aggressive' }, // 성문 앞 견제
+    ],
+    reinforce: {
+      6: { atTurn: 6, dir: '동쪽', units: [ { char: 'yuan_shang', x: 12, y: 6 }, { char: 'yuan_soldier', x: 12, y: 5 } ] }, // 원상 구원군(정사상 구원 시도 실재 — 6턴 합류 시점은 게임 각색)
+    },
+    rewards: { gold: 3500, items: ['meat','ore','tonic','manual'], exp: 180 },
+  },
+  {
+    id: 6, name: '제6전 · 백랑산 결전', maxTurns: 24,
+    briefing: '207년, 도망친 원상·원희를 비호하는 오환의 족장 답돈을 토벌하러 북방으로 진군한다(정사 실재 전투). 곽가는 병으로 역주에 남아 이 전투에 함께하지 못하며, 그 부고는 전투 후 귀환길에 전해진다(정사). 산지 사이로 돌격하는 오환 기병을 끊고 답돈을 격파하면 북방이 평정된다. 편성 규모·승리조건·기병 돌격 배치는 게임 각색이다.',
+    victory: '답돈 격파', defeat: '조조 전사 또는 턴 초과', bossChar: 'tadun',
+    bossDrop: 'jade',
+    fastWin: { turns: 14, gold: 1500 },
+    map: [ // 산지·황무지 축 야전 — 요서 백랑산 지형의 게임 각색(기병은 산 통행 불가라 완만한 초원 축이 결전로)
+      'MMMMMMMMMMMMMM',
+      'M....,,,....VM',
+      'M..MM,,F.....M',
+      'M.MMM,,,..,,.M',
+      '...,,,,,,....M',
+      'M.,,,MM..,,..M',
+      'M..,,,F.,,..MM',
+      'M...,,,,.MM..M',
+      'MM..,,,,.....M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 서쪽 진군로의 조조군
+      { char: 'cao_cao', x: 1, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 2, y: 3 },
+      { char: 'xiahou_yuan', x: 1, y: 5 },
+      { char: 'cao_ren', x: 1, y: 6 },
+      { char: 'yue_jin', x: 1, y: 3 },
+      { char: 'xun_yu', x: 1, y: 2 },
+    ],
+    enemies: [ // 답돈 본대+원상(정사 지휘관 명단) — 돌격 배치·규모는 게임 각색
+      { char: 'wuhuan_c', x: 8, y: 2, ai: 'aggressive' },
+      { char: 'wuhuan_c', x: 8, y: 6, ai: 'aggressive' },
+      { char: 'wuhuan_c', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'tadun', x: 11, y: 4, boss: true, ai: 'hold', holdUntil: 4 }, // 오환 본진 대기 후 반격
+      { char: 'yuan_shang', x: 12, y: 3, ai: 'hold' },
+    ],
+    rewards: { gold: 4500, items: ['meat','ore','tonic','manual'], exp: 220 },
   },
 ];
 
