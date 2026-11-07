@@ -3,6 +3,10 @@
 
 window.addEventListener('error', (e) => { document.title = 'ERR:' + e.message + ' @' + (e.filename||'').split('/').pop() + ':' + e.lineno; });
 window.addEventListener('unhandledrejection', (e) => { document.title = 'REJ:' + (e.reason && e.reason.stack ? e.reason.stack.slice(0,300) : e.reason); });
+// 전투 진행 중 페이지 이탈 확인 — 전투 상태는 저장되지 않으므로 실수 새로고침/닫기 시 진행이 통째로 사라지는 것을 막는다 (결과 화면·전투 종료 후에는 묻지 않음)
+window.addEventListener('beforeunload', (e) => {
+  if (typeof Game !== 'undefined' && Game.battle && !Game.battle.over && !Game.battle._finished) { e.preventDefault(); e.returnValue = ''; }
+});
 window.addEventListener('load', () => {
   loadImages(() => {
     Game.renderTitle();
