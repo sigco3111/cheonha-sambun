@@ -1024,7 +1024,43 @@ const LIU_STAGES3 = [
     rewards: { gold: 4800, items: ['ore','tonic','manual','rice'], exp: 240 }, // 초안
   },
   {
-    id: 15, name: '제15전 · 정군산', maxTurns: 26, bossChar: 'xiahou_yuan_dj',
+    id: 15, name: '제15전 · 익주 평정', maxTurns: 28, bossChar: 'liu_zhang',
+    briefing: '214년, 유비는 성도를 포위하고 유장의 항복을 받아 익주를 평정한다(정사 선주전: "璋降…先主復領益州牧"). 정사에서 유장은 백성을 위해 성을 열었고, 마초의 귀부는 포위 직전의 결정타였다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성도의 수비를 꺾고 유장을 격퇴하라.',
+    victory: '유장 격퇴(익주 항복)', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1600 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 성도 평야와 성곽 전진진지(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,,,..,,...M',
+      'M.,CC,,,,,CC.M',
+      'M.,,,..,..,,.M',
+      'M..,,,,..,,..M',
+      'M.,,..,,..,,.M',
+      'M..,F,,,..,..M',
+      'M...,,,.,,...M',
+      'M..,,,...,,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 포위진 — 마초는 16전 진입 시 편입(정사 실재, 편입 표현은 각색)
+      { char: 'liu_bei', x: 2, y: 8, commander: true },
+      { char: 'ma_chao', x: 3, y: 7 },
+      { char: 'zhang_fei', x: 4, y: 8 },
+      { char: 'wei_yan', x: 3, y: 8 },
+      { char: 'pang_tong', x: 1, y: 7 },
+      { char: 'zhao_yun', x: 2, y: 7 },
+    ],
+    enemies: [ // 성도 수비군(정사 실재: 유장·엄안·왕누) — 편성 규모·배치는 게임 각색
+      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'yan_yan', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'wang_lei', x: 7, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
+      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
+      { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
+      { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5000, items: ['ore','tonic','manual','rice'], exp: 260 }, // 초안
+  },
+  {
+    id: 16, name: '제16전 · 정군산', maxTurns: 26, bossChar: 'xiahou_yuan_dj',
     briefing: '219년, 유비는 한중을 두고 조조군과 정군산에서 맞선다(정사 선주전: "於定軍山勢作營…黃忠…斬淵"). 정사에서 황충의 공격으로 하후연이 전사했고 이 승리로 유비는 한중을 얻었다. 산지 전투의 전개·편성·승리조건은 게임 각색이다. 산세를 타고 내려오는 하후연의 본대를 격퇴하라.',
     victory: '하후연 격퇴', defeat: '유비 전사 또는 턴 초과',
     fastWin: { turns: 14, gold: 1500 }, // 초안 — 자연 완주 표본 없음
@@ -1058,42 +1094,6 @@ const LIU_STAGES3 = [
       { char: 'cao_archer', x: 8, y: 1, ai: 'guard' },
     ],
     rewards: { gold: 4900, items: ['ore','tonic','manual','rice'], exp: 250 }, // 초안
-  },
-  {
-    id: 16, name: '제16전 · 익주 평정', maxTurns: 28, bossChar: 'liu_zhang',
-    briefing: '214년, 유비는 성도를 포위하고 유장의 항복을 받아 익주를 평정한다(정사 선주전: "璋降…先主復領益州牧"). 정사에서 유장은 백성을 위해 성을 열었고, 마초의 귀부는 포위 직전의 결정타였다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성도의 수비를 꺾고 유장을 격퇴하라.',
-    victory: '유장 격퇴(익주 항복)', defeat: '유비 전사 또는 턴 초과',
-    fastWin: { turns: 15, gold: 1600 }, // 초안 — 자연 완주 표본 없음
-    map: [ // 성도 평야와 성곽 전진진지(게임 각색)
-      'MMMMMMMMMMMMMM',
-      'M..,,,..,,...M',
-      'M.,CC,,,,,CC.M',
-      'M.,,,..,..,,.M',
-      'M..,,,,..,,..M',
-      'M.,,..,,..,,.M',
-      'M..,F,,,..,..M',
-      'M...,,,.,,...M',
-      'M..,,,...,,..M',
-      'MMMMMMMMMMMMMM',
-    ],
-    players: [ // 남쪽 포위진 — 마초는 16전 진입 시 편입(정사 실재, 편입 표현은 각색)
-      { char: 'liu_bei', x: 2, y: 8, commander: true },
-      { char: 'ma_chao', x: 3, y: 7 },
-      { char: 'huang_zhong', x: 4, y: 8 },
-      { char: 'wei_yan', x: 3, y: 8 },
-      { char: 'pang_tong', x: 1, y: 7 },
-      { char: 'zhao_yun', x: 2, y: 7 },
-    ],
-    enemies: [ // 성도 수비군(정사 실재: 유장·엄안·왕누) — 편성 규모·배치는 게임 각색
-      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
-      { char: 'yan_yan', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
-      { char: 'wang_lei', x: 7, y: 3, ai: 'hold', holdUntil: 5 },
-      { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
-      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
-      { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
-      { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
-    ],
-    rewards: { gold: 5000, items: ['ore','tonic','manual','rice'], exp: 260 }, // 초안
   },
 ];
 

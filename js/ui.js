@@ -207,8 +207,8 @@ const Game = {
       joined.push('taishi_ci');
       this.save();
     }
-    // 정사 기반 합류(유비 3부): 16전(익주 평정) 진입 시 마초 편입 — 정사 실재(214년 귀부), 편입 표현은 각색. 1회·평균레벨 규칙 동일
-    if (this.stageIndex >= 15 && this.hasRoute('liu_p3')) {
+    // 정사 기반 합류(유비 3부): 15전(익주 평정) 진입 시 마초 편입 — 정사 실재(214년 귀부), 편입 표현은 각색. 1회·평균레벨 규칙 동일
+    if (this.stageIndex >= 14 && this.hasRoute('liu_p3')) {
       if (!this.army.ma_chao) {
         const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
         const c = CHARS.ma_chao, g = lv - 1;
@@ -219,8 +219,8 @@ const Game = {
         this.save();
       }
     }
-    // 정사 기반 합류(유비 3부): 15전(정군산) 진입 시 황충 편입 — 정사 실재, 편입 표현은 각색. 1회·평균레벨 규칙 동일
-    if (this.stageIndex >= 14 && this.hasRoute('liu_p3')) {
+    // 정사 기반 합류(유비 3부): 16전(정군산) 진입 시 황충 편입 — 정사 실재, 편입 표현은 각색. 1회·평균레벨 규칙 동일
+    if (this.stageIndex >= 15 && this.hasRoute('liu_p3')) {
       if (!this.army.huang_zhong) {
         const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
         const c = CHARS.huang_zhong, g = lv - 1;
