@@ -183,16 +183,16 @@ p { line-height: 1.5; }
 #base-shop>div { width:100%; }
 
 /* ── v22: 정비 장수카드 밀도 (표시층만) ── */
-/* 모바일·데스크톱 공통: 카드 내부 수직 여백 압축 */
-#base-units .unit-card { line-height: 1.45; margin-bottom: 0; }
-#base-units .unit-card .card-body .dim { font-size: 11px; }
-#base-units .unit-card .unit-trait { font-size: 11px; margin-top: 2px; }
-#base-units .unit-card .promo-hint { font-size: 10px; }
-#base-units .unit-card .card-actions, #base-units .unit-card .perk-row { margin-top: 6px; gap: 5px; }
-#base-units .unit-card .perk-row button, #base-units .unit-card .card-actions button { padding: 6px 10px; font-size: 12px; }
+/* 모바일은 글자 크기·줄간격 원래대로 유지(가독성 우선), 빈 여백 제거와 전직 설명 접기로 공간 확보 */
+#base-units .unit-card { margin-bottom: 0; }
+#base-units .unit-card button { min-height: 44px; }
+#base-units .unit-card .promo-hint { display: block; }
+/* 전직 설명 토글 */
+.ui2-promo-toggle { width: 100%; min-height: 44px; margin-top: 4px; text-align: left; background: rgba(58,50,40,.6); border: 1px solid #4a4034; border-radius: 6px; color: #c8b89a; font-size: 12px; padding: 6px 10px; }
+.ui2-promo-toggle.ui2-ready { border-color: #a98c4f; color: #f0d9a8; }
+.ui2-promo-body { padding: 2px 2px 0; }
 /* 데스크톱: 카드 2열 그리드 — 관리 블록(소지품·상점·기록·판매)은 전폭 유지 */
 @media (min-width: 900px) {
   #base-units { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
   #base-units > div:not(.unit-card) { grid-column: 1 / -1; }
 }
-#base-units .unit-card button { min-height: 36px; }

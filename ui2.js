@@ -181,4 +181,33 @@
   };
   wrapBase(); document.addEventListener('DOMContentLoaded',wrapBase);
   wrapBase2(); document.addEventListener('DOMContentLoaded',wrapBase2);
+  // ── 정비 카드 전직 설명 정리 (표시층): 앞 빈 줄(<br>) 제거 + 긴 설명은 토글 뒤로 ──
+  const tidyPromoHints=()=>{
+    document.querySelectorAll('#base-units .promo-hint').forEach(h=>{
+      if(h._ui2promo)return;
+      h._ui2promo=true;
+      const br=h.previousSibling;
+      if(br&&br.nodeName==='BR')br.remove(); // 블록 특기 행 뒤의 빈 줄 제거
+      const usable=/가능/.test(h.textContent)&&!/부족/.test(h.textContent);
+      const body=document.createElement('div');
+      body.className='ui2-promo-body';
+      h.parentNode.insertBefore(body,h);
+      body.appendChild(h);
+      const btn=document.createElement('button');
+      btn.className='ui2-promo-toggle';btn.type='button';
+      if(usable)btn.classList.add('ui2-ready');
+      const setLbl=()=>{btn.textContent=(body.style.display==='none'?'전직 정보 보기 ▾':'전직 정보 접기 ▴');};
+      body.style.display=usable?'':'none'; // 지금 전직 가능하면 펼침, 조건 미충족 설명은 접힘
+      btn.onclick=()=>{body.style.display=body.style.display==='none'?'':'none';setLbl();};
+      setLbl();
+      body.parentNode.insertBefore(btn,body);
+    });
+  };
+  const wrapBase3=()=>{
+    if(typeof Game==='undefined'||Game._ui2Base3)return;
+    const orig=Game.renderBase.bind(Game);
+    Game.renderBase=function(){orig();tidyPromoHints();};
+    Game._ui2Base3=true;
+  };
+  wrapBase3(); document.addEventListener('DOMContentLoaded',wrapBase3);
 })();
