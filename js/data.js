@@ -217,6 +217,11 @@ const CHARS = {
   shu_soldier:{ name: '유비군 보병', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 20, int: 5, spd: 13, morale: 85 }, // 조조군 보병(cao_soldier 120/30/22) 하향 — 조조 3부 적 잡병
   shu_archer: { name: '유비군 궁수', cls: 'archer',   hp: 85,  mp: 5, atk: 29, def: 16, int: 5, spd: 15, morale: 85 }, // 형주 남군 궁수(jing_archer) 동급
   liu_bei_chibi:{ name: '유비', cls: 'infantry', hp: 175, mp: 25, atk: 36, def: 28, int: 24, spd: 18, morale: 100, tactics: ['cheer'] }, // 적벽 퇴각전 추격대 지휘 보스 — 조조 적벽 보스(cao_cao_chibi 185/38/30) 약간 하향
+  ma_chao:    { name: '마초', cls: 'cavalry',  hp: 170, mp: 15, atk: 37, def: 26, int: 10, spd: 24, morale: 100, tactics: ['intimidate'] }, // 위남 대전 보스 — 금성의 무위(정사 서열감), 조조 적벽 보스(cao_cao_chibi 185/38/30) 약간 하향
+  han_sui:    { name: '한수', cls: 'cavalry',  hp: 130, mp: 15, atk: 33, def: 22, int: 16, spd: 20, morale: 90 }, // 정사 실재 — 위남 패주(보스 아님, 퇴각 가능)
+  cheng_yi:   { name: '성의', cls: 'infantry', hp: 120, mp: 10, atk: 30, def: 22, int: 8,  spd: 15, morale: 85 }, // 정사 실재 — 위남에서 전사(斬成宜)
+  li_kan:     { name: '이감', cls: 'infantry', hp: 115, mp: 10, atk: 29, def: 21, int: 8,  spd: 15, morale: 85 }, // 정사 실재 — 위남에서 전사(斬李堪)
+  guanzhong_c:{ name: '관중 기병', cls: 'cavalry', hp: 95, mp: 5, atk: 28, def: 19, int: 5, spd: 18, morale: 85 },
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -950,9 +955,42 @@ const CAO_STAGES3 = [
     ],
     rewards: { gold: 4600, items: ['ore','tonic','manual','rice'], exp: 230 },
   },
+  {
+    id: 8, name: '제8전 · 위남 대전', maxTurns: 24, bossChar: 'ma_chao',
+    briefing: '211년 가을, 관중의 마초·한수 연합이 위수 남쪽에 주둔해 동진하는 조조군과 맞선다(정사 실재 전투 — 삼국지 무제기 "秋七月，公西征…超等屯渭南…大破之，斬成宜、李堪等"). 정사에서 조조는 이 싸움을 크게 이겼고 성의·이감이 죽었으며 마초·한수는 물러났다. 전투 전개·편성·승리조건은 게임 각색이다. 기병이 달리는 넓은 들에서 마초의 서량 기병을 격퇴하라.',
+    victory: '마초 격퇴', defeat: '조조 전사 또는 턴 초과',
+    map: [ // 위남 들판 — 기병 기동전의 게임 각색(북쪽 위수, 넓은 초원이 결전로)
+      'MMMMMMMMMMMMMM',
+      'M~~~~~~~~~~~~M',
+      'M.,,,,,,,,,,.M',
+      'M.,,,,,,,,,,.M',
+      'M.,,,,,,,,,,.M',
+      'M.,,,,,,,,,,.M',
+      'M.,,,,,,,,,,.M',
+      'M.,,,,,,,,,,.M',
+      'M............M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 동쪽에서 진군하는 조조군
+      { char: 'cao_cao', x: 11, y: 4, commander: true },
+      { char: 'xiahou_dun', x: 10, y: 3 },
+      { char: 'xiahou_yuan', x: 10, y: 5 },
+      { char: 'cao_ren', x: 11, y: 5 },
+      { char: 'yue_jin', x: 11, y: 3 },
+      { char: 'xun_yu', x: 12, y: 4 },
+    ],
+    enemies: [ // 서쪽 위남 주둔 연합군(정사 지휘관: 마초·한수·성의·이감) — 편성 규모·돌격 배치는 게임 각색
+      { char: 'ma_chao', x: 2, y: 4, boss: true, ai: 'aggressive' },
+      { char: 'han_sui', x: 2, y: 5, ai: 'aggressive' },
+      { char: 'cheng_yi', x: 3, y: 3, ai: 'aggressive' },
+      { char: 'li_kan', x: 3, y: 6, ai: 'aggressive' },
+      { char: 'guanzhong_c', x: 4, y: 2, ai: 'aggressive' },
+      { char: 'guanzhong_c', x: 4, y: 7, ai: 'aggressive' },
+      { char: 'guanzhong_c', x: 5, y: 4, ai: 'aggressive' },
+    ],
+    rewards: { gold: 4700, items: ['ore','tonic','manual','rice'], exp: 240 },
+  },
 ];
-
-
 
 function buildMap(pattern) {
   return pattern.map(row => row.split('').map(ch => MAP_CHARS[ch] || 'plain'));
