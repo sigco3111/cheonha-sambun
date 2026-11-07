@@ -54,6 +54,26 @@
   };
   wrap(); document.addEventListener('DOMContentLoaded',wrap);
 
+
+  // ── 전투 목표 표시줄: stage.victory/defeat 텍스트만 표시 (게임 로직 무관) ──
+  const objBar=()=>{
+    const main=document.getElementById('battle-main'); if(!main||document.getElementById('ui2-obj'))return;
+    const bar=document.createElement('div'); bar.id='ui2-obj'; bar.title='탭하면 펼치기';
+    bar.addEventListener('click',()=>bar.classList.toggle('ui2-open'));
+    main.insertBefore(bar,main.firstChild);
+    const upd=()=>{
+      const b=(typeof Game!=='undefined')&&Game.battle;
+      if(!b||!b.stage||Game.screen!=='screen-battle'){bar.style.display='none';return;}
+      bar.style.display='';
+      bar.textContent='목표: '+b.stage.victory+' · 패배: '+b.stage.defeat;
+    };
+    const hud=document.getElementById('hud-turn');
+    if(hud)new MutationObserver(upd).observe(hud,{childList:true,characterData:true,subtree:true});
+    new MutationObserver(upd).observe(main,{childList:true});
+    upd();
+  };
+  objBar(); document.addEventListener('DOMContentLoaded',objBar);
+
   // ── 턴 배지 진영 색 ──
   const paint=()=>{
     const t=document.getElementById('hud-turn'); if(!t)return;
