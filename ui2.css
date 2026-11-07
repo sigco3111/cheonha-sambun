@@ -102,7 +102,7 @@ p { line-height: 1.5; }
 .uc-stat s { text-decoration: none; font-size: 9px; color: #8f857a; }
 .uc-trait { padding: 0 10px 8px; font-size: 10px; line-height: 1.5; color: #9a9084; }
 /* 행동 메뉴: 아이콘 그리드 */
-#action-menu { gap: 5px; display: flex; flex-wrap: wrap; width: 168px; background: linear-gradient(160deg, #322b22, #241f19); border: 1px solid #5a4c38; border-radius: 8px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.55); }
+#action-menu { gap: 5px; flex-wrap: wrap; width: 168px; background: linear-gradient(160deg, #322b22, #241f19); border: 1px solid #5a4c38; border-radius: 8px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.55); }
 #action-menu button { flex: 1 1 44%; min-height: 44px; font-size: 13px; background: rgba(58,50,40,.9); border: 1px solid #5a4c38; border-radius: 6px; }
 #menu-attack::before { content: '⚔ '; color: #d8a05a; }
 #menu-tactic::before { content: '✦ '; color: #7fa3c8; }
@@ -199,3 +199,7 @@ p { line-height: 1.5; }
 
 /* ── v23: 브리핑 한글 줄바꿈 품질 (표시층만) ── */
 #brief-text, #brief-conditions { word-break: keep-all; }
+
+/* ── v25: 세력 선택 버튼 폭 통일 (표시층만) ── */
+#title-faction-pick { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
+#title-faction-pick button { width: 100%; min-width: 0; }
