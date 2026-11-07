@@ -1912,8 +1912,8 @@ const Game = {
     const P3 = isLiu
       ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전 ~ 제18전 북벌·낙양 · 천하통일 엔딩)',
           note: '정사 실재 전투(적벽 208 · 남형주 4군 209 · 낙성·익주 평정 213-14 · 정군산 219)와 IF 전투(이릉 설욕 · 북벌·낙양, 정사에 없는 가상 결말). 강·다리 배치, 수군 편성, 합류 표현, 인물 생사와 전개·승리조건은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
-      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전 ~ 제9전 한중 양평관)',
-          note: '정사 실재 전투(적벽 퇴각 208). 강·다리 배치, 추격 편성, 승리조건(후퇴로 확보)은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
+      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전 ~ 제12전 천하통일 결전 · 천하통일 엔딩)',
+          note: '정사 실재 전투(적벽 퇴각 208 · 위남 211 · 한중 양평관 215)와 IF 전투(정군산 방어 · 남하 재기 · 천하통일 결전, 정사에 없는 가상 결말). 강·다리 배치, 편성, 인물 생사와 전개·승리조건은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
     const p3id = this.factionId + '_p3';
     const p3existing = document.getElementById('cao-part3-choice');
     if (this.stageIndex === this.stages().length && this.hasRoute(p2id) && P3.def && P3.def.length && !this.hasRoute(p3id)) {

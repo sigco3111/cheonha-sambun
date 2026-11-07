@@ -263,6 +263,10 @@ const CHARS = {
   // ── 유비 3부 · 북벌·낙양 IF(정사 실재 인물, 스탯은 초안 — AUTO 실측 조정 전) ──
   sima_yi:   { name: '사마의', cls: 'strategist', hp: 160, mp: 45, atk: 26, def: 26, int: 40, spd: 18, morale: 100, tactics: ['fire_arrow','intimidate'] }, // 정사 실재 — 북벌의 상대(대응 시기·결전은 IF 각색)
   xu_huang:  { name: '서황', cls: 'infantry', hp: 140, mp: 10, atk: 33, def: 26, int: 14, spd: 17, morale: 95 }, // 정사 실재 — 위 오자양장
+  // ── 조조 3부 후반(정사 실재 인물, 스탯은 초안 — AUTO 실측 조정 전) ──
+  fa_zheng:  { name: '법정', cls: 'strategist', hp: 95, mp: 35, atk: 20, def: 20, int: 34, spd: 16, morale: 90, tactics: ['fire_arrow'] }, // 정사 실재 — 정군산 공략의 모사
+  guan_ping: { name: '관평', cls: 'cavalry', hp: 120, mp: 10, atk: 32, def: 23, int: 12, spd: 20, morale: 92 }, // 정사 실재 — 관우의 아들
+  liu_bei_king: { name: '한중왕 유비', cls: 'infantry', hp: 190, mp: 25, atk: 33, def: 28, int: 20, spd: 15, morale: 100, tactics: ['intimidate'] }, // 정사 실재 — 한중왕 취위는 정사, 결전 상대로서는 IF 각색
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -1285,6 +1289,113 @@ const CAO_STAGES3 = [
       { char: 'hanzhong_soldier', x: 12, y: 5, ai: 'hold', holdUntil: 8 },
     ],
     rewards: { gold: 4400, items: ['meat','ore','tonic','manual'], exp: 215 }, // 초안
+  },
+  {
+    id: 10, name: '제10전 · 정군산 방어', maxTurns: 26, bossChar: 'huang_zhong',
+    briefing: '정사와 IF가 섞인 전투입니다. 정사에서 219년 정군산의 하후연은 황충의 공격에 전사했고(선주전: "黃忠…斬淵") 조조는 한중에서 물러났다. 이 전투는 그 방어에 성공하는 가상 분기이며, 하후연의 생존·편성·전개·승리조건은 게임 각색이다. 황충의 공세를 꺾고 산세를 사수하라.',
+    victory: '황충 격퇴(IF 방어 성공)', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1500 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 정군산 산지(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M.,,..,,..,,.M',
+      'M.,MM,,..,,,.M',
+      'M..,,..,.,,..M',
+      'M..,,,,..,,..M',
+      'M.,,..,,..,,.M',
+      'M..,,F,,..,..M',
+      'M.,,..,,..,,.M',
+      'M..,,,...,,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 조조 본대 — 하후연 생존은 IF 각색
+      { char: 'cao_cao', x: 5, y: 8, commander: true },
+      { char: 'xiahou_yuan', x: 4, y: 7 },
+      { char: 'zhang_he', x: 6, y: 8 },
+      { char: 'xiahou_dun', x: 4, y: 8 },
+      { char: 'cao_ren', x: 6, y: 7 },
+      { char: 'xun_yu', x: 5, y: 7 },
+    ],
+    enemies: [ // 북쪽 촉군 공격대(정사 실재: 황충·법정·조운) — 편성·배치·전개는 게임 각색
+      { char: 'huang_zhong', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 4 },
+      { char: 'fa_zheng', x: 5, y: 1, ai: 'hold', holdUntil: 4 },
+      { char: 'zhao_yun', x: 7, y: 2, ai: 'hold', holdUntil: 4 },
+      { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
+      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
+      { char: 'shu_archer', x: 4, y: 1, ai: 'guard' },
+      { char: 'shu_archer', x: 8, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 4900, items: ['ore','tonic','manual','rice'], exp: 250 }, // 초안
+  },
+  {
+    id: 11, name: '제11전 · 남하 재기', maxTurns: 28, bossChar: 'guan_yu',
+    briefing: 'IF(가상) 전개입니다. 정사에서 조조는 한중을 잃은 뒤 다시 남하해 형주를 직접 공격하지 않았고, 관우는 번성을 쳤다가 오의 기습에 몰락했다. 이 전투는 위가 정군산을 지켜낸 가상 분기에서 형주의 관우를 직접 치는 결전으로, 편성·전개·승리조건은 모두 게임 각색이다. 관우의 방어선을 돌파하라.',
+    victory: '관우 격퇴(IF 형주 돌파)', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1600 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 형주 평야와 수로(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,,,..,,...M',
+      'M.,,,..,..,,.M',
+      'M..,,,,,,....M',
+      'M,,~~~,,,~~,.M',
+      'M.,~~~,,~~~,.M',
+      'M..,,,,,.,,..M',
+      'M.,,..,,..,,.M',
+      'M..,,,...,,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남하 본대(IF 편성)
+      { char: 'cao_cao', x: 5, y: 8, commander: true },
+      { char: 'xiahou_dun', x: 4, y: 8 },
+      { char: 'xiahou_yuan', x: 6, y: 8 },
+      { char: 'zhang_he', x: 4, y: 7 },
+      { char: 'yue_jin', x: 6, y: 7 },
+      { char: 'cao_ren', x: 5, y: 7 },
+    ],
+    enemies: [ // 형주 수비군(정사 실재: 관우·관평) — 편성·배치·전개는 게임 각색
+      { char: 'guan_yu', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 5 },
+      { char: 'guan_ping', x: 4, y: 2, ai: 'hold', holdUntil: 5 },
+      { char: 'shu_guard', x: 5, y: 3, ai: 'guard' },
+      { char: 'shu_guard', x: 7, y: 3, ai: 'guard' },
+      { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
+      { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5100, items: ['ore','tonic','manual','rice'], exp: 265 }, // 초안
+  },
+  {
+    id: 12, name: '제12전 · 천하통일 결전', maxTurns: 30, bossChar: 'liu_bei_king',
+    briefing: 'IF(가상) 전개이며 조조 루트의 최종전입니다. 정사에서 조조는 220년에 사망했고 천하를 통일하지 못했다(무제기: "庚子，王崩于洛陽"). 이 전투의 한중왕 유비와의 결전·승리·통일은 모두 정사에 없는 가상 결말이며, 등장 인물의 생사·편성·전개·승리조건은 게임 각색이다. 최후의 결전에서 한중왕 유비를 격퇴하라.',
+    victory: '한중왕 유비 격퇴(IF 통일)', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 16, gold: 2000 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 결전 평야와 양측 진지(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,,,..,,...M',
+      'M.,CC,,,,CC,.M',
+      'M.,,,..,..,,.M',
+      'M..,,,,,,....M',
+      'M.,,..,,..,,.M',
+      'M..,F,,,..,..M',
+      'M.,,..,,..,,.M',
+      'M..,,,...,,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 결전 본대(IF 편성)
+      { char: 'cao_cao', x: 5, y: 8, commander: true },
+      { char: 'xiahou_dun', x: 4, y: 8 },
+      { char: 'xiahou_yuan', x: 6, y: 8 },
+      { char: 'zhang_he', x: 4, y: 7 },
+      { char: 'yue_jin', x: 6, y: 7 },
+      { char: 'xun_yu', x: 5, y: 7 },
+    ],
+    enemies: [ // 촉한 본대(정사 실재: 유비·제갈량·위연) — 생사·편성·전개는 IF 각색
+      { char: 'liu_bei_king', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'zhuge_liang', x: 5, y: 1, ai: 'hold', holdUntil: 5 },
+      { char: 'wei_yan', x: 7, y: 2, ai: 'hold', holdUntil: 5 },
+      { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
+      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
+      { char: 'shu_archer', x: 4, y: 1, ai: 'guard' },
+      { char: 'shu_archer', x: 8, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5500, items: ['ore','tonic','manual','rice'], exp: 300 }, // 초안
   },
 ];
 
