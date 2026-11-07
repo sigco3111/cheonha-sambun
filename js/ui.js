@@ -799,9 +799,20 @@ const Game = {
       const cur = a.equip[slot];
       row.innerHTML = `<b>${{weapon:'무기',armor:'방어구',acc:'장신구'}[slot]}</b>: ${cur ? ITEMS[cur.id].name + (cur.up ? '+'+cur.up : '') + ` <span class="dim">(${this.itemStatText(cur)})</span>` : '없음'} `;
       const sel = document.createElement('select');
-      sel.innerHTML = `<option value="">(비우기)</option>` + this.inventory
-        .map((it, i) => ITEMS[it.id].slot === slot ? `<option value="${i}">${ITEMS[it.id].name}${it.up ? '+'+it.up : ''} — ${this.itemStatText(it)}</option>` : '')
-        .join('');
+      // 현재 장착 상태를 표시하는 자리표시 옵션 — 장착 중인데 '(비우기)'가 보이는 오해 방지
+      const curTxt = cur ? `현재: ${ITEMS[cur.id].name}${cur.up ? '+' + cur.up : ''}` : '비어 있음';
+      // 같은 장비는 개수로 묶어 표시 (선택 시 첫 번째 실물을 장착)
+      const seen = {};
+      const opts = [];
+      this.inventory.forEach((it, i) => {
+        if (ITEMS[it.id].slot !== slot) return;
+        const k = it.id + '|' + (it.up || 0);
+        if (seen[k] !== undefined) { opts[seen[k]].n++; return; }
+        seen[k] = opts.length;
+        opts.push({ i, n: 1, label: `${ITEMS[it.id].name}${it.up ? '+' + it.up : ''} — ${this.itemStatText(it)}` });
+      });
+      sel.innerHTML = `<option value="__keep" selected disabled>${curTxt} — 변경하려면 선택</option><option value="">(비우기)</option>` +
+        opts.map(o => `<option value="${o.i}">${o.label}${o.n > 1 ? ' ×' + o.n : ''}</option>`).join('');
       sel.onchange = () => {
         if (cur) this.inventory.push(cur);
         const v = sel.value;
