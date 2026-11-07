@@ -4,9 +4,9 @@
 const TILE = 48;
 const IMG = { terrain: {}, units: {} };
 const TERRAIN_KEYS = Object.keys(TERRAIN);
-const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry','enemy_cavalry','enemy_archer','enemy_strategist'];
+const UNIT_SPRITES = ['infantry','cavalry','archer','strategist','enemy_infantry','enemy_cavalry','enemy_archer','enemy_strategist','navy','enemy_navy'];
 // Sprite files renamed on GitHub (web UI upload prefixed them); map sprite keys to actual file basenames.
-const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist', infantry:'new_infantry', enemy_infantry:'new_enemy_infantry'};
+const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strategist', enemy_cavalry:'4-enemy_cavalry', enemy_archer:'5-enemy_archer', enemy_strategist:'6-enemy_strategist', infantry:'new_infantry', enemy_infantry:'new_enemy_infantry', navy:'2-archer', enemy_navy:'5-enemy_archer'}; // 수군 스프라이트는 궁병 계열 재사용(전용 에셋 없음 — 각색)
 // Individual commander sprites (allied officers); fallback to class sprite when absent.
 const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru','dong_zhuo','li_jue','guo_si','cao_cao','xiahou_dun','xiahou_yuan','cao_ren','yue_jin','xun_yu','yuan_shao','yan_liang','wen_chou','ju_shou'];
 
@@ -55,8 +55,12 @@ const Game = {
     // 2부 연장(조조 북방 평정 / 유비 박망파·장판): 완주 후 명시 언락(route '<세력>_p2')이 있을 때만 연장 — 미언락 세이브는 1부 그대로라 완주 의미·엔딩 기록 불변 (2부 데이터 미정의면 아무 변화 없음)
     const p2 = this.factionId === 'cao' ? (typeof CAO_STAGES2 !== 'undefined' ? CAO_STAGES2 : null)
              : this.factionId === 'liu' ? (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null) : null;
-    if (p2 && p2.length && this.hasRoute(this.factionId + '_p2')) return base.concat(p2);
-    return base;
+    let stages = base;
+    if (p2 && p2.length && this.hasRoute(this.factionId + '_p2')) stages = base.concat(p2);
+    // 3부 연장(유비 적벽): 2부 완주 후 명시 언락(route '<세력>_p3')이 있을 때만 결합 — 미언락 세이브는 기존 완주 의미·엔딩 기록 불변
+    const p3 = this.factionId === 'liu' ? (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null) : null; // 조조 3부는 데이터 미정의 — 정의 전까지 무영향
+    if (p3 && p3.length && this.hasRoute(this.factionId + '_p3')) stages = stages.concat(p3);
+    return stages;
   },
   save() {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
@@ -187,6 +191,29 @@ const Game = {
       joined.push('taishi_ci');
       this.save();
     }
+    // 정사 기반 합류(유비 3부): 12전(적벽) 진입 시 조운·제갈량 편입 — 정사상 이 시점 이미 유비 휘하(장판 기록), 합류 표현만 각색. IF 합류와 같은 1회 편입·평균레벨 규칙
+    if (this.stageIndex >= 11 && this.hasRoute('liu_p3') && !this.army.zhao_yun && Object.keys(this.army).length >= 6) {
+      const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+      const c = CHARS.zhao_yun, g = lv - 1; // gainExp와 같은 성장 계수를 편입 시 1회만 적용
+      this.army.zhao_yun = {
+        charId: 'zhao_yun', cls: c.cls, level: lv, exp: 0,
+        maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+        equip: { weapon: { id: 'spear', up: 0 }, armor: null, acc: null }, // 초기 장비 고정
+      };
+      joined.push('zhao_yun');
+      this.save();
+    }
+    if (this.stageIndex >= 11 && this.hasRoute('liu_p3') && !this.army.zhuge_liang && Object.keys(this.army).length >= 6) {
+      const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+      const c = CHARS.zhuge_liang, g = lv - 1; // 조운과 같은 1회 편입 규칙
+      this.army.zhuge_liang = {
+        charId: 'zhuge_liang', cls: c.cls, level: lv, exp: 0,
+        maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+        equip: { weapon: { id: 'fan', up: 0 }, armor: null, acc: null }, // 초기 장비 고정
+      };
+      joined.push('zhuge_liang');
+      this.save();
+    }
     if ((this.records.ach || {}).veteran && !this.army.zhou_cang && Object.keys(this.army).length >= 6) {
       const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
       const c = CHARS.zhou_cang, g = lv - 1; // 관해·태사자와 같은 1회 편입 규칙
@@ -307,7 +334,10 @@ const Game = {
     const jn = document.getElementById('brief-join');
     if (jn) {
       const joined = this.checkJoiners();
-      jn.innerHTML = joined.length ? `<b>오리지널 IF</b> · ${joined.map(id => `${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ')} · 아래 출전 편성에서 선택 가능` : '';
+      const STORY_JOIN = ['zhao_yun', 'zhuge_liang']; // 정사 기반 합류(합류 시점만 각색) — IF 합류와 표기 분리
+      jn.innerHTML = joined.length ? joined.map(id => STORY_JOIN.includes(id)
+        ? `<b>정사 기반 합류</b> · ${CHARS[id].name}(은)는 이 시점 이미 유비 휘하(정사, 합류 표현만 각색) · 합류 Lv ${this.army[id].level}로 고정 저장`
+        : `<b>오리지널 IF</b> · ${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ') + ' · 아래 출전 편성에서 선택 가능' : '';
     }
     // 회차 시작 자원 해금 표시(회차 시작 또는 누락분 보완으로 이번 세션에 실제 지급된 보상)
     let bn = document.getElementById('brief-bonus');
@@ -1787,8 +1817,9 @@ const Game = {
     const addMark = id => { if (!cur.includes(id)) cur.push(id); };
     addMark(this.factionId + '_p1');
     if (this.hasRoute(this.factionId + '_p2')) addMark(this.factionId + '_p2');
+    if (this.hasRoute(this.factionId + '_p3')) addMark(this.factionId + '_p3');
     this.save();
-    document.getElementById('complete-text').textContent += ' 루트 기록: ' + cur.map(m => m.endsWith('_p2') ? '2부' : '1부').join('·') + ' 완주.';
+    document.getElementById('complete-text').textContent += ' 루트 기록: ' + cur.map(m => m.endsWith('_p3') ? '3부' : m.endsWith('_p2') ? '2부' : '1부').join('·') + ' 완주.';
     // 2부 연장 선택(세력 공통): 미언락(route '<세력>_p2' 없음) 완주 화면에만 노출 — 명시 선택 시에만 2부가 stages에 결합되고, 미선택 세이브는 1부 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
     const P2 = isLiu
       ? { def: (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null), btn: '형주의 시련 계속 · 2부 (제10전 박망파 ~ 제11전 장판)',
@@ -1809,6 +1840,25 @@ const Game = {
       b2.onclick = () => { if (this.hasRoute(p2id)) return; this.route.push({ c: this.cycle, id: p2id }); this.save(); this.renderBriefing(); }; // 중복 클릭·잔재 호출 안전: route 중복 push는 화면 숨김이 아니라 핸들러에서 방지
       p2.appendChild(b2);
     } else if (p2existing) p2existing.style.display = 'none'; // 언락 후 재완주·미대상 화면에서는 이전 렌더 잔재 숨김 — 중복 언락 버튼 노출·route 중복 push 방지
+    // 3부 연장 선택: 2부 언락 상태에서 2부까지 완주(stageIndex === stages().length)한 화면에만 노출 — 명시 선택 시에만 3부가 stages에 결합. 조조 3부는 데이터 미정의로 버튼 자체 미표시
+    const P3 = isLiu
+      ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전)',
+          note: '정사 실재 전투(적벽 대전 208). 강·다리 배치, 수군 편성, 오군 동맹의 표현 방식은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
+      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '', note: '' };
+    const p3id = this.factionId + '_p3';
+    const p3existing = document.getElementById('cao-part3-choice');
+    if (this.stageIndex === this.stages().length && this.hasRoute(p2id) && P3.def && P3.def.length && !this.hasRoute(p3id)) {
+      let p3 = p3existing;
+      if (!p3) { p3 = document.createElement('div'); p3.id = 'cao-part3-choice'; document.getElementById('complete-text').after(p3); }
+      p3.style.display = '';
+      p3.innerHTML = '';
+      const n3 = document.createElement('p'); n3.className = 'dim';
+      n3.textContent = P3.note;
+      p3.appendChild(n3);
+      const b3 = document.createElement('button'); b3.id = 'btn-cao-part3'; b3.textContent = P3.btn;
+      b3.onclick = () => { if (this.hasRoute(p3id)) return; this.route.push({ c: this.cycle, id: p3id }); this.save(); this.renderBriefing(); }; // 중복 클릭·잔재 호출 안전: route 중복 push는 화면 숨김이 아닌 핸들러에서 방지(p2와 같은 규칙)
+      p3.appendChild(b3);
+    } else if (p3existing) p3existing.style.display = 'none'; // 미대상·언락 후 화면의 잔재 숨김(p2와 같은 규칙)
     // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)
     let panel=document.getElementById('epilogue-choice');
     if(!panel){panel=document.createElement('div');panel.id='epilogue-choice';document.getElementById('complete-text').after(panel);}

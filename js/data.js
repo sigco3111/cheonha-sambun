@@ -2,20 +2,20 @@
 'use strict';
 
 const TERRAIN = {
-  plain:     { name: '평지',   def: 0,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  grass:     { name: '초원',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  forest:    { name: '숲',     def: 15, heal: 0,   costs: { infantry:2, cavalry:3, archer:2, strategist:2 } },
-  mountain:  { name: '산',     def: 20, heal: 0,   costs: { infantry:3, cavalry:-1, archer:3, strategist:3 } },
-  river:     { name: '강',     def: 0,  heal: 0,   costs: { infantry:4, cavalry:-1, archer:4, strategist:4 } },
-  bridge:    { name: '다리',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  swamp:     { name: '습지',   def: -5, heal: 0,   costs: { infantry:3, cavalry:4, archer:3, strategist:3 } },
-  wasteland: { name: '황무지', def: 5,  heal: 0,   costs: { infantry:2, cavalry:2, archer:2, strategist:2 } },
-  castle:    { name: '성내',   def: 20, heal: 0.1, costs: { infantry:1, cavalry:2, archer:1, strategist:1 } },
-  wall:      { name: '성벽',   def: 0,  heal: 0,   costs: { infantry:-1, cavalry:-1, archer:-1, strategist:-1 } },
-  gate:      { name: '관문',   def: 15, heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  village:   { name: '마을',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  barracks:  { name: '병영',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
-  treasure:  { name: '보물창고', def: 10, heal: 0, costs: { infantry:1, cavalry:1, archer:1, strategist:1 } },
+  plain:     { name: '평지',   def: 0,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
+  grass:     { name: '초원',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
+  forest:    { name: '숲',     def: 15, heal: 0,   costs: { infantry:2, cavalry:3, archer:2, strategist:2, navy:3 } },
+  mountain:  { name: '산',     def: 20, heal: 0,   costs: { infantry:3, cavalry:-1, archer:3, strategist:3, navy:-1 } },
+  river:     { name: '강',     def: 0,  heal: 0,   costs: { infantry:4, cavalry:-1, archer:4, strategist:4, navy:1 } },
+  bridge:    { name: '다리',   def: 5,  heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:1 } },
+  swamp:     { name: '습지',   def: -5, heal: 0,   costs: { infantry:3, cavalry:4, archer:3, strategist:3, navy:1 } },
+  wasteland: { name: '황무지', def: 5,  heal: 0,   costs: { infantry:2, cavalry:2, archer:2, strategist:2, navy:3 } },
+  castle:    { name: '성내',   def: 20, heal: 0.1, costs: { infantry:1, cavalry:2, archer:1, strategist:1, navy:3 } },
+  wall:      { name: '성벽',   def: 0,  heal: 0,   costs: { infantry:-1, cavalry:-1, archer:-1, strategist:-1, navy:-1 } },
+  gate:      { name: '관문',   def: 15, heal: 0,   costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
+  village:   { name: '마을',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
+  barracks:  { name: '병영',   def: 10, heal: 0.2, costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
+  treasure:  { name: '보물창고', def: 10, heal: 0, costs: { infantry:1, cavalry:1, archer:1, strategist:1, navy:2 } },
 };
 
 const CLASSES = {
@@ -31,6 +31,8 @@ const CLASSES = {
   strategist: { name: '모사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist2', promoLevel: 10, sprite: 'strategist' },
   strategist2:{ name: '군사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: 'strategist3', promoLevel: 20, sprite: 'strategist' },
   strategist3:{ name: '책사',   cat: 'strategist', move: 4, rMin: 1, rMax: 2, counter: false, promoTo: null, sprite: 'strategist' },
+  // 수군(3막 적벽~): 강 비용 1의 수상 특화 궁병 계열. 상성표(MATCHUP)에 없어 중립. 전직 없음.
+  navy:       { name: '수군',   cat: 'navy',       move: 5, rMin: 2, rMax: 3, counter: false, promoTo: null, sprite: 'navy' },
   // 3단계 분기 전직(보병·기병·궁병): promoBonus 없는 클래스는 PROMO_BONUS_DEFAULT 적용.
   // 롤백 구조: 이 클래스 정의들은 영구 유지(기존 저장의 cls 참조 보존). 롤백은 promoTo 단일화로 선택지만 닫는다.
   infantry3b: { name: '돌격병', cat: 'infantry',   move: 4, rMin: 1, rMax: 1, counter: true,  promoTo: null, promoBonus: { atk: 6, def: 1, hp: 14, mp: 3 }, sprite: 'infantry' },
@@ -209,6 +211,10 @@ const CHARS = {
   cao_elite_c:{ name: '조조군 정예기병', cls: 'cavalry', hp: 150, mp: 5, atk: 40, def: 22, int: 5, spd: 23, morale: 90 }, // 장판 급습 추격대(정사상 정예 기병 5천의 게임 각색)
   cao_soldier:{ name: '조조군 보병', cls: 'infantry', hp: 120, mp: 5, atk: 30, def: 22, int: 5, spd: 14, morale: 85 }, // 유비 2부 — 10전에 황건 병종이 섞이던 표기 결함 수정
   cao_archer:{ name: '조조군 궁수', cls: 'archer', hp: 100, mp: 5, atk: 32, def: 18, int: 5, spd: 16, morale: 85 },
+  zhao_yun: { name: '조운',   cls: 'cavalry',    hp: 102, mp: 20, atk: 31, def: 23, int: 14, spd: 23, morale: 95 }, // 관우(공32/방24)와 주창(공30/방23) 사이 — 기존 아군 기병 실측 기준
+  zhuge_liang:{ name: '제갈량', cls: 'strategist', hp: 78, mp: 42, atk: 11, def: 13, int: 36, spd: 15, morale: 95, tactics: ['fire','heal'] }, // 최고 지력 — 저수(int 34) 위, 화계·치유 보유(적벽 화계 서사)
+  cao_navy: { name: '조조군 수군', cls: 'navy',   hp: 110, mp: 5, atk: 34, def: 18, int: 5, spd: 17, morale: 85 }, // 조조군 궁수(hp100/atk32) 약간 상향 — 수상 방어선
+  cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
@@ -864,6 +870,46 @@ const LIU_STAGES2 = [
     rewards: { gold: 4200, items: ['meat','ore','tonic','manual'], exp: 210 },
   },
 ];
+// 유비 3부 — 12전 적벽 대전. 해금: route 'liu_p3' 언락(2부 완주 후 명시 선택) 시에만 stages()가 결합 — 미언락 세이브 11전 완주 의미·엔딩 불변
+const LIU_STAGES3 = [
+  {
+    id: 12, name: '제12전 · 적벽 대전', maxTurns: 24, bossChar: 'cao_cao_chibi',
+    briefing: '208년 겨울, 장판에서 물러난 유비는 손권과 연합해 적벽에서 조조의 대군과 대치한다(정사 실재 전투 — 삼국지 선주전 "與曹公戰於赤壁，大破之，焚其舟船"). 정사에서 조조군은 화계와 역병으로 붕괴했다. 전장의 강과 다리 배치, 수군 편성은 게임 각색이며 오군 동맹군은 별도 부대로 등장하지 않는다(브리핑 서사 표현). 조운·제갈량은 정사상 이 시점 이미 유비 휘하(장판 기록) — 합류 표현만 각색. 강을 지키는 수군을 뚫고 북쪽의 조조를 격퇴하라.',
+    victory: '조조 격퇴', defeat: '유비 전사 또는 턴 초과',
+    map: [ // 적벽 수계 — 강 2열+다리 2개가 결전로(화계 연출 공간은 강, 각색)
+      'MMMMMMMMMMMMMM',
+      'M............M',
+      'M..,.......,.M',
+      'M.,......,...M',
+      'M~~=~~~~~~=~~M',
+      'M~~=~~~~~~=~~M',
+      'M..,.,...,..,M',
+      'M.,.....,,...M',
+      'M..,......,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 연합군 전위 — 유비 고정 지휘관
+      { char: 'liu_bei', x: 2, y: 7, commander: true },
+      { char: 'guan_yu', x: 3, y: 6 },
+      { char: 'zhang_fei', x: 3, y: 8 },
+      { char: 'zhao_yun', x: 4, y: 7 },
+      { char: 'zhuge_liang', x: 1, y: 7 },
+      { char: 'jian_yong', x: 2, y: 8 },
+    ],
+    enemies: [ // 수군 방어선(강, 게임 각색) + 북쪽 조조 본대 — 11→8기 축소·보스 하향(220→185): AUTO 실측 L14~18 전패(유비 전사 경로) 기반, 동일 진입 스냅샷 비교로 조정: AUTO 실측 L14~18 전패(유비 전사 경로) 기반, 동일 진입 스냅샷 비교로 조정
+      { char: 'cao_navy', x: 6, y: 4, ai: 'aggressive' },
+      { char: 'cao_navy', x: 8, y: 5, ai: 'aggressive' },
+      { char: 'cao_archer', x: 9, y: 3 },
+      { char: 'cao_soldier', x: 4, y: 2 },
+      { char: 'cao_soldier', x: 10, y: 2 },
+      { char: 'yu_jin', x: 5, y: 1 },
+      { char: 'li_dian', x: 9, y: 1 },
+      { char: 'cao_cao_chibi', x: 7, y: 1, ai: 'hold', holdUntil: 4 }, // 후방 지휘 — 초반 돌출 방지
+    ],
+    rewards: { gold: 4600, items: ['ore','tonic','manual','rice'], exp: 230 },
+  },
+];
+
 
 
 function buildMap(pattern) {
