@@ -194,8 +194,8 @@
     const btn=document.createElement('button');
     btn.className='ui2-rec-toggle';btn.type='button';
     const setLbl=()=>{btn.textContent=(body.style.display==='none'?'판매 보기 ▾':'판매 접기 ▴');};
-    body.style.display='none';
-    btn.onclick=()=>{body.style.display=body.style.display==='none'?'':'none';setLbl();};
+    body.style.display=window._ui2SellOpen?'':'none'; // 열림 상태는 페이지 세션 동안 유지 — 판매·구매로 정비가 다시 그려져도 패널이 닫히지 않게 (표시 상태만, 저장 무관)
+    btn.onclick=()=>{body.style.display=body.style.display==='none'?'':'none';window._ui2SellOpen=body.style.display!=='none';setLbl();};
     setLbl();
     sell.appendChild(btn);sell.appendChild(body);
   };
