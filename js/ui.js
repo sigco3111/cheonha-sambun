@@ -1721,6 +1721,8 @@ const Game = {
     this.battle.epilogueTrial = true;
     this.battle.weather = null; this.battle.pendingReinforce = null; this.battle.defense = null;
     this.battle.autoItem = () => false;
+    // 시험전은 수동 기본 진입: 직전 전역의 AUTO가 이어지면 사용자가 살펴볼 새도 없이 시험전이 끝남. 화면의 자동전투 버튼으로 직접 켤 수 있고(허용 자체는 유지), 종료 시 원래 AUTO 상태로 복원
+    this._epiAuto = this.auto; this.auto = false;
     this.turnGuard = 0; this.selected = null; this.moveTiles = [];
     this.restoreMenuButtons(); this.show('screen-battle'); this.setupCanvas(); this.renderBattle(); this.updateHud();
     document.getElementById('battle-log').innerHTML = '';
@@ -1730,10 +1732,10 @@ const Game = {
     if (!exit) { exit=document.createElement('button');exit.id='epilogue-exit';document.getElementById('screen-battle').appendChild(exit); }
     exit.textContent='후일담 중단 (소모 없음)';exit.style.display='';
     exit.onclick=()=>{ const b=this.battle; if(!b.epilogueTrial || b._finished)return; b.over={win:false,reason:'후일담 중단'};this.finishBattle(); };
-    if (this.auto) this.autoLoop();
   },
   finishEpilogue(b) {
     const exit=document.getElementById('epilogue-exit');if(exit)exit.style.display='none';
+    this.auto = !!this._epiAuto; this._epiAuto = null; // 진입 때 끈 AUTO를 원래 상태로 복원 — 시험전 중 사용자가 켠 AUTO는 시험전 안에만 적용
     // 승리 일반분기의 드랍/경험치/기록/상점회전/군단반영을 전혀 호출하지 않는다.
     const won=!!b.over.win;
     this.epilogue={c:this.cycle,id:(this.epilogue&&this.epilogue.id)||'escape',status:won?'cleared':'ready',last:won?'승리':b.over.reason}; // 시험전 id 보존(세력별 이력 분리) — 미보유 구 세이브만 escape 폴백
