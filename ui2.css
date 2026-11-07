@@ -203,3 +203,13 @@ p { line-height: 1.5; }
 /* ── v25: 세력 선택 버튼 폭 통일 (표시층만) ── */
 #title-faction-pick { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
 #title-faction-pick button { width: 100%; min-width: 0; }
+
+/* ── v26: 유닛 카드 잘림 수정 — 스크롤 가능+단서 (표시층만) ── */
+#unit-info { overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #5a4c38 transparent; }
+#unit-info::-webkit-scrollbar { width: 5px; }
+#unit-info::-webkit-scrollbar-thumb { background: #5a4c38; border-radius: 3px; }
+/* 데스크톱·가로: 카드 자연 높이 우선, 부족하면 축소+스크롤. 로그 최소 높이 보장 */
+@media (min-width: 761px) {
+  #unit-info { max-height: none; flex: 0 1 auto; }
+  #battle-log { min-height: 60px; }
+}
