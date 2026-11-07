@@ -364,6 +364,7 @@ class Battle {
   endPhase() {
     // 턴 시작 효과: 회복 지형, 사기 소폭 회복
     if (this.phase === 'enemy') {
+      if (!this.over && this.stage.victoryType === 'hold' && this.turn >= this.stage.maxTurns) { this.over = { win: true, reason: '후퇴로를 확보했다! 승리!' }; return; } // hold형: 12번째 적 페이즈 종료 = 12턴 방어 성공 — 13턴에 진입·표시하지 않고 판정(턴 13/12 표시 방지). checkTurnLimit의 hold 분기는 후방 방어로 유지
       this.turn++;
       this.spawnReinforce();
       for (const u of this.units) {

@@ -1720,7 +1720,7 @@ const Game = {
     (this.endingHistory ||= {});
     const prev = this.endingHistory[this.cycle];
     if (prev && prev.id) {
-    // 구 전역 완주 기록 보유 세이브(조조군: 확장 전 3전 완주) — 새 전투 포함 무결과 구별해 '이전 완주 시점 기록 보존'으로 표시. 유비군은 이전 기록이 없어 정상 경로에서 이 분기에 오지 않음(방어적 일반 문구)
+    // 이전 완주 기록 보유 시 '보존' 표시: 같은 회차에 완주 화면이 두 번 뜨는 경우(1부 완주 → 2부 연장 → 재완주, 또는 확장 전 완주 세이브 이어하기) 첫 표시에서 기록된 엔딩을 이후 추가 전투 결과로 덮어쓰지 않는 정책 — 자연 주행에서도 정상 도달하는 경로
       document.getElementById('complete-text').textContent += ` 엔딩 기록: 이전 완주의 ${prev.id === 'flawless' ? '무결 완주' : '통상 완주'} 기록 보존 — 이후 추가된 전투를 포함한 이번 완주 결과로는 변경하지 않습니다.`; // 세력 공통 일반 문구 — 확장 시점 하드코딩(제3전/제4전)은 2부 연장 뒤 낡은 서술이 되어 폐기
     } else {
       const endingId = (typeof this.records.deaths === 'number' && this.records.deaths === 0) ? 'flawless' : 'standard';
