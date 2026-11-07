@@ -199,9 +199,9 @@ const CHARS = {
   yuan_elite:{ name: '원소 친위병', cls: 'infantry', hp: 100, mp: 5, atk: 30, def: 23, int: 5, spd: 14, morale: 90 },
   yuan_soldier:{ name: '원소군 보병', cls: 'infantry', hp: 82, mp: 5, atk: 24, def: 17, int: 5, spd: 14, morale: 85 },
   // ── 조조 2부 · 북방 평정(204~207): 정사 실재 인물(출처 ko.wikipedia 업_전투/백랑산_전투), 스탯은 기존 동급 장수 체계 — 기존 클래스 스프라이트 재사용으로 신규 아트 없음 ──
-  shen_pei:  { name: '심배', cls: 'infantry',  hp: 150, mp: 10, atk: 33, def: 30, int: 20, spd: 13, morale: 95 }, // 5전 보스 — 정사상 업 성 수비 사령(성내 방어·회복 이점 위치 배치)
+  shen_pei:  { name: '심배', cls: 'infantry',  hp: 185, mp: 10, atk: 36, def: 30, int: 20, spd: 13, morale: 95 }, // 5전 보스 — 정사상 업 성 수비 사령(성내 방어·회복 이점 위치 배치)
   yuan_shang:{ name: '원상', cls: 'cavalry',   hp: 120, mp: 10, atk: 31, def: 22, int: 12, spd: 21, morale: 90 }, // 업 구원군(정사상 구원 시도 실재, 시간차 합류는 게임 각색) — 백랑산 지휘관 명단에도 포함
-  tadun:     { name: '답돈', cls: 'cavalry',   hp: 160, mp: 10, atk: 37, def: 24, int: 8,  spd: 24, morale: 95 }, // 6전 보스 — 오환 족장(정사)
+  tadun:     { name: '답돈', cls: 'cavalry',   hp: 200, mp: 10, atk: 40, def: 24, int: 8,  spd: 24, morale: 95 }, // 6전 보스 — 오환 족장(정사)
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
@@ -775,6 +775,7 @@ const CAO_STAGES2 = [
       { char: 'wuhuan_c', x: 8, y: 2, ai: 'aggressive' },
       { char: 'wuhuan_c', x: 8, y: 6, ai: 'aggressive' },
       { char: 'wuhuan_c', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'wuhuan_c', x: 9, y: 3, ai: 'aggressive' }, // C안: 돌격 압박 +1기
       { char: 'tadun', x: 11, y: 4, boss: true, ai: 'hold', holdUntil: 4 }, // 오환 본진 대기 후 반격
       { char: 'yuan_shang', x: 12, y: 3, ai: 'hold' },
     ],
