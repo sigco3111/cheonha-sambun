@@ -11,8 +11,12 @@
   const run=()=>{['#brief-text','#epilogue-choice .dim','#support-box .dim'].forEach(setup)};
   new MutationObserver(run).observe(document.body,{childList:true,subtree:true}); run();
   const log=document.getElementById('battle-log');
-  if(log){log.title='탭하면 펼치기';log.addEventListener('click',()=>log.classList.toggle('ui2-open'));
-    new MutationObserver(()=>{if(!log.classList.contains('ui2-open'))log.scrollTop=log.scrollHeight}).observe(log,{childList:true,subtree:true});
+  if(log){
+    const wrap=document.createElement('div'); wrap.id='ui2-logwrap';
+    const tgl=document.createElement('button'); tgl.type='button'; tgl.id='ui2-log-toggle'; tgl.textContent='전투 로그 펼치기 ▾';
+    tgl.addEventListener('click',()=>{const open=wrap.classList.toggle('open');tgl.textContent=open?'전투 로그 접기 ▴':'전투 로그 펼치기 ▾';if(!open)log.scrollTop=log.scrollHeight;});
+    log.insertAdjacentElement('beforebegin',wrap); wrap.appendChild(tgl); wrap.appendChild(log);
+    new MutationObserver(()=>{if(!wrap.classList.contains('open'))log.scrollTop=log.scrollHeight}).observe(log,{childList:true,subtree:true});
     log.scrollTop=log.scrollHeight;}
   const hint=document.querySelector('#battle-top .dim');
   if(hint){hint.title='탭하면 전체 보기';hint.addEventListener('click',()=>hint.classList.toggle('ui2-open'));}
@@ -58,8 +62,7 @@
   // ── 전투 목표 표시줄: stage.victory/defeat 텍스트만 표시 (게임 로직 무관) ──
   const objBar=()=>{
     const main=document.getElementById('battle-main'); if(!main||document.getElementById('ui2-obj'))return;
-    const bar=document.createElement('div'); bar.id='ui2-obj'; bar.title='탭하면 펼치기';
-    bar.addEventListener('click',()=>bar.classList.toggle('ui2-open'));
+    const bar=document.createElement('div'); bar.id='ui2-obj';
     main.insertBefore(bar,main.firstChild);
     const upd=()=>{
       const b=(typeof Game!=='undefined')&&Game.battle;
