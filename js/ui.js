@@ -35,7 +35,7 @@ const Game = {
   selected: null, moveTiles: [], menuFor: null,
   auto: false, fast: false, speed: 1,
   stageIndex: 0, cycle: 1, battlesCleared: 0,
-  factionId: 'liu', route: [], endingHistory: {}, // 세력·전역 분기 이력·엔딩 이력 (구 세이브는 폴백)
+  factionId: 'liu', route: [], endingHistory: {}, clearMarks: {}, // 세력·전역 분기 이력·엔딩 이력·장별 루트 기록 (구 세이브는 폴백)
   records: { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {} }, // 명예 기록(보상 없음): 누적 승리·최단 턴·무사망·최고 등급·업적
   canvas: null, ctx: null,
   zoom: 1, ZOOM_MIN: 0.4, ZOOM_MAX: 2.5,
@@ -63,7 +63,7 @@ const Game = {
     localStorage.setItem('cheonha3_save', JSON.stringify({
       army: this.army, inventory: this.inventory, gold: this.gold, stageIndex: this.stageIndex, cycle: this.cycle, battlesCleared: this.battlesCleared, deploySel: this.deploySel,
       records: this.records, bonusCycle: this.bonusCycle || 0, epilogue: this.epilogue || null, epilogueHistory: this.epilogueHistory || {},
-      factionId: this.factionId || 'liu', route: this.route || [], endingHistory: this.endingHistory || {}, // 미지 factionId는 로드 시 보존된 값이 그대로 기록됨
+      factionId: this.factionId || 'liu', route: this.route || [], endingHistory: this.endingHistory || {}, clearMarks: this.clearMarks || {}, // 미지 factionId는 로드 시 보존된 값이 그대로 기록됨
     }));
   },
   load() {
@@ -82,11 +82,13 @@ const Game = {
     this.cycle = d.cycle || 1;
     this.epilogue = d.epilogue || null; this.epilogueHistory = d.epilogueHistory || {};
     this.route = Array.isArray(d.route) ? d.route : []; this.endingHistory = (d.endingHistory && typeof d.endingHistory === 'object') ? d.endingHistory : {};
+    this.clearMarks = (d.clearMarks && typeof d.clearMarks === 'object') ? d.clearMarks : {}; // 구 세이브(필드 없음)는 미기록 — 과거 완주를 추정해 채우지 않음
     this.bonusCycle = d.bonusCycle || 0; // 구세이브(필드 없음)는 0. 미지급 회차는 브리핑에서 1회 보완
     // 구세이브(battlesCleared 없음): 신규 전투 추가 전 기준(6전)으로 누적 승리 수를 복원해 상점 로테이션 연속성 유지
     this.battlesCleared = (d.battlesCleared != null) ? d.battlesCleared : (this.stageIndex + (this.cycle - 1) * 6);
     const dr = d.records; // 구세이브(records 없음)는 빈 기록으로 시작 — 기존 진행은 그대로
-    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null, deaths: (typeof dr.deaths === 'number') ? dr.deaths : undefined, swiftThis: (dr.swiftThis && typeof dr.swiftThis === 'object' && typeof dr.swiftThis.c === 'number' && dr.swiftThis.ids && typeof dr.swiftThis.ids === 'object') ? dr.swiftThis : null } : { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null, deaths: 0 }; // swiftThis: 형태 검증 후 보존(구 세이브·오염 값은 null → 다음 승리 시 현재 회차로 재생성)
+    this.records = (dr && typeof dr === 'object') ? { wins: dr.wins || 0, bestTurns: dr.bestTurns || {}, noDeath: dr.noDeath || {}, grades: dr.grades || {}, ach: dr.ach || {}, support: dr.support || null, deaths: (typeof dr.deaths === 'number') ? dr.deaths : undefined, swiftThis: (dr.swiftThis && typeof dr.swiftThis === 'object' && typeof dr.swiftThis.c === 'number' && dr.swiftThis.ids && typeof dr.swiftThis.ids === 'object') ? dr.swiftThis : null, defeats: (dr.defeats && typeof dr.defeats === 'object' && typeof dr.defeats.c === 'number' && typeof dr.defeats.n === 'number' && Array.isArray(dr.defeats.ids)) ? dr.defeats : null } // defeats: 패배 이력 — 형태 검증 후 보존(구 세이브·오염 값은 null → 다음 패배 시 재생성)
+: { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, support: null, deaths: 0 }; // swiftThis: 형태 검증 후 보존(구 세이브·오염 값은 null → 다음 승리 시 현재 회차로 재생성)
 
     return true;
   },
@@ -132,7 +134,7 @@ const Game = {
     this.stageIndex = 0; this.cycle = 1; this.battlesCleared = 0;
     this.records = { wins: 0, bestTurns: {}, noDeath: {}, grades: {}, ach: {}, deaths: 0 };
     this.deploySel = null; this.epilogue = null; this.epilogueHistory = {};
-    this.route = []; this.endingHistory = {}; // factionId는 새 게임 흐름이 initArmy에서 먼저 설정
+    this.route = []; this.endingHistory = {}; this.clearMarks = {}; // factionId는 새 게임 흐름이 initArmy에서 먼저 설정
   },
 
   // 회차 시작 지원(선택지 해금의 첫 선택 단계): 업적이 옵션을 해금, 회차 첫 전투 브리핑에서 택1. 중간 회차 세이브는 다음 회차부터 대상(소급·마이그레이션 없음)
@@ -1632,6 +1634,11 @@ const Game = {
         this.show('screen-result');
       }, this.auto ? 100 : 800);
     } else {
+      // 패배 이력(회차별): '패퇴 후 재기' 엔딩 판정의 근거 — 본전역 전투만 기록(IF 후일담 시험전은 위에서 분기). 보상·승리 집계와 무관한 기록 추가로 기존 판정 불변
+      const drc = (this.records ||= {});
+      if (!drc.defeats || drc.defeats.c !== this.cycle) drc.defeats = { c: this.cycle, n: 0, ids: [] };
+      drc.defeats.n++; if (!drc.defeats.ids.includes(b.stage.id)) drc.defeats.ids.push(b.stage.id);
+      this.save();
       setTimeout(() => {
         document.getElementById('result-title').textContent = '패배...';
         document.getElementById('btn-retry').style.display = '';
@@ -1726,11 +1733,20 @@ const Game = {
       const endingId = (typeof this.records.deaths === 'number' && this.records.deaths === 0) ? 'flawless' : 'standard';
       const allFw = this.stages().every(st => !!st.fastWin); // 신속 목표가 정의되지 않은 전투가 있는 세력은 신속 축 비활성(미주장)
       const swiftNow = allFw && !!(this.records.swiftThis && this.records.swiftThis.c === this.cycle) && this.stages().every(st => this.records.swiftThis.ids[st.id]);
-      this.endingHistory[this.cycle] = { faction: this.factionId, id: endingId, swift: swiftNow };
+      const comeback = !!(this.records.defeats && this.records.defeats.c === this.cycle && this.records.defeats.n > 0); // 패퇴 후 재기: 이번 회차 실제 패배 후 재도전으로 완주한 경우에만(first-wins — 보존 분기는 갱신하지 않음)
+      this.endingHistory[this.cycle] = { faction: this.factionId, id: endingId, swift: swiftNow, comeback };
       this.save();
       document.getElementById('complete-text').textContent += endingId === 'flawless' ? ' 엔딩 기록: 무결 완주(승리한 전투에서 전사자 0 · 패배/재도전 전투는 집계하지 않음).' : ' 엔딩 기록: 통상 완주.';
       if (swiftNow) document.getElementById('complete-text').textContent += ' 신속 완주 달성(이번 회차 모든 전투를 신속 목표 턴 내 승리 · 재도전 후 승리도 인정, 패배한 전투의 턴은 집계하지 않음).';
+      if (comeback) document.getElementById('complete-text').textContent += ' 패퇴 후 재기(이번 회차 패배 후 재도전으로 완주).';
     }
+    // 장별 루트 기록(회차별 합집합): 실제 완주 화면 도달로만 기록 — '통일'은 최종 루트 미구현으로 기록하지 않음. 보존 분기에서도 누적(1부 완주 → 2부 재완주 시 2부 추가)
+    const cm = (this.clearMarks ||= {}); const cur = (cm[this.cycle] ||= []);
+    const addMark = id => { if (!cur.includes(id)) cur.push(id); };
+    addMark(this.factionId + '_p1');
+    if (this.hasRoute(this.factionId + '_p2')) addMark(this.factionId + '_p2');
+    this.save();
+    document.getElementById('complete-text').textContent += ' 루트 기록: ' + cur.map(m => m.endsWith('_p2') ? '2부' : '1부').join('·') + ' 완주.';
     // 2부 연장 선택(세력 공통): 미언락(route '<세력>_p2' 없음) 완주 화면에만 노출 — 명시 선택 시에만 2부가 stages에 결합되고, 미선택 세이브는 1부 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
     const P2 = isLiu
       ? { def: (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null), btn: '형주의 시련 계속 · 2부 (제10전 박망파 ~ 제11전 장판)',
