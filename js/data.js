@@ -254,6 +254,12 @@ const CHARS = {
   liu_zhang: { name: '유장', cls: 'infantry', hp: 150, mp: 20, atk: 26, def: 30, int: 15, spd: 13, morale: 90 }, // 정사 실재 — 익주목, 성도에서 항복
   yan_yan:   { name: '엄안', cls: 'infantry', hp: 140, mp: 10, atk: 33, def: 27, int: 14, spd: 15, morale: 92 }, // 정사 실재 — 파군 노장
   wang_lei:  { name: '왕누', cls: 'strategist', hp: 90, mp: 30, atk: 20, def: 19, int: 31, spd: 16, morale: 88, tactics: ['fire_arrow'] }, // 정사 실재(광한 왕누, 간하다 절사) — 게임상 적 참모 각색
+  // ── 유비 3부 · 여릉 IF(정사 실재 인물, 스탯은 초안 — AUTO 실측 조정 전) ──
+  lu_xun:    { name: '육손', cls: 'strategist', hp: 150, mp: 40, atk: 25, def: 24, int: 38, spd: 18, morale: 100, tactics: ['fire_arrow','intimidate'] }, // 정사 실재 — 이릉 오군 대도독
+  zhu_huan:  { name: '주환', cls: 'infantry', hp: 135, mp: 10, atk: 32, def: 25, int: 14, spd: 17, morale: 92 }, // 정사 실재
+  sun_huan:  { name: '손환', cls: 'cavalry', hp: 125, mp: 10, atk: 33, def: 22, int: 12, spd: 22, morale: 92 }, // 정사 실재 — 이릉에서 유비군 추격
+  wu_soldier: { name: '오 병사', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 20, int: 5, spd: 13, morale: 85 },
+  wu_archer:  { name: '오 궁병', cls: 'archer', hp: 82, mp: 5, atk: 26, def: 15, int: 5, spd: 15, morale: 85 },
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -1094,6 +1100,42 @@ const LIU_STAGES3 = [
       { char: 'cao_archer', x: 8, y: 1, ai: 'guard' },
     ],
     rewards: { gold: 4900, items: ['ore','tonic','manual','rice'], exp: 250 }, // 초안
+  },
+  {
+    id: 17, name: '제17전 · 여릉의 설욕', maxTurns: 28, bossChar: 'lu_xun',
+    briefing: 'IF(가상) 전개입니다. 정사에서 유비는 222년 이릉·효정에서 육손에게 대패했다(선주전: "陸議大破先主軍於猇亭"). 이 전투는 그 패전을 뒤집는 가상 루트이며, 등장 인물의 생사와 편성·전개·승리조건은 모두 게임 각색이다(정사 전사자의 등장은 게임상 생존 각색으로, 정사 기록과 구분한다). 육손의 진을 돌파하고 오군 대도독을 격퇴하라.',
+    victory: '육손 격퇴(IF 설욕)', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1700 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 여릉 협곡 — 강줄기를 낀 산림 전장(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M.,,..,,..,,.M',
+      'M.,MM,,..,,,.M',
+      'M..,,..,.,,..M',
+      'M,,,,~~~,,,,.M',
+      'M.,,~~~~~,,..M',
+      'M..,,~~~,.,,.M',
+      'M.,,..,,..,,.M',
+      'M..,,.F.,,...M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 진군로의 유비군(IF 설욕전 편성, 각색)
+      { char: 'liu_bei', x: 5, y: 8, commander: true },
+      { char: 'zhao_yun', x: 4, y: 7 },
+      { char: 'huang_zhong', x: 6, y: 8 },
+      { char: 'wei_yan', x: 5, y: 7 },
+      { char: 'pang_tong', x: 3, y: 8 },
+      { char: 'ma_chao', x: 4, y: 8 },
+    ],
+    enemies: [ // 북쪽 오군(정사 실재: 육손·주환·손환) — 편성 규모·배치·전개는 게임 각색
+      { char: 'lu_xun', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'zhu_huan', x: 4, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'sun_huan', x: 8, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'wu_soldier', x: 3, y: 2, ai: 'guard' },
+      { char: 'wu_soldier', x: 9, y: 2, ai: 'guard' },
+      { char: 'wu_archer', x: 5, y: 1, ai: 'guard' },
+      { char: 'wu_archer', x: 7, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5200, items: ['ore','tonic','manual','rice'], exp: 270 }, // 초안
   },
 ];
 
