@@ -52,8 +52,10 @@ const Game = {
   hasRoute(id) { return (this.route || []).some(r => r && r.id === id); }, // 전역 분기 이력 조회 (구 세이브 route 없음 → false)
   stages() { // 현재 세력의 전역 목록 — 기존 STAGES 직접 참조 대신 이 경로 사용
     const base = this.faction().stages;
-    // 조조 2부(북방 평정): 완주 후 명시 언락(route 'cao_p2')이 있을 때만 연장 — 미언락 세이브는 4전 그대로라 완주 의미·엔딩 기록 불변 (CAO_STAGES2 미정의면 아무 변화 없음)
-    if (this.factionId === 'cao' && this.hasRoute('cao_p2') && typeof CAO_STAGES2 !== 'undefined' && CAO_STAGES2.length) return base.concat(CAO_STAGES2);
+    // 2부 연장(조조 북방 평정 / 유비 박망파·장판): 완주 후 명시 언락(route '<세력>_p2')이 있을 때만 연장 — 미언락 세이브는 1부 그대로라 완주 의미·엔딩 기록 불변 (2부 데이터 미정의면 아무 변화 없음)
+    const p2 = this.factionId === 'cao' ? (typeof CAO_STAGES2 !== 'undefined' ? CAO_STAGES2 : null)
+             : this.factionId === 'liu' ? (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null) : null;
+    if (p2 && p2.length && this.hasRoute(this.factionId + '_p2')) return base.concat(p2);
     return base;
   },
   save() {
