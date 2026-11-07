@@ -49,7 +49,13 @@ const Game = {
     const id = (fId !== undefined) ? fId : this.factionId;
     return (F && F[id]) || (F && F.liu) || { name: '유비군', need: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], roster: ['liu_bei', 'guan_yu', 'zhang_fei', 'jian_yong', 'sun_qian', 'mi_zhu'], stages: STAGES, initEquip: { liu_bei: 'iron_sword', guan_yu: 'spear', zhang_fei: 'spear', sun_qian: 'bow', jian_yong: 'fan' } }; // FACTIONS 부재(구 data 혼합) 폴백도 initArmy에 필요한 전체 사양을 갖춤
   },
-  stages() { return this.faction().stages; }, // 현재 세력의 전역 목록 — 기존 STAGES 직접 참조 대신 이 경로 사용
+  hasRoute(id) { return (this.route || []).some(r => r && r.id === id); }, // 전역 분기 이력 조회 (구 세이브 route 없음 → false)
+  stages() { // 현재 세력의 전역 목록 — 기존 STAGES 직접 참조 대신 이 경로 사용
+    const base = this.faction().stages;
+    // 조조 2부(북방 평정): 완주 후 명시 언락(route 'cao_p2')이 있을 때만 연장 — 미언락 세이브는 4전 그대로라 완주 의미·엔딩 기록 불변 (CAO_STAGES2 미정의면 아무 변화 없음)
+    if (this.factionId === 'cao' && this.hasRoute('cao_p2') && typeof CAO_STAGES2 !== 'undefined' && CAO_STAGES2.length) return base.concat(CAO_STAGES2);
+    return base;
+  },
   save() {
     if (!this.armyComplete(this.army)) { console.warn('[save 차단] 군단 데이터가 불완전해 기존 세이브를 보호합니다'); return; } // 비정상 상태에서 원본 세이브 덮어쓰기 방지
     localStorage.setItem('cheonha3_save', JSON.stringify({
