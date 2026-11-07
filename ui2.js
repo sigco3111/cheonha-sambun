@@ -63,7 +63,7 @@
   const objBar=()=>{
     const main=document.getElementById('battle-main'); if(!main||document.getElementById('ui2-obj'))return;
     const bar=document.createElement('div'); bar.id='ui2-obj';
-    main.insertBefore(bar,main.firstChild);
+    main.insertAdjacentElement('beforebegin',bar);
     const upd=()=>{
       const b=(typeof Game!=='undefined')&&Game.battle;
       if(!b||!b.stage||Game.screen!=='screen-battle'){bar.style.display='none';return;}
