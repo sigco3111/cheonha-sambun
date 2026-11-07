@@ -1754,9 +1754,11 @@ const Game = {
       : { def: (typeof CAO_STAGES2 !== 'undefined' ? CAO_STAGES2 : null), btn: '북방 원정 계속 · 2부 (제5전 업 포위 ~ 제6전 백랑산)',
           note: '정사 실재 전투 2종(업 포위전 204 · 백랑산 결전 207). 편성·승리조건·증원 시점 등은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
     const p2id = this.factionId + '_p2';
+    const p2existing = document.getElementById('cao-part2-choice');
     if (this.stageIndex === this.stages().length && P2.def && P2.def.length && !this.hasRoute(p2id)) {
-      let p2 = document.getElementById('cao-part2-choice');
+      let p2 = p2existing;
       if (!p2) { p2 = document.createElement('div'); p2.id = 'cao-part2-choice'; document.getElementById('complete-text').after(p2); }
+      p2.style.display = '';
       p2.innerHTML = '';
       const n2 = document.createElement('p'); n2.className = 'dim';
       n2.textContent = P2.note;
@@ -1764,7 +1766,7 @@ const Game = {
       const b2 = document.createElement('button'); b2.id = 'btn-cao-part2'; b2.textContent = P2.btn;
       b2.onclick = () => { this.route.push({ c: this.cycle, id: p2id }); this.save(); this.renderBriefing(); };
       p2.appendChild(b2);
-    }
+    } else if (p2existing) p2existing.style.display = 'none'; // 언락 후 재완주·미대상 화면에서는 이전 렌더 잔재 숨김 — 중복 언락 버튼 노출·route 중복 push 방지
     // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)
     let panel=document.getElementById('epilogue-choice');
     if(!panel){panel=document.createElement('div');panel.id='epilogue-choice';document.getElementById('complete-text').after(panel);}
