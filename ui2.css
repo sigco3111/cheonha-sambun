@@ -196,3 +196,6 @@ p { line-height: 1.5; }
   #base-units { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
   #base-units > div:not(.unit-card) { grid-column: 1 / -1; }
 }
+
+/* ── v23: 브리핑 한글 줄바꿈 품질 (표시층만) ── */
+#brief-text, #brief-conditions { word-break: keep-all; }
