@@ -240,3 +240,6 @@ p { line-height: 1.5; }
 #battle-main:has(#unit-info:not(:empty)) #battle-wrap { flex: 0 1 auto; min-height: 150px; overflow: auto; }
 #battle-main:has(#unit-info:not(:empty)) #battle-bottom { flex: 0 0 auto; align-self: stretch; }
 #battle-main:has(#unit-info:not(:empty)) #unit-info { max-height: none; }
+
+/* 대상 상세 행 텍스트 래퍼 */
+#target-detail .td-txt { flex: 1 1 auto; min-width: 0; word-break: keep-all; }
