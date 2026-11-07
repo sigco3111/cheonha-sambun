@@ -181,3 +181,18 @@ p { line-height: 1.5; }
 #base-shop>b { width:100%; }
 #base-shop>button { flex:1 1 44%; min-width:150px; margin:0; min-height:44px; font-size:12px; padding:8px 10px; }
 #base-shop>div { width:100%; }
+
+/* ── v22: 정비 장수카드 밀도 (표시층만) ── */
+/* 모바일·데스크톱 공통: 카드 내부 수직 여백 압축 */
+#base-units .unit-card { line-height: 1.45; margin-bottom: 0; }
+#base-units .unit-card .card-body .dim { font-size: 11px; }
+#base-units .unit-card .unit-trait { font-size: 11px; margin-top: 2px; }
+#base-units .unit-card .promo-hint { font-size: 10px; }
+#base-units .unit-card .card-actions, #base-units .unit-card .perk-row { margin-top: 6px; gap: 5px; }
+#base-units .unit-card .perk-row button, #base-units .unit-card .card-actions button { padding: 6px 10px; font-size: 12px; }
+/* 데스크톱: 카드 2열 그리드 — 관리 블록(소지품·상점·기록·판매)은 전폭 유지 */
+@media (min-width: 900px) {
+  #base-units { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+  #base-units > div:not(.unit-card) { grid-column: 1 / -1; }
+}
+#base-units .unit-card button { min-height: 36px; }
