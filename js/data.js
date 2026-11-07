@@ -214,6 +214,9 @@ const CHARS = {
   zhao_yun: { name: '조운',   cls: 'cavalry',    hp: 102, mp: 20, atk: 31, def: 23, int: 14, spd: 23, morale: 95 }, // 관우(공32/방24)와 주창(공30/방23) 사이 — 기존 아군 기병 실측 기준
   zhuge_liang:{ name: '제갈량', cls: 'strategist', hp: 78, mp: 42, atk: 11, def: 13, int: 36, spd: 15, morale: 95, tactics: ['fire','heal'] }, // 최고 지력 — 저수(int 34) 위, 화계·치유 보유(적벽 화계 서사)
   cao_navy: { name: '조조군 수군', cls: 'navy',   hp: 110, mp: 5, atk: 34, def: 18, int: 5, spd: 17, morale: 85 }, // 조조군 궁수(hp100/atk32) 약간 상향 — 수상 방어선
+  shu_soldier:{ name: '유비군 보병', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 20, int: 5, spd: 13, morale: 85 }, // 조조군 보병(cao_soldier 120/30/22) 하향 — 조조 3부 적 잡병
+  shu_archer: { name: '유비군 궁수', cls: 'archer',   hp: 85,  mp: 5, atk: 29, def: 16, int: 5, spd: 15, morale: 85 }, // 형주 남군 궁수(jing_archer) 동급
+  liu_bei_chibi:{ name: '유비', cls: 'infantry', hp: 175, mp: 25, atk: 36, def: 28, int: 24, spd: 18, morale: 100, tactics: ['cheer'] }, // 적벽 퇴각전 추격대 지휘 보스 — 조조 적벽 보스(cao_cao_chibi 185/38/30) 약간 하향
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -905,6 +908,45 @@ const LIU_STAGES3 = [
       { char: 'yu_jin', x: 5, y: 1 },
       { char: 'li_dian', x: 9, y: 1 },
       { char: 'cao_cao_chibi', x: 7, y: 1, ai: 'hold', holdUntil: 4 }, // 후방 지휘 — 초반 돌출 방지
+    ],
+    rewards: { gold: 4600, items: ['ore','tonic','manual','rice'], exp: 230 },
+  },
+];
+
+// 조조 3부 — 7전 적벽 퇴각전. 해금: route 'cao_p3' 언락(2부 완주 후 명시 선택) 시에만 stages()가 결합 — 미언락 세이브 6전 완주 의미·엔딩 불변
+const CAO_STAGES3 = [
+  {
+    id: 7, name: '제7전 · 적벽 퇴각전', maxTurns: 24, bossChar: 'liu_bei_chibi',
+    briefing: '208년 겨울, 적벽에서 유비·손권 연합군에 패한 조조는 역병이 도는 군을 이끌고 북으로 물러난다(정사 실재 전투 — 삼국지 무제기 "公至赤壁，與備戰，不利。於是大疫…乃引軍還", 추격은 선주전 "先主與吳軍水陸並進，追到南郡"). 정사에서 조조의 퇴각 자체는 성공했다. 후퇴로를 덮치는 추격대와의 이 전투 전개·편성·승리조건은 게임 각색이다. 강을 건너오는 관우·장비·조운의 추격을 뿌리치고 유비를 격퇴해 퇴각로를 확보하라.',
+    victory: '유비 격퇴(후퇴로 확보)', defeat: '조조 전사 또는 턴 초과',
+    map: [ // 적벽 수계 퇴각로 — 강 2열+다리 2개(유비 12전과 같은 수계, 공수 전환은 게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,......,..M',
+      'M.,.....,,...M',
+      'M..,.,...,..,M',
+      'M~~=~~~~~~=~~M',
+      'M~~=~~~~~~=~~M',
+      'M.,......,...M',
+      'M..,.......,.M',
+      'M............M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 북쪽 퇴각로의 조조군
+      { char: 'cao_cao', x: 6, y: 1, commander: true },
+      { char: 'xiahou_dun', x: 5, y: 2 },
+      { char: 'xiahou_yuan', x: 7, y: 2 },
+      { char: 'cao_ren', x: 4, y: 1 },
+      { char: 'yue_jin', x: 8, y: 1 },
+      { char: 'xun_yu', x: 6, y: 2 },
+    ],
+    enemies: [ // 남쪽에서 강을 건너오는 유비군 추격대(정사상 추격 주체는 유비) — 편성 규모·화계 없는 육로 추격은 게임 각색
+      { char: 'guan_yu', x: 3, y: 7, ai: 'aggressive' },
+      { char: 'zhang_fei', x: 4, y: 8, ai: 'aggressive' },
+      { char: 'zhao_yun', x: 10, y: 7, ai: 'aggressive' },
+      { char: 'shu_soldier', x: 2, y: 6, ai: 'aggressive' },
+      { char: 'shu_soldier', x: 11, y: 6, ai: 'aggressive' },
+      { char: 'shu_archer', x: 8, y: 6, ai: 'aggressive' },
+      { char: 'liu_bei_chibi', x: 6, y: 8, boss: true, ai: 'hold', holdUntil: 4 }, // 추격대 지휘 — 초반 돌출 방지
     ],
     rewards: { gold: 4600, items: ['ore','tonic','manual','rice'], exp: 230 },
   },

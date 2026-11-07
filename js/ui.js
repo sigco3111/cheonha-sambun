@@ -58,7 +58,9 @@ const Game = {
     let stages = base;
     if (p2 && p2.length && this.hasRoute(this.factionId + '_p2')) stages = base.concat(p2);
     // 3부 연장(유비 적벽): 2부 완주 후 명시 언락(route '<세력>_p3')이 있을 때만 결합 — 미언락 세이브는 기존 완주 의미·엔딩 기록 불변
-    const p3 = this.factionId === 'liu' ? (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null) : null; // 조조 3부는 데이터 미정의 — 정의 전까지 무영향
+    // 3부 연장(유비 적벽 대전 / 조조 적벽 퇴각전): 2부 완주 후 명시 언락(route '<세력>_p3')이 있을 때만 결합 — 미언락 세이브는 기존 완주 의미·엔딩 기록 불변
+    const p3 = this.factionId === 'cao' ? (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null)
+             : this.factionId === 'liu' ? (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null) : null;
     if (p3 && p3.length && this.hasRoute(this.factionId + '_p3')) stages = stages.concat(p3);
     return stages;
   },
@@ -1844,7 +1846,8 @@ const Game = {
     const P3 = isLiu
       ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전)',
           note: '정사 실재 전투(적벽 대전 208). 강·다리 배치, 수군 편성, 오군 동맹의 표현 방식은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
-      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '', note: '' };
+      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전)',
+          note: '정사 실재 전투(적벽 퇴각 208). 강·다리 배치, 추격 편성, 승리조건(후퇴로 확보)은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
     const p3id = this.factionId + '_p3';
     const p3existing = document.getElementById('cao-part3-choice');
     if (this.stageIndex === this.stages().length && this.hasRoute(p2id) && P3.def && P3.def.length && !this.hasRoute(p3id)) {
