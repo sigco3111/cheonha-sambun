@@ -291,7 +291,7 @@ const Game = {
       ? '이전 완주 이후 추가된 전투입니다. 이전 완주의 엔딩 기록은 보존되며 이번 전투 결과로 변경되지 않습니다.' : '';
     document.getElementById('brief-conditions').textContent = (this.cycle > 1 ? `${this.cycle}회차 · ` : '') + `승리: ${st.victory} / 패배: ${st.defeat} / 제한 ${st.maxTurns}턴` + (st.bossChar ? ' / 보스는 퇴각하지 않음' : '')
       + (st.fastWin ? ` / ${st.fastWin.turns}턴 내 승리 시 +${st.fastWin.gold}골드` : '');
-    { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name} — ${WEATHER[w].note}`; }
+    { const w = weatherFor(st.id, this.cycle); if (w) document.getElementById('brief-conditions').textContent += ` / 날씨: ${WEATHER[w].name}(${WEATHER[w].note})`; }
     { const rf = reinforceFor(st.id, this.cycle); if (rf) document.getElementById('brief-conditions').textContent += ` / 증원 예고: ${rf.atTurn}턴째 적 ${rf.units.length}기 ${rf.dir}에서 도착`; }
     { const df = defenseFor(st.id, this.cycle); if (df) document.getElementById('brief-conditions').textContent += ` / 방어 목표: ${df.name} 사수(적 점거 시 패배)`; }
     { const dep = this.deploySelection();
@@ -323,8 +323,8 @@ const Game = {
       const cmdName = CHARS[this.commanderId()].name;
       head.innerHTML = `<b>출전 편성</b> <span class="dim">${dep.sel.length}/${slots}명 · ${cmdName} 고정</span>`
         + (dep.corrected ? ' <span class="dim">· 스테이지 규모가 달라 자동 조정됨'
-          + (dep.dropped && dep.dropped.length ? ` — 제외: ${dep.dropped.map(id => CHARS[id].name).join(',')}` : '')
-          + (dep.added && dep.added.length ? ` — 보충: ${dep.added.map(id => CHARS[id].name).join(',')}` : '') + '</span>' : '')
+          + (dep.dropped && dep.dropped.length ? ` · 제외: ${dep.dropped.map(id => CHARS[id].name).join(',')}` : '')
+          + (dep.added && dep.added.length ? ` · 보충: ${dep.added.map(id => CHARS[id].name).join(',')}` : '') + '</span>' : '')
         + (!dep.valid ? ` <span style="color:#e08a8a">출전 인원이 ${slots}명이 되어야 출진할 수 있습니다</span>` : '');
       dp.appendChild(head);
       const fixed = document.createElement('button'); fixed.textContent = `✓ ${cmdName} Lv${this.army[this.commanderId()].level} (고정)`; fixed.disabled = true; fixed.className = 'primary';
@@ -402,7 +402,7 @@ const Game = {
               } else {
                 const lock = document.createElement('div');
                 lock.className = 'dim';
-                lock.textContent = `🔒 ${o.label} — 업적 「${o.achName}」 해금 시`;
+                lock.textContent = `🔒 ${o.label} · 업적 「${o.achName}」 해금 시`;
                 sp.appendChild(lock);
               }
             }
@@ -568,7 +568,7 @@ const Game = {
         const nd = rc.noDeath[st.id] || 0;
         const gd = (rc.grades || {})[st.id];
         const btTxt = bt == null ? '—' : (typeof bt === 'object' ? `${bt.t}턴(${bt.c}회차)` : `${bt}턴`);
-        return `${esc(st.name)} — 등급 ${gd ? gd.g + '(' + gd.c + '회차)' : '—'} · 최단 ${btTxt} · 무사망 ${nd}회`;
+        return `${esc(st.name)} · 등급 ${gd ? gd.g + '(' + gd.c + '회차)' : '—'} · 최단 ${btTxt} · 무사망 ${nd}회`;
       }).join('<br>');
     const ACH_LIST = [
       ['first_s', '무결의 첫걸음', 'S 등급 달성'], ['nine', '아홉 전투 정복', '제1전~제9전 모두 클리어'],
@@ -670,7 +670,7 @@ const Game = {
             perkRow.innerHTML = '';
             const warn = document.createElement('span');
             warn.className = 'dim perk-note';
-            warn.textContent = `${label} — 확정하면 변경할 수 없습니다.`;
+            warn.textContent = `${label} · 확정하면 변경할 수 없습니다.`;
             const ok = document.createElement('button');
             ok.textContent = '확정';
             ok.className = 'primary';
@@ -1321,7 +1321,7 @@ const Game = {
         const ctr = f.counter
           ? `반격 ${f.counter.min}~${f.counter.max}${f.counter.certain ? '(확정)' : '(조건부)'}`
           : '반격 없음(최소 피해로 격파 가능)';
-        row.innerHTML = `<b>${t.name}</b> ${muTxt}— 피해 <b>${f.min}~${f.max}</b> · 회심 시 최대 ${f.critMax} · 회심률 ${f.critPct}% · ${ctr}`;
+        row.innerHTML = `<b>${t.name}</b> ${muTxt}· 피해 <b>${f.min}~${f.max}</b> · 회심 시 최대 ${f.critMax} · 회심률 ${f.critPct}% · ${ctr}`;
       } else if (this.pendingKind && this.pendingKind.startsWith('tactic:')) {
         const tid = this.pendingKind.slice(7), tc = TACTICS[tid];
         let txt = null;
@@ -1336,7 +1336,7 @@ const Game = {
           else if (t.morale <= tc.power && delta > 0) txt += ' (퇴각)';
         }
         if (!txt) continue;
-        row.innerHTML = `<b>${t.name}</b> — ${txt}`;
+        row.innerHTML = `<b>${t.name}</b> · ${txt}`;
       } else continue;
       row.innerHTML = `<span class="td-txt">${row.innerHTML}</span>`; // flex 행에서 텍스트 조각이 개별 아이템으로 쪼개져 단어 중간 줄바꿈되는 것 방지
       row.onclick = () => this.onTargetClick(t.x, t.y);
@@ -1362,7 +1362,7 @@ const Game = {
       this.log('대상을 선택하세요.');
       const hintEl = document.getElementById('target-hint');
       const critPct = b.forecastAttack(u, targets[0]).critPct; // 회심률은 공격자 사기 기준으로 모든 대상 동일
-      hintEl.textContent = `대상 선택 — 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격은 조건부일 수 있음 · ▲상성우세/▼열세 ×1.15/×0.85`;
+      hintEl.textContent = `대상 선택 · 타일 수치는 비회심 범위(회심 시 표시의 ×1.5) · 회심률 ${critPct}% · 반격은 조건부일 수 있음 · ▲상성우세/▼열세 ×1.15/×0.85`;
       hintEl.style.display = 'block';
       this.positionHint();
       this.renderBattle(); // 예측 프리뷰 표시
@@ -1403,7 +1403,7 @@ const Game = {
           const sideTxt = t.kind === 'damage' ? '의 적 피해 · 아군 피해 없음 · 표시는 해당 대상 기준'
             : t.kind === 'demoralize' ? '의 적 사기 감소 · 사기 0이면 퇴각(보스 제외) · 표시는 해당 대상 기준'
             : t.kind === 'morale' ? '의 아군 사기 상승 · 표시는 해당 대상 기준' : ' 회복';
-          hintEl.textContent = `대상 선택 — ${t.name}: ${areaTxt}${sideTxt}`;
+          hintEl.textContent = `대상 선택 · ${t.name}: ${areaTxt}${sideTxt}`;
           hintEl.style.display = 'block';
           this.positionHint();
           this.renderBattle(); // 디밍 표시
