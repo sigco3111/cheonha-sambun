@@ -169,8 +169,22 @@ const Game = {
 
   // 합류 장수(오리지널 IF): 업적 해금 시 1회만 군단 편입 — 합류 레벨·초기 능력·초기 장비는 편입 순간 확정 저장(재로드/화면 재진입으로 재상승 없음)
   checkJoiners() {
-    if (this.factionId !== 'liu') return []; // 관해·태사자·주창 IF 합류는 유비군 전역 전용 — 다른 세력 루트에 유비 IF를 섞지 않는다
     const joined = [];
+    // 정사 기반 편입(조조 3부): 9전(한중) 진입 시 장합·주령·해표·고조 편입 — 정사 실재 조조군 장수(무제기 양평관 기사), 편입 표현은 게임 각색. 유비 12전 편입과 같은 1회·평균레벨 규칙
+    if (this.factionId === 'cao' && this.stageIndex >= 8 && this.hasRoute('cao_p3')) {
+      for (const id of ['zhang_he', 'zhu_ling', 'xie_biao', 'gao_zuo']) {
+        if (this.army[id]) continue;
+        const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+        const c = CHARS[id], g = lv - 1;
+        this.army[id] = { charId: id, cls: c.cls, level: lv, exp: 0,
+          maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+          equip: { weapon: { id: c.cls === 'cavalry' ? 'spear' : 'iron_sword', up: 0 }, armor: null, acc: null } };
+        joined.push(id);
+      }
+      if (joined.length) this.save();
+      return joined;
+    }
+    if (this.factionId !== 'liu') return joined; // 관해·태사자·주창 IF 합류는 유비군 전역 전용 — 다른 세력 루트에 유비 IF를 섞지 않는다
     if ((this.records.ach || {}).nine && !this.army.guan_hai && Object.keys(this.army).length >= 6) {
       const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
       const c = CHARS.guan_hai, g = lv - 1; // gainExp와 같은 성장 계수를 편입 시 1회만 적용
@@ -336,9 +350,9 @@ const Game = {
     const jn = document.getElementById('brief-join');
     if (jn) {
       const joined = this.checkJoiners();
-      const STORY_JOIN = ['zhao_yun', 'zhuge_liang']; // 정사 기반 합류(합류 시점만 각색) — IF 합류와 표기 분리
-      jn.innerHTML = joined.length ? joined.map(id => STORY_JOIN.includes(id)
-        ? `<b>정사 기반 합류</b> · ${CHARS[id].name}(은)는 이 시점 이미 유비 휘하(정사, 합류 표현만 각색) · 합류 Lv ${this.army[id].level}로 고정 저장`
+      const STORY_JOIN = { zhao_yun: '이 시점 이미 유비 휘하', zhuge_liang: '이 시점 이미 유비 휘하', zhang_he: '정사 실재 조조군 장수', zhu_ling: '정사 실재 조조군 장수', xie_biao: '정사 실재 조조군 장수', gao_zuo: '정사 실재 조조군 장수' }; // 정사 기반 편입(합류 표현만 각색) — IF 합류와 표기 분리
+      jn.innerHTML = joined.length ? joined.map(id => STORY_JOIN[id]
+        ? `<b>정사 기반 합류</b> · ${CHARS[id].name}(은)는 ${STORY_JOIN[id]}(정사, 합류 표현만 각색) · 합류 Lv ${this.army[id].level}로 고정 저장`
         : `<b>오리지널 IF</b> · ${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ') + ' · 아래 출전 편성에서 선택 가능' : '';
     }
     // 회차 시작 자원 해금 표시(회차 시작 또는 누락분 보완으로 이번 세션에 실제 지급된 보상)
@@ -1844,9 +1858,9 @@ const Game = {
     } else if (p2existing) p2existing.style.display = 'none'; // 언락 후 재완주·미대상 화면에서는 이전 렌더 잔재 숨김 — 중복 언락 버튼 노출·route 중복 push 방지
     // 3부 연장 선택: 2부 언락 상태에서 2부까지 완주(stageIndex === stages().length)한 화면에만 노출 — 명시 선택 시에만 3부가 stages에 결합. 조조 3부는 데이터 미정의로 버튼 자체 미표시
     const P3 = isLiu
-      ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전)',
+      ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전 ~ 제13전 남형주 4군)',
           note: '정사 실재 전투(적벽 대전 208). 강·다리 배치, 수군 편성, 오군 동맹의 표현 방식은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
-      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전)',
+      : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전 ~ 제9전 한중 양평관)',
           note: '정사 실재 전투(적벽 퇴각 208). 강·다리 배치, 추격 편성, 승리조건(후퇴로 확보)은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
     const p3id = this.factionId + '_p3';
     const p3existing = document.getElementById('cao-part3-choice');

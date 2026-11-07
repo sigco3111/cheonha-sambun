@@ -222,6 +222,23 @@ const CHARS = {
   cheng_yi:   { name: '성의', cls: 'infantry', hp: 120, mp: 10, atk: 30, def: 22, int: 8,  spd: 15, morale: 85 }, // 정사 실재 — 위남에서 전사(斬成宜)
   li_kan:     { name: '이감', cls: 'infantry', hp: 115, mp: 10, atk: 29, def: 21, int: 8,  spd: 15, morale: 85 }, // 정사 실재 — 위남에서 전사(斬李堪)
   guanzhong_c:{ name: '관중 기병', cls: 'cavalry', hp: 95, mp: 5, atk: 28, def: 19, int: 5, spd: 18, morale: 85 },
+  // ── 유비 3부 · 남형주 4군(정사 선주전 태수 이름, 스탯은 초안 — AUTO 실측 조정 전) ──
+  jin_xuan:  { name: '금선', cls: 'infantry', hp: 165, mp: 10, atk: 34, def: 24, int: 10, spd: 14, morale: 90 }, // 무릉 태수(정사 실재)
+  han_xuan:  { name: '한현', cls: 'cavalry',  hp: 175, mp: 10, atk: 37, def: 23, int: 9,  spd: 19, morale: 90 }, // 장사 태수(정사 실재)
+  zhao_fan:  { name: '조범', cls: 'infantry', hp: 165, mp: 15, atk: 33, def: 23, int: 13, spd: 15, morale: 90 }, // 계양 태수(정사 실재)
+  liu_du:    { name: '유도', cls: 'infantry', hp: 160, mp: 10, atk: 31, def: 25, int: 12, spd: 13, morale: 90 }, // 영릉 태수(정사 실재)
+  jing_soldier: { name: '형주 남군 보병', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 20, int: 5, spd: 13, morale: 85 },
+  jing_archer:  { name: '형주 남군 궁수', cls: 'archer',   hp: 85,  mp: 5, atk: 29, def: 16, int: 5, spd: 15, morale: 85 },
+  // ── 조조 3부 · 한중 정벌(정사 무제기 이름, 스탯은 초안 — AUTO 실측 조정 전) ──
+  zhang_he:  { name: '장합', cls: 'cavalry',  hp: 112, mp: 15, atk: 33, def: 23, int: 14, spd: 20, morale: 100 }, // 정사 실재 조조군 장수
+  zhu_ling:  { name: '주령', cls: 'infantry', hp: 104, mp: 15, atk: 28, def: 24, int: 12, spd: 16, morale: 100 }, // 정사 실재(무제기 양평관 선공)
+  xie_biao:  { name: '해표', cls: 'infantry', hp: 98,  mp: 10, atk: 28, def: 20, int: 10, spd: 18, morale: 100 }, // 정사 실재 — 험지 야습
+  gao_zuo:   { name: '고조', cls: 'infantry', hp: 96,  mp: 10, atk: 27, def: 20, int: 10, spd: 17, morale: 100 }, // 정사 실재 — 험지 야습
+  zhang_wei: { name: '장위', cls: 'infantry', hp: 185, mp: 15, atk: 34, def: 26, int: 14, spd: 15, morale: 95 }, // 장로의 아우(정사 실재)
+  yang_ang:  { name: '양앙', cls: 'infantry', hp: 150, mp: 10, atk: 32, def: 25, int: 10, spd: 14, morale: 90 }, // 정사 실재
+  yang_ren:  { name: '양임', cls: 'infantry', hp: 145, mp: 10, atk: 33, def: 24, int: 10, spd: 15, morale: 90 }, // 정사 실재 — 야습으로 전사
+  hanzhong_soldier: { name: '한중 수비병', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 21, int: 5, spd: 13, morale: 85 },
+  hanzhong_archer:  { name: '한중 궁수',   cls: 'archer',   hp: 84,  mp: 5, atk: 29, def: 16, int: 5, spd: 15, morale: 85 },
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -916,6 +933,45 @@ const LIU_STAGES3 = [
     ],
     rewards: { gold: 4600, items: ['ore','tonic','manual','rice'], exp: 230 },
   },
+  {
+    id: 13, name: '제13전 · 남형주 4군', maxTurns: 30, // vooy 초안(이슈 #2) 통합 — 수치·편성은 초안 표기
+    briefing: '209년, 유비는 유기를 형주자사로 세운 뒤 남쪽 네 군으로 군을 돌린다(정사 선주전: 무릉·장사·계양·영릉의 태수가 모두 항복). 정사에는 이 항복 앞뒤의 전투 기록이 없다 — 네 태수를 직접 제압하는 이 싸움은 항복에 이르는 압박을 전술전으로 옮긴 게임 각색이다. 무릉의 금선과 장사의 한현은 북쪽 성에, 영릉의 유도와 계양의 조범은 남쪽 성에 있다. 상수를 건너는 다리는 하나뿐이다. 어느 군부터 칠지 정하라. 지도의 방위와 편성은 게임 각색이다.',
+    victory: '4군 태수 4명 제압(적 전멸)', defeat: '유비 전사 또는 턴 초과', // 보스 미지정: 전멸 승리(엔진의 다중 보스 승리 판정은 bossChar 1명 기준)
+    fastWin: { turns: 18, gold: 1400 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 14열 x 12행. 가운데 상수(강) 세로 흐름, 다리 1곳(행7), 성 4곳(북 2·남 2)
+      'MMMMMMMMMMMMMM',
+      'M..FF......FFM',
+      'M.F.........FM',
+      'M....,,,,,...M',
+      'M..,..~~..,..M',
+      'MCCC.F~~F.CCCM',
+      'MCVG..~~..GVCM',
+      'M...,.==.,...M',
+      'M..F..~~..F..M',
+      'M..G..~~..G..M',
+      'M.CVC.~~.CVC.M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 북쪽 중앙에서 남진하는 유비군
+      { char: 'liu_bei', x: 6, y: 2, commander: true },
+      { char: 'guan_yu', x: 5, y: 3 },
+      { char: 'zhang_fei', x: 7, y: 3 },
+      { char: 'jian_yong', x: 4, y: 2 },
+      { char: 'sun_qian', x: 8, y: 2 },
+      { char: 'mi_zhu', x: 6, y: 1 },
+    ],
+    enemies: [ // 4군 태수 각 1명 + 성 수비병 1명 = 8기. 북쪽 두 성은 5턴, 남쪽 두 성은 8턴까지 성을 지킨다(편성·행동은 게임 각색)
+      { char: 'jin_xuan', x: 2, y: 5, boss: true, ai: 'guard' }, // 무릉 태수 금선(정사 실재)
+      { char: 'jing_archer', x: 2, y: 6, ai: 'hold', holdUntil: 5 },
+      { char: 'han_xuan', x: 11, y: 5, boss: true, ai: 'guard' }, // 장사 태수 한현(정사 실재)
+      { char: 'jing_soldier', x: 10, y: 6, ai: 'hold', holdUntil: 5 },
+      { char: 'liu_du', x: 3, y: 10, boss: true, ai: 'guard' }, // 영릉 태수 유도(정사 실재)
+      { char: 'jing_soldier', x: 3, y: 9, ai: 'hold', holdUntil: 8 },
+      { char: 'zhao_fan', x: 10, y: 10, boss: true, ai: 'guard' }, // 계양 태수 조범(정사 실재)
+      { char: 'jing_archer', x: 11, y: 10, ai: 'hold', holdUntil: 8 },
+    ],
+    rewards: { gold: 4600, items: ['meat','ore','tonic','manual'], exp: 220 }, // 초안
+  },
 ];
 
 // 조조 3부 — 7전 적벽 퇴각전. 해금: route 'cao_p3' 언락(2부 완주 후 명시 선택) 시에만 stages()가 결합 — 미언락 세이브 6전 완주 의미·엔딩 불변
@@ -989,6 +1045,42 @@ const CAO_STAGES3 = [
       { char: 'guanzhong_c', x: 5, y: 4, ai: 'aggressive' },
     ],
     rewards: { gold: 4700, items: ['ore','tonic','manual','rice'], exp: 240 },
+  },
+  {
+    id: 9, name: '제9전 · 한중 양평관', maxTurns: 26, bossChar: 'zhang_wei', // vooy 초안(이슈 #2) 통합 — 수치·편성은 초안 표기
+    briefing: '215년, 조조가 장로를 치러 서쪽으로 나섰다. 장로의 아우 장위와 양앙은 양평관을 점거하고 횡산을 따라 십여 리에 성을 쌓아 버텼다. 정면으로는 뚫리지 않아 조조는 군을 물렸고, 적은 대군이 물러나자 수비를 풀었다(정사 무제기). 그 틈에 해표와 고조가 험지로 밤에 올라 양임을 베고 관을 무너뜨렸다. 군을 물린 것이 위장이었는지는 기록에 없다. 북쪽 숲길로 돌아 관문 뒤를 칠지, 관문을 정면으로 두드릴지 정하라. 8턴이 지나면 수비대가 성을 풀고 나온다(시점과 규모는 게임 각색). 편성·승리조건·턴 수는 게임 각색이다.',
+    victory: '수비대장 장위 격파', defeat: '조조 전사 또는 턴 초과',
+    fastWin: { turns: 14, gold: 1500 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 14열 x 9행. 관문(G) 1곳과 성벽(#) 세로선, 북쪽 숲길(행1)이 성채 뒤쪽 병영(B)으로 이어짐
+      'MMMMMMMMMMMMMM',
+      'MFFFFFFFFFFFFM',
+      'MMMMMMMMMMMF.M',
+      'M..,..FF#..B.M',
+      'M.,..F..#.CC.M',
+      'M.......G.CV.M',
+      'M..F....#.CC.M',
+      'M...,.FF#..B.M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 서쪽 입구의 본대와 북쪽 숲길의 야습대(해표·고조, 보병) — 장합·주령·해표·고조는 9전 진입 시 편입(정사 실재 인물, 편입 표현은 각색)
+      { char: 'cao_cao', x: 2, y: 5, commander: true },
+      { char: 'xiahou_yuan', x: 1, y: 4 },
+      { char: 'zhang_he', x: 2, y: 4 },
+      { char: 'zhu_ling', x: 2, y: 6 },
+      { char: 'xie_biao', x: 1, y: 1 },
+      { char: 'gao_zuo', x: 2, y: 1 },
+    ],
+    enemies: [ // 성채 안 8기. 8턴까지 성을 지키다 이후 나오는 것은 게임 각색
+      { char: 'zhang_wei', x: 11, y: 5, boss: true, ai: 'hold', holdUntil: 8 }, // 장위(정사 실재)
+      { char: 'yang_ang', x: 9, y: 4, ai: 'hold', holdUntil: 8 }, // 양앙(정사 실재)
+      { char: 'yang_ren', x: 9, y: 6, ai: 'hold', holdUntil: 8 }, // 양임(정사 실재 — 야습으로 전사한 장수)
+      { char: 'hanzhong_archer', x: 9, y: 3, ai: 'hold', holdUntil: 8 },
+      { char: 'hanzhong_archer', x: 9, y: 7, ai: 'hold', holdUntil: 8 },
+      { char: 'hanzhong_soldier', x: 10, y: 3, ai: 'hold', holdUntil: 8 },
+      { char: 'hanzhong_soldier', x: 10, y: 7, ai: 'hold', holdUntil: 8 },
+      { char: 'hanzhong_soldier', x: 12, y: 5, ai: 'hold', holdUntil: 8 },
+    ],
+    rewards: { gold: 4400, items: ['meat','ore','tonic','manual'], exp: 215 }, // 초안
   },
 ];
 
