@@ -393,7 +393,10 @@ class Battle {
   }
 
   checkTurnLimit() {
-    if (!this.over && this.turn > this.stage.maxTurns) this.over = { win: false, reason: '제한 턴 초과...' };
+    if (!this.over && this.turn > this.stage.maxTurns) {
+      if (this.stage.victoryType === 'hold') this.over = { win: true, reason: '후퇴로를 확보했다! 승리!' }; // hold형 승리(장판): maxTurns까지 지휘관 생존·방어 성공이 곧 승리 — victoryType 미지정 기존 전투는 기존 판정 그대로
+      else this.over = { win: false, reason: '제한 턴 초과...' };
+    }
   }
 
   // AI 한 유닛 행동
