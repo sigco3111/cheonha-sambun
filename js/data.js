@@ -203,10 +203,10 @@ const CHARS = {
   yuan_shang:{ name: '원상', cls: 'cavalry',   hp: 120, mp: 10, atk: 31, def: 22, int: 12, spd: 21, morale: 90 }, // 업 구원군(정사상 구원 시도 실재, 시간차 합류는 게임 각색) — 백랑산 지휘관 명단에도 포함
   tadun:     { name: '답돈', cls: 'cavalry',   hp: 200, mp: 10, atk: 40, def: 24, int: 8,  spd: 24, morale: 95 }, // 6전 보스 — 오환 족장(정사)
   // ── 유비 2부 · 박망파(정사, 연대 미명기)/장판(208, 정사) — 정사 실재 인물, 스탯은 기존 동급 장수 체계 · 기존 스프라이트 재사용 ──
-  xiahou_dun_bowang:{ name: '하후돈', cls: 'cavalry',  hp: 190, mp: 15, atk: 38, def: 26, int: 9,  spd: 22, morale: 95 }, // 10전 보스 — 정사상 유비의 복병에 진입해 패한 추격 지휘관(적 버전은 _bowang 접미, lu_bu_siege 패턴)
-  yu_jin:   { name: '우금', cls: 'infantry',  hp: 140, mp: 10, atk: 32, def: 27, int: 12, spd: 14, morale: 90 }, // 박망파 하후돈과 동행(정사)
-  li_dian:  { name: '이전', cls: 'infantry',  hp: 130, mp: 10, atk: 29, def: 25, int: 18, spd: 14, morale: 90 }, // 추격 만류 후 구원(정사) — 시간차 합류 시점은 각색
-  cao_elite_c:{ name: '조조군 정예기병', cls: 'cavalry', hp: 110, mp: 5, atk: 34, def: 20, int: 5, spd: 23, morale: 90 }, // 장판 급습 추격대(정사상 정예 기병 5천의 게임 각색)
+  xiahou_dun_bowang:{ name: '하후돈', cls: 'cavalry',  hp: 260, mp: 15, atk: 46, def: 28, int: 9,  spd: 22, morale: 95 }, // 10전 보스 — 정사상 유비의 복병에 진입해 패한 추격 지휘관(적 버전은 _bowang 접미, lu_bu_siege 패턴)
+  yu_jin:   { name: '우금', cls: 'infantry',  hp: 190, mp: 10, atk: 38, def: 29, int: 12, spd: 14, morale: 90 }, // 박망파 하후돈과 동행(정사)
+  li_dian:  { name: '이전', cls: 'infantry',  hp: 170, mp: 10, atk: 34, def: 27, int: 18, spd: 14, morale: 90 }, // 추격 만류 후 구원(정사) — 시간차 합류 시점은 각색
+  cao_elite_c:{ name: '조조군 정예기병', cls: 'cavalry', hp: 150, mp: 5, atk: 40, def: 22, int: 5, spd: 23, morale: 90 }, // 장판 급습 추격대(정사상 정예 기병 5천의 게임 각색)
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
@@ -860,6 +860,7 @@ const LIU_STAGES2 = [
       { char: 'cao_elite_c', x: 11, y: 4, ai: 'aggressive' },
       { char: 'cao_elite_c', x: 10, y: 5, ai: 'aggressive' },
       { char: 'cao_elite_c', x: 11, y: 2, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 11, y: 6, ai: 'aggressive' }, // L안: 추격대 +1기(홀드 압박)
     ],
     rewards: { gold: 4200, items: ['meat','ore','tonic','manual'], exp: 210 },
   },
