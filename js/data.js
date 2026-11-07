@@ -260,6 +260,9 @@ const CHARS = {
   sun_huan:  { name: '손환', cls: 'cavalry', hp: 125, mp: 10, atk: 33, def: 22, int: 12, spd: 22, morale: 92 }, // 정사 실재 — 이릉에서 유비군 추격
   wu_soldier: { name: '오 병사', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 20, int: 5, spd: 13, morale: 85 },
   wu_archer:  { name: '오 궁병', cls: 'archer', hp: 82, mp: 5, atk: 26, def: 15, int: 5, spd: 15, morale: 85 },
+  // ── 유비 3부 · 북벌·낙양 IF(정사 실재 인물, 스탯은 초안 — AUTO 실측 조정 전) ──
+  sima_yi:   { name: '사마의', cls: 'strategist', hp: 160, mp: 45, atk: 26, def: 26, int: 40, spd: 18, morale: 100, tactics: ['fire_arrow','intimidate'] }, // 정사 실재 — 북벌의 상대(대응 시기·결전은 IF 각색)
+  xu_huang:  { name: '서황', cls: 'infantry', hp: 140, mp: 10, atk: 33, def: 26, int: 14, spd: 17, morale: 95 }, // 정사 실재 — 위 오자양장
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -1136,6 +1139,42 @@ const LIU_STAGES3 = [
       { char: 'wu_archer', x: 7, y: 1, ai: 'guard' },
     ],
     rewards: { gold: 5200, items: ['ore','tonic','manual','rice'], exp: 270 }, // 초안
+  },
+  {
+    id: 18, name: '제18전 · 북벌·낙양', maxTurns: 30, bossChar: 'sima_yi',
+    briefing: 'IF(가상) 전개이며 유비 루트의 최종전입니다. 정사에서 유비는 223년에 사망했고 촉의 북벌은 통일에 이르지 못했다(선주전: "三年夏四月…先主殂於永安宮"). 이 전투의 북벌 성공·낙양 함락·천하통일은 모두 정사에 없는 가상 결말이며, 등장 인물의 생사·편성·전개·승리조건은 게임 각색이다(정사 전사자의 등장은 게임상 생존 각색으로, 정사 기록과 구분한다). 사마의의 방어선을 돌파하고 낙양을 함락하라.',
+    victory: '사마의 격퇴(낙양 함락 · IF 통일)', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 16, gold: 2000 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 낙양 외곽 — 궁성 전진진지와 평야 결전장(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M...,,..,,...M',
+      'M.,CC,,,,CC,.M',
+      'M.,,,..,..,,.M',
+      'M..,,,,,,....M',
+      'M.,,..,..,.,.M',
+      'M..,,,..,,...M',
+      'M.,..,,,..,,.M',
+      'M...,,.,,,...M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 북벌군(IF 편성 — 정사 전사자 생존은 게임 각색)
+      { char: 'liu_bei', x: 5, y: 8, commander: true },
+      { char: 'guan_yu', x: 4, y: 8 },
+      { char: 'zhang_fei', x: 6, y: 8 },
+      { char: 'zhao_yun', x: 4, y: 7 },
+      { char: 'ma_chao', x: 6, y: 7 },
+      { char: 'huang_zhong', x: 5, y: 7 },
+    ],
+    enemies: [ // 낙양 방어군(정사 실재: 사마의·서황·장합) — 편성 규모·배치·시기는 IF 각색
+      { char: 'sima_yi', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'xu_huang', x: 4, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'zhang_he', x: 8, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'cao_soldier', x: 3, y: 2, ai: 'guard' },
+      { char: 'cao_soldier', x: 9, y: 2, ai: 'guard' },
+      { char: 'cao_archer', x: 5, y: 1, ai: 'guard' },
+      { char: 'cao_archer', x: 7, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5500, items: ['ore','tonic','manual','rice'], exp: 300 }, // 초안
   },
 ];
 

@@ -1841,11 +1841,13 @@ const Game = {
     if (nc) { nc.disabled = false; nc.textContent = '다음 회차 시작 (미완주 후일담 생략)'; }
     const current=this.epilogue&&this.epilogue.c===this.cycle?this.epilogue:null;
     const cleared=current&&current.status==='cleared';
+    const p3done = this.hasRoute(this.factionId + '_p3') && this.stageIndex === this.stages().length; // 3부까지 완주 — 천하통일(IF) 최종 엔딩 대상
     const lastName = this.stages()[this.stages().length - 1].name.split('·')[1].trim(); // 유비도 2부 연장 시엔 마지막 전투명(장판)을 엔딩 문구에 사용 — 미연장 유비는 기존 '하비' 문구 유지
     const EPI_LABEL={escape:'하비의 탈출로',yuan_hunt:'원소 추격'}; // 후일담 시험전 표시명 — 세력별 시험전(유비 escape/조조 yuan_hunt)
     document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
-    document.getElementById('complete-text').textContent =
-      `${this.stages().length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
+    document.getElementById('complete-text').textContent = p3done
+      ? `${this.stages().length}개 전투를 모두 클리어했습니다. 천하통일 엔딩(IF): ${isLiu ? '유비는 낙양에 입성해 한실 재건을 선포했습니다' : '조조는 마지막 저항을 꺾고 천하를 통일했습니다'}. 이 결말은 정사에 없는 가상 엔딩입니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
+      : `${this.stages().length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
       +(cleared?` IF 후일담 완주: ${current.id==='yuan_hunt'?'원소를 사로잡은':'백성의 탈출로를 연'} 가상 엔딩을 별도 기록했습니다.`:` 공통 전역 엔딩: ${isLiu && !this.hasRoute('liu_p2') ? '하비' : lastName}의 싸움이 끝나고 군단은 다음 여정을 준비합니다.`);
     // 성과 기반 엔딩 분기 첫 단계: 이번 회차 누적 전사자 0이면 무결 완주 — 세력 전역 엔딩 이력에 기록(분기 엔딩의 기초)
     // 엔딩 기록: 이번 회차 누적 전사자 0이면 무결 — 단, 같은 회차에 이미 기록된 엔딩은 보존(전역 확장으로 추가된 전투를 이어가도 완료 시점에 사용자에게 표시된 기존 엔딩을 덮어쓰지 않음). deaths 미상(구 세이브)은 통상 완주 폴백 — 무결을 미검증으로 주장하지 않음
@@ -1865,14 +1867,27 @@ const Game = {
       if (swiftNow) document.getElementById('complete-text').textContent += ' 신속 완주 달성(이번 회차 모든 전투를 신속 목표 턴 내 승리 · 재도전 후 승리도 인정, 패배한 전투의 턴은 집계하지 않음).';
       if (comeback) document.getElementById('complete-text').textContent += ' 패퇴 후 재기(이번 회차 패배 후 재도전으로 완주).';
     }
-    // 장별 루트 기록(회차별 합집합): 실제 완주 화면 도달로만 기록 — '통일'은 최종 루트 미구현으로 기록하지 않음. 보존 분기에서도 누적(1부 완주 → 2부 재완주 시 2부 추가)
+    // 천하통일 엔딩 기록(3부 완주 시): 기존 엔딩 id(무결/통상)는 건드리지 않고 unification 필드로 확장 — 성과 변형 3형(무결 통일/재기 통일/통상 통일), 재표시 시 기존 기록 유지
+    if (p3done) {
+      const uh = this.endingHistory[this.cycle] || (this.endingHistory[this.cycle] = { faction: this.factionId, id: 'standard', swift: false, comeback: false });
+      if (!uh.unification) {
+        const uKind = (typeof this.records.deaths === 'number' && this.records.deaths === 0) ? 'flawless'
+          : (this.records.defeats && this.records.defeats.c === this.cycle && this.records.defeats.n > 0) ? 'comeback' : 'standard';
+        uh.unification = { faction: this.factionId, kind: uKind };
+        this.save();
+      }
+      const uk = this.endingHistory[this.cycle].unification.kind;
+      document.getElementById('complete-text').textContent += ' 통일 엔딩 기록: ' + (uk === 'flawless' ? '무결 통일(전사자 0)' : uk === 'comeback' ? '패퇴 후 재기 통일' : '통상 통일') + '.';
+    }
+    // 장별 루트 기록(회차별 합집합): 실제 완주 화면 도달로만 기록 — 3부 완주(p3done) 시 통일 마크 추가. 보존 분기에서도 누적(1부 완주 → 2부 재완주 시 2부 추가)
     const cm = (this.clearMarks ||= {}); const cur = (cm[this.cycle] ||= []);
     const addMark = id => { if (!cur.includes(id)) cur.push(id); };
     addMark(this.factionId + '_p1');
     if (this.hasRoute(this.factionId + '_p2')) addMark(this.factionId + '_p2');
     if (this.hasRoute(this.factionId + '_p3')) addMark(this.factionId + '_p3');
+    if (p3done) addMark(this.factionId + '_unify');
     this.save();
-    document.getElementById('complete-text').textContent += ' 루트 기록: ' + cur.map(m => m.endsWith('_p3') ? '3부' : m.endsWith('_p2') ? '2부' : '1부').join('·') + ' 완주.';
+    document.getElementById('complete-text').textContent += ' 루트 기록: ' + cur.map(m => m.endsWith('_unify') ? '통일' : m.endsWith('_p3') ? '3부' : m.endsWith('_p2') ? '2부' : '1부').join('·') + ' 완주.';
     // 2부 연장 선택(세력 공통): 미언락(route '<세력>_p2' 없음) 완주 화면에만 노출 — 명시 선택 시에만 2부가 stages에 결합되고, 미선택 세이브는 1부 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
     const P2 = isLiu
       ? { def: (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null), btn: '형주의 시련 계속 · 2부 (제10전 박망파 ~ 제11전 장판)',
@@ -1895,8 +1910,8 @@ const Game = {
     } else if (p2existing) p2existing.style.display = 'none'; // 언락 후 재완주·미대상 화면에서는 이전 렌더 잔재 숨김 — 중복 언락 버튼 노출·route 중복 push 방지
     // 3부 연장 선택: 2부 언락 상태에서 2부까지 완주(stageIndex === stages().length)한 화면에만 노출 — 명시 선택 시에만 3부가 stages에 결합. 조조 3부는 데이터 미정의로 버튼 자체 미표시
     const P3 = isLiu
-      ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전 ~ 제13전 남형주 4군)',
-          note: '정사 실재 전투(적벽 대전 208). 강·다리 배치, 수군 편성, 오군 동맹의 표현 방식은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
+      ? { def: (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3 : null), btn: '적벽의 불길 계속 · 3부 (제12전 적벽 대전 ~ 제18전 북벌·낙양 · 천하통일 엔딩)',
+          note: '정사 실재 전투(적벽 208 · 남형주 4군 209 · 낙성·익주 평정 213-14 · 정군산 219)와 IF 전투(이릉 설욕 · 북벌·낙양, 정사에 없는 가상 결말). 강·다리 배치, 수군 편성, 합류 표현, 인물 생사와 전개·승리조건은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
       : { def: (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3 : null), btn: '적벽의 퇴각 계속 · 3부 (제7전 적벽 퇴각전 ~ 제9전 한중 양평관)',
           note: '정사 실재 전투(적벽 퇴각 208). 강·다리 배치, 추격 편성, 승리조건(후퇴로 확보)은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
     const p3id = this.factionId + '_p3';
