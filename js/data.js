@@ -207,6 +207,8 @@ const CHARS = {
   yu_jin:   { name: '우금', cls: 'infantry',  hp: 190, mp: 10, atk: 38, def: 29, int: 12, spd: 14, morale: 90 }, // 박망파 하후돈과 동행(정사)
   li_dian:  { name: '이전', cls: 'infantry',  hp: 170, mp: 10, atk: 34, def: 27, int: 18, spd: 14, morale: 90 }, // 추격 만류 후 구원(정사) — 시간차 합류 시점은 각색
   cao_elite_c:{ name: '조조군 정예기병', cls: 'cavalry', hp: 150, mp: 5, atk: 40, def: 22, int: 5, spd: 23, morale: 90 }, // 장판 급습 추격대(정사상 정예 기병 5천의 게임 각색)
+  cao_soldier:{ name: '조조군 보병', cls: 'infantry', hp: 120, mp: 5, atk: 30, def: 22, int: 5, spd: 14, morale: 85 }, // 유비 2부 — 10전에 황건 병종이 섞이던 표기 결함 수정
+  cao_archer:{ name: '조조군 궁수', cls: 'archer', hp: 100, mp: 5, atk: 32, def: 18, int: 5, spd: 16, morale: 85 },
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
@@ -822,18 +824,18 @@ const LIU_STAGES2 = [
       { char: 'xiahou_dun_bowang', x: 9, y: 4, boss: true, ai: 'aggressive' },
       { char: 'yu_jin', x: 10, y: 3, ai: 'aggressive' },
       { char: 'cao_elite_c', x: 9, y: 6, ai: 'aggressive' },
-      { char: 'soldier_i', x: 11, y: 4, ai: 'aggressive' },
-      { char: 'soldier_a', x: 11, y: 6, ai: 'hold' },
+      { char: 'cao_soldier', x: 11, y: 4, ai: 'aggressive' },
+      { char: 'cao_archer', x: 11, y: 6, ai: 'hold' },
     ],
     reinforce: {
-      5: { atTurn: 5, dir: '동쪽', units: [ { char: 'li_dian', x: 12, y: 5 }, { char: 'soldier_i', x: 12, y: 6 } ] }, // 이전 구원군(정사상 구원 실재 — 5턴 합류 시점은 게임 각색)
+      5: { atTurn: 5, dir: '동쪽', units: [ { char: 'li_dian', x: 12, y: 5 }, { char: 'cao_soldier', x: 12, y: 6 } ] }, // 이전 구원군(정사상 구원 실재 — 5턴 합류 시점은 게임 각색)
     },
     rewards: { gold: 3800, items: ['meat','ore','tonic','manual'], exp: 190 },
   },
   {
     id: 11, name: '제11전 · 장판 후퇴전', maxTurns: 12, victoryType: 'hold', // hold: 12턴 생존·방어 성공이 승리(후퇴로 확보)
-    briefing: '208년, 조조의 정예 기병이 밤낮없이 추격해 장판에서 따라잡힌다(정사 실재 전투). 정사에서 이 싸움은 유비의 패퇴다 — 목표는 적을 멸하는 것이 아니라 후퇴로를 지켜 12턴을 버티는 것이며, 이 승리조건 자체가 게임 각색이다. 장비가 다리를 지키며 추격을 멈춘 기록(정사)처럼 다리 서쪽을 방어하라. 조조 본대는 아직 도착하지 않았다.',
-    victory: '후퇴로 확보(12턴 방어)', defeat: '유비 전사', // hold형: 턴 초과는 패배가 아니라 승리 — 패배는 지휘관 전사뿐
+    briefing: '208년, 조조의 정예 기병이 밤낮없이 추격해 장판에서 따라잡힌다(정사 실재 전투). 정사에서 이 싸움은 유비의 패퇴다 — 목표는 적을 멸하는 것이 아니라 후퇴로를 지켜 12턴을 버티는 것이며, 이 승리조건 자체가 게임 각색이다. 장비가 다리를 지키며 추격을 멈춘 기록(정사)처럼 다리 서쪽을 방어하라. 추격대를 모두 격퇴해도 후퇴로는 확보된다. 후속 추격대가 7턴경 합류한다(시점은 게임 각색). 조조 본대는 아직 도착하지 않았다.',
+    victory: '후퇴로 확보(12턴 방어 또는 추격대 격퇴)', defeat: '유비 전사', // hold형: 턴 한도 도달 생존 또는 추격대 전멸 모두 승리 — 패배는 지휘관 전사뿐. 두 경로를 브리핑과 판정 양쪽에 일치시킴
     map: [ // 장판 수계 축 — 다리 2칸이 유일한 결전로(장비 거수교 기록 반영)
       'MMMMMMMMMMMMMM',
       'M......~~~...M',
@@ -862,6 +864,9 @@ const LIU_STAGES2 = [
       { char: 'cao_elite_c', x: 11, y: 2, ai: 'aggressive' },
       { char: 'cao_elite_c', x: 11, y: 6, ai: 'aggressive' }, // L안: 추격대 +1기(홀드 압박)
     ],
+    reinforce: {
+      7: { atTurn: 7, dir: '동쪽', units: [ { char: 'cao_elite_c', x: 12, y: 3 }, { char: 'cao_elite_c', x: 12, y: 5 } ] }, // 후속 추격대(조조 본대 전위의 게임 각색) — 조기 전멸을 못 한 방어측에 12턴까지 압박 유지
+    },
     rewards: { gold: 4200, items: ['meat','ore','tonic','manual'], exp: 210 },
   },
 ];
