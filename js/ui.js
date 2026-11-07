@@ -1428,14 +1428,23 @@ const Game = {
       const btn = document.createElement('button');
       const use = ITEMS[it.id].use;
       const eff = use.hp ? `HP ${use.hp} 회복` : use.mp ? `MP ${use.mp} 회복` : '';
-      btn.textContent = `${ITEMS[it.id].name} ×${it.count}` + (eff ? ` · ${eff}` : '');
+      let effTxt = eff;
+      // 실수 소모 방지: 모든 효과가 회복이고 해당 수치가 이미 가득 차 있으면 비활성 (부가 효과가 있는 도구는 차단하지 않음)
+      const recovOnly = Object.keys(use).every(k => k === 'hp' || k === 'mp');
+      const hpNeedless = use.hp && u.hp >= u.maxHp;
+      const mpNeedless = use.mp && u.mp >= u.maxMp;
+      if (recovOnly && ((use.hp && !use.mp && hpNeedless) || (use.mp && !use.hp && mpNeedless) || (use.hp && use.mp && hpNeedless && mpNeedless))) {
+        btn.disabled = true;
+        effTxt = (eff ? eff + ' · ' : '') + '회복 불필요';
+      }
+      btn.innerHTML = `${ITEMS[it.id].name} ×${it.count}` + (effTxt ? `<br><span class="im-eff">${effTxt}</span>` : '');
       btn.onclick = () => {
         this.inventory.splice(it.idx, 1);
         this.battle.useItem(u, it.id, u);
         u.done = true;
         this.closeMenu(); this.menuFor = null; this.restoreMenuButtons();
         this.log(this.battle.log[this.battle.log.length - 1]);
-        this.renderBattle(); this.afterAction();
+        this.renderBattle(); this.showUnitInfo(u); this.afterAction(); // 카드 HP/MP도 즉시 갱신
       };
       m.appendChild(btn);
     }

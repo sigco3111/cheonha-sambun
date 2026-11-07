@@ -243,3 +243,8 @@ p { line-height: 1.5; }
 
 /* 대상 상세 행 텍스트 래퍼 */
 #target-detail .td-txt { flex: 1 1 auto; min-width: 0; word-break: keep-all; }
+
+/* 전투 도구 메뉴: 두 줄 표기(이름/효과) — 긴 문구 줄넘김 허용 */
+#action-menu button { white-space: normal; }
+#action-menu .im-eff { font-size: 11px; color: #b3a896; }
+#action-menu button:disabled .im-eff { color: #8a8078; }
