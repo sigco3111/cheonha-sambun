@@ -352,6 +352,17 @@ const Game = {
       const rst = document.createElement('button'); rst.textContent = '기본 편성으로';
       rst.onclick = () => { this.deploySel = null; this.save(); this.renderBriefing(); };
       dp.appendChild(rst);
+      // 인원 미달이면 출전 버튼 비활성 + 버튼 바로 위에 부족 인원 안내 (무효 편성 차단 엔진 가드는 startBattle에 그대로 유지)
+      const bd = document.getElementById('btn-deploy');
+      if (bd) {
+        bd.disabled = !dep.valid;
+        let bn = document.getElementById('deploy-block-note');
+        if (!dep.valid) {
+          if (!bn) { bn = document.createElement('div'); bn.id = 'deploy-block-note'; bn.className = 'dim'; bd.parentNode.insertBefore(bn, bd); }
+          bn.textContent = `출전 인원이 ${slots}명이 되어야 출진할 수 있습니다 (현재 ${dep.sel.length}/${slots}명)`;
+          bn.style.display = '';
+        } else if (bn) bn.style.display = 'none';
+      }
     }
     // 회차 시작 지원(택1): 업적 해금 옵션만 표시. 첫 전투 브리핑에서만 받을 수 있고 출진 시 미선택은 포기 확정
     const sp = document.getElementById('brief-support');
