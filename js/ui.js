@@ -1764,7 +1764,7 @@ const Game = {
       n2.textContent = P2.note;
       p2.appendChild(n2);
       const b2 = document.createElement('button'); b2.id = 'btn-cao-part2'; b2.textContent = P2.btn;
-      b2.onclick = () => { this.route.push({ c: this.cycle, id: p2id }); this.save(); this.renderBriefing(); };
+      b2.onclick = () => { if (this.hasRoute(p2id)) return; this.route.push({ c: this.cycle, id: p2id }); this.save(); this.renderBriefing(); }; // 중복 클릭·잔재 호출 안전: route 중복 push는 화면 숨김이 아니라 핸들러에서 방지
       p2.appendChild(b2);
     } else if (p2existing) p2existing.style.display = 'none'; // 언락 후 재완주·미대상 화면에서는 이전 렌더 잔재 숨김 — 중복 언락 버튼 노출·route 중복 push 방지
     // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)
