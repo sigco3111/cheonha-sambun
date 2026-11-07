@@ -1709,12 +1709,12 @@ const Game = {
     if (nc) { nc.disabled = false; nc.textContent = '다음 회차 시작 (미완주 후일담 생략)'; }
     const current=this.epilogue&&this.epilogue.c===this.cycle?this.epilogue:null;
     const cleared=current&&current.status==='cleared';
-    const lastName = this.stages()[this.stages().length - 1].name.split('·')[1].trim();
+    const lastName = this.stages()[this.stages().length - 1].name.split('·')[1].trim(); // 유비도 2부 연장 시엔 마지막 전투명(장판)을 엔딩 문구에 사용 — 미연장 유비는 기존 '하비' 문구 유지
     const EPI_LABEL={escape:'하비의 탈출로',yuan_hunt:'원소 추격'}; // 후일담 시험전 표시명 — 세력별 시험전(유비 escape/조조 yuan_hunt)
     document.getElementById('complete-title').textContent = `${this.cycle}회차 클리어!`;
     document.getElementById('complete-text').textContent =
       `${this.stages().length}개 공통 전투를 모두 클리어했습니다. 군단·장비·소지품을 유지한 채 ${this.cycle + 1}회차를 시작할 수 있습니다.`
-      +(cleared?` IF 후일담 완주: ${current.id==='yuan_hunt'?'원소를 사로잡은':'백성의 탈출로를 연'} 가상 엔딩을 별도 기록했습니다.`:` 공통 전역 엔딩: ${isLiu ? '하비' : lastName}의 싸움이 끝나고 군단은 다음 여정을 준비합니다.`);
+      +(cleared?` IF 후일담 완주: ${current.id==='yuan_hunt'?'원소를 사로잡은':'백성의 탈출로를 연'} 가상 엔딩을 별도 기록했습니다.`:` 공통 전역 엔딩: ${isLiu && !this.hasRoute('liu_p2') ? '하비' : lastName}의 싸움이 끝나고 군단은 다음 여정을 준비합니다.`);
     // 성과 기반 엔딩 분기 첫 단계: 이번 회차 누적 전사자 0이면 무결 완주 — 세력 전역 엔딩 이력에 기록(분기 엔딩의 기초)
     // 엔딩 기록: 이번 회차 누적 전사자 0이면 무결 — 단, 같은 회차에 이미 기록된 엔딩은 보존(전역 확장으로 추가된 전투를 이어가도 완료 시점에 사용자에게 표시된 기존 엔딩을 덮어쓰지 않음). deaths 미상(구 세이브)은 통상 완주 폴백 — 무결을 미검증으로 주장하지 않음
     (this.endingHistory ||= {});
