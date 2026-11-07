@@ -207,6 +207,18 @@ const Game = {
       joined.push('taishi_ci');
       this.save();
     }
+    // 정사 기반 합류(유비 3부): 16전(익주 평정) 진입 시 마초 편입 — 정사 실재(214년 귀부), 편입 표현은 각색. 1회·평균레벨 규칙 동일
+    if (this.stageIndex >= 15 && this.hasRoute('liu_p3')) {
+      if (!this.army.ma_chao) {
+        const lv = Math.max(1, Math.round(Object.values(this.army).reduce((sum, a) => sum + a.level, 0) / Object.keys(this.army).length));
+        const c = CHARS.ma_chao, g = lv - 1;
+        this.army.ma_chao = { charId: 'ma_chao', cls: c.cls, level: lv, exp: 0,
+          maxHp: c.hp + 4 * g, maxMp: c.mp + 2 * g, atk: c.atk + 1.6 * g, def: c.def + 1.3 * g, int: c.int + 1.4 * g, spd: c.spd + 1.1 * g,
+          equip: { weapon: { id: 'iron_sword', up: 0 }, armor: null, acc: null } };
+        joined.push('ma_chao');
+        this.save();
+      }
+    }
     // 정사 기반 합류(유비 3부): 15전(정군산) 진입 시 황충 편입 — 정사 실재, 편입 표현은 각색. 1회·평균레벨 규칙 동일
     if (this.stageIndex >= 14 && this.hasRoute('liu_p3')) {
       if (!this.army.huang_zhong) {
@@ -375,7 +387,7 @@ const Game = {
     const jn = document.getElementById('brief-join');
     if (jn) {
       const joined = this.checkJoiners();
-      const STORY_JOIN = { zhao_yun: '이 시점 이미 유비 휘하', zhuge_liang: '이 시점 이미 유비 휘하', pang_tong: '정사 실재 참모(익주 공략)', wei_yan: '정사 실재 부장(입촉)', huang_zhong: '정사 실재 장수(정군산)', zhang_he: '정사 실재 조조군 장수', zhu_ling: '정사 실재 조조군 장수', xie_biao: '정사 실재 조조군 장수', gao_zuo: '정사 실재 조조군 장수' }; // 정사 기반 편입(합류 표현만 각색) — IF 합류와 표기 분리
+      const STORY_JOIN = { zhao_yun: '이 시점 이미 유비 휘하', zhuge_liang: '이 시점 이미 유비 휘하', pang_tong: '정사 실재 참모(익주 공략)', wei_yan: '정사 실재 부장(입촉)', huang_zhong: '정사 실재 장수(정군산)', ma_chao: '정사 실재 장수(익주 귀부)', zhang_he: '정사 실재 조조군 장수', zhu_ling: '정사 실재 조조군 장수', xie_biao: '정사 실재 조조군 장수', gao_zuo: '정사 실재 조조군 장수' }; // 정사 기반 편입(합류 표현만 각색) — IF 합류와 표기 분리
       jn.innerHTML = joined.length ? joined.map(id => STORY_JOIN[id]
         ? `<b>정사 기반 합류</b> · ${CHARS[id].name}(은)는 ${STORY_JOIN[id]}(정사, 합류 표현만 각색) · 합류 Lv ${this.army[id].level}로 고정 저장`
         : `<b>오리지널 IF</b> · ${CHARS[id].name}(이)가 군단에 합류했습니다(이 게임의 가상 설정) · 합류 Lv ${this.army[id].level}로 고정 저장`).join(' / ') + ' · 아래 출전 편성에서 선택 가능' : '';

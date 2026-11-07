@@ -249,6 +249,11 @@ const CHARS = {
   xiahou_yuan_dj: { name: '하후연', cls: 'cavalry', hp: 180, mp: 15, atk: 36, def: 27, int: 14, spd: 21, morale: 100, tactics: ['intimidate'] }, // 정군산 수비 지휘(정사 실재, 斬淵) — 적벽 보스 동급
   cao_hong:  { name: '조홍', cls: 'infantry', hp: 130, mp: 10, atk: 31, def: 23, int: 12, spd: 16, morale: 90 }, // 정사 실재
   huang_zhong: { name: '황충', cls: 'archer', hp: 110, mp: 15, atk: 35, def: 22, int: 12, spd: 19, morale: 95 }, // 정사 실재 — 정군산의 노장(편입 표현은 각색)
+  // ── 유비 3부 · 익주 평정(정사 선주전 이름, 스탯은 초안 — AUTO 실측 조정 전) ──
+  ma_chao:   { name: '마초', cls: 'cavalry', hp: 115, mp: 10, atk: 37, def: 24, int: 12, spd: 24, morale: 95, tactics: ['sweep'] }, // 정사 실재 — 214년 유비에게 귀부(편입 표현은 각색)
+  liu_zhang: { name: '유장', cls: 'infantry', hp: 150, mp: 20, atk: 26, def: 30, int: 15, spd: 13, morale: 90 }, // 정사 실재 — 익주목, 성도에서 항복
+  yan_yan:   { name: '엄안', cls: 'infantry', hp: 140, mp: 10, atk: 33, def: 27, int: 14, spd: 15, morale: 92 }, // 정사 실재 — 파군 노장
+  wang_lei:  { name: '왕누', cls: 'strategist', hp: 90, mp: 30, atk: 20, def: 19, int: 31, spd: 16, morale: 88, tactics: ['fire_arrow'] }, // 정사 실재(광한 왕누, 간하다 절사) — 게임상 적 참모 각색
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -1053,6 +1058,42 @@ const LIU_STAGES3 = [
       { char: 'cao_archer', x: 8, y: 1, ai: 'guard' },
     ],
     rewards: { gold: 4900, items: ['ore','tonic','manual','rice'], exp: 250 }, // 초안
+  },
+  {
+    id: 16, name: '제16전 · 익주 평정', maxTurns: 28, bossChar: 'liu_zhang',
+    briefing: '214년, 유비는 성도를 포위하고 유장의 항복을 받아 익주를 평정한다(정사 선주전: "璋降…先主復領益州牧"). 정사에서 유장은 백성을 위해 성을 열었고, 마초의 귀부는 포위 직전의 결정타였다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성도의 수비를 꺾고 유장을 격퇴하라.',
+    victory: '유장 격퇴(익주 항복)', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1600 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 성도 평야와 성곽 전진진지(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,,,..,,...M',
+      'M.,CC,,,,,CC.M',
+      'M.,,,..,..,,.M',
+      'M..,,,,..,,..M',
+      'M.,,..,,..,,.M',
+      'M..,F,,,..,..M',
+      'M...,,,.,,...M',
+      'M..,,,...,,..M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 포위진 — 마초는 16전 진입 시 편입(정사 실재, 편입 표현은 각색)
+      { char: 'liu_bei', x: 2, y: 8, commander: true },
+      { char: 'ma_chao', x: 3, y: 7 },
+      { char: 'huang_zhong', x: 4, y: 8 },
+      { char: 'wei_yan', x: 3, y: 8 },
+      { char: 'pang_tong', x: 1, y: 7 },
+      { char: 'zhao_yun', x: 2, y: 7 },
+    ],
+    enemies: [ // 성도 수비군(정사 실재: 유장·엄안·왕누) — 편성 규모·배치는 게임 각색
+      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'yan_yan', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'wang_lei', x: 7, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
+      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
+      { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
+      { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 5000, items: ['ore','tonic','manual','rice'], exp: 260 }, // 초안
   },
 ];
 
