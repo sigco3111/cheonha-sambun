@@ -1237,7 +1237,7 @@ const Game = {
       return;
     }
     this.threatTiles = null;
-    this.selected = null; this.moveTiles = []; this.renderBattle();
+    this.selected = null; this.moveTiles = []; this.showUnitInfo(null); this.renderBattle(); // 선택 해제 시 카드도 닫아 전장 크기 복귀
   },
 
   threatRange(u) {
