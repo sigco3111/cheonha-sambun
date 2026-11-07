@@ -1418,9 +1418,17 @@ const Game = {
     m.innerHTML = '';
     const usable = this.inventory.map((it, i) => ({ ...it, idx: i })).filter(it => ITEMS[it.id].use && !ITEMS[it.id].use.promo);
     if (!usable.length) { this.log('사용할 도구가 없습니다.'); this.closeMenu(); this.menuFor = null; return; }
+    // 같은 도구는 개수로 묶어 표시 — 종류별 중복 버튼 나열로 메뉴가 전장 밖까지 넘치는 것 방지
+    const groups = [];
     for (const it of usable) {
+      const g = groups.find(g => g.id === it.id);
+      if (g) g.count++; else groups.push({ ...it, count: 1 });
+    }
+    for (const it of groups) {
       const btn = document.createElement('button');
-      btn.textContent = ITEMS[it.id].name;
+      const use = ITEMS[it.id].use;
+      const eff = use.hp ? `HP ${use.hp} 회복` : use.mp ? `MP ${use.mp} 회복` : '';
+      btn.textContent = `${ITEMS[it.id].name} ×${it.count}` + (eff ? ` · ${eff}` : '');
       btn.onclick = () => {
         this.inventory.splice(it.idx, 1);
         this.battle.useItem(u, it.id, u);
