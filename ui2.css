@@ -181,7 +181,7 @@ p { line-height: 1.5; }
 /* 정비 상점 밀도: 2열 그리드 */
 #base-shop { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 #base-shop>b { width:100%; }
-#base-shop>button { flex:1 1 44%; min-width:150px; margin:0; min-height:44px; font-size:12px; padding:8px 10px; }
+#base-shop>button { flex:1 1 44%; min-width:150px; margin:0; min-height:44px; font-size:12px; padding:8px 10px; word-break:keep-all; }
 #base-shop>div { width:100%; }
 
 /* ── v22: 정비 장수카드 밀도 (표시층만) ── */
