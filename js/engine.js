@@ -161,7 +161,9 @@ class Battle {
       this.units.push(makeUnit(e.char, e.x, e.y, 'enemy', { boss: e.boss, ai: e.ai, holdUntil: e.holdUntil, level: anchorLv + (e.boss ? 2 : 0) }));
     }
     this.anchorLv = anchorLv; // 증원 유닛도 동일 앵커(보스 가산 없음)
-    const rf = reinforceFor(stage.id, cycle, this.faction);
+    const story = stage.reinforce && Array.isArray(stage.reinforce.units) ? stage.reinforce : null; // 스토리 증원(2부 전역): 회차·변형 회전과 무관하게 항상 출현 — 브리핑이 약속하는 서사 이벤트
+    const rf = story || reinforceFor(stage.id, cycle, this.faction);
+    this.reinforceDir = rf && rf.dir ? rf.dir : null;
     this.pendingReinforce = rf ? { atTurn: rf.atTurn, units: rf.units.map(u => ({ ...u })) } : null; // 전투 변형(증원) — 미출현 목록, 전멸 승리 판정에 포함하지 않음
     this.defense = defenseFor(stage.id, cycle, this.faction); // 전투 변형(거점 사수) — 적 점거 시 패배
   }
@@ -181,7 +183,7 @@ class Battle {
           if (free(probe, spec.x + dx, spec.y + dy)) { spot = { x: spec.x + dx, y: spec.y + dy }; break outer; }
         }
       }
-      if (spot) { probe.x = spot.x; probe.y = spot.y; this.units.push(probe); const rfT=(REINFORCEMENTS[this.faction]||{})[this.stage.id]||{}; this.log.push(`적의 증원 도착: ${probe.name}(${rfT.dir||'적 후방'})`); } // 세력별 테이블 키 — 없으면 방향 표기 생략
+      if (spot) { probe.x = spot.x; probe.y = spot.y; this.units.push(probe); const rfD=this.reinforceDir || ((REINFORCEMENTS[this.faction]||{})[this.stage.id]||{}).dir; this.log.push(`적의 증원 도착: ${probe.name}(${rfD||'적 후방'})`); } // 세력별 테이블 키 — 없으면 방향 표기 생략
       else remain.push(spec);
     }
     this.pendingReinforce = remain.length ? { atTurn: this.turn + 1, units: remain } : null;

@@ -747,9 +747,7 @@ const CAO_STAGES2 = [
       { char: 'yuan_archer', x: 12, y: 3, ai: 'hold' },
       { char: 'yuan_soldier', x: 8, y: 4, ai: 'aggressive' }, // 성문 앞 견제
     ],
-    reinforce: {
-      6: { atTurn: 6, dir: '동쪽', units: [ { char: 'yuan_shang', x: 12, y: 6 }, { char: 'yuan_soldier', x: 12, y: 5 } ] }, // 원상 구원군(정사상 구원 시도 실재 — 6턴 합류 시점은 게임 각색)
-    },
+    reinforce: { atTurn: 6, dir: '동쪽', units: [ { char: 'yuan_shang', x: 12, y: 6 }, { char: 'yuan_soldier', x: 12, y: 5 } ] }, // 원상 구원군(원씨군 병종 유지 — 조조군 병종 교체는 이전 구원군만 해당)(정사상 구원 시도 실재 — 6턴 합류 시점은 게임 각색) — 스토리 증원: 회차 무관 항상 출현
     rewards: { gold: 3500, items: ['meat','ore','tonic','manual'], exp: 180 },
   },
   {
@@ -827,9 +825,7 @@ const LIU_STAGES2 = [
       { char: 'cao_soldier', x: 11, y: 4, ai: 'aggressive' },
       { char: 'cao_archer', x: 11, y: 6, ai: 'hold' },
     ],
-    reinforce: {
-      5: { atTurn: 5, dir: '동쪽', units: [ { char: 'li_dian', x: 12, y: 5 }, { char: 'cao_soldier', x: 12, y: 6 } ] }, // 이전 구원군(정사상 구원 실재 — 5턴 합류 시점은 게임 각색)
-    },
+    reinforce: { atTurn: 5, dir: '동쪽', units: [ { char: 'li_dian', x: 12, y: 5 }, { char: 'cao_soldier', x: 12, y: 6 } ] }, // 이전 구원군(정사상 구원 실재 — 5턴 합류 시점은 게임 각색) — 스토리 증원
     rewards: { gold: 3800, items: ['meat','ore','tonic','manual'], exp: 190 },
   },
   {
@@ -864,9 +860,7 @@ const LIU_STAGES2 = [
       { char: 'cao_elite_c', x: 11, y: 2, ai: 'aggressive' },
       { char: 'cao_elite_c', x: 11, y: 6, ai: 'aggressive' }, // L안: 추격대 +1기(홀드 압박)
     ],
-    reinforce: {
-      7: { atTurn: 7, dir: '동쪽', units: [ { char: 'cao_elite_c', x: 12, y: 3 }, { char: 'cao_elite_c', x: 12, y: 5 } ] }, // 후속 추격대(조조 본대 전위의 게임 각색) — 조기 전멸을 못 한 방어측에 12턴까지 압박 유지
-    },
+    reinforce: { atTurn: 7, dir: '동쪽', units: [ { char: 'cao_elite_c', x: 12, y: 3 }, { char: 'cao_elite_c', x: 12, y: 5 } ] }, // 후속 추격대(조조 본대 전위의 게임 각색) — 스토리 증원: 조기 전멸을 못 한 방어측에 12턴까지 압박 유지
     rewards: { gold: 4200, items: ['meat','ore','tonic','manual'], exp: 210 },
   },
 ];
