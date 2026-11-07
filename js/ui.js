@@ -1731,16 +1731,22 @@ const Game = {
       document.getElementById('complete-text').textContent += endingId === 'flawless' ? ' 엔딩 기록: 무결 완주(승리한 전투에서 전사자 0 · 패배/재도전 전투는 집계하지 않음).' : ' 엔딩 기록: 통상 완주.';
       if (swiftNow) document.getElementById('complete-text').textContent += ' 신속 완주 달성(이번 회차 모든 전투를 신속 목표 턴 내 승리 · 재도전 후 승리도 인정, 패배한 전투의 턴은 집계하지 않음).';
     }
-    // 조조 2부 연장 선택: 미언락(route 'cao_p2' 없음) 조조 완주 화면에만 노출 — 명시 선택 시에만 5·6전이 stages에 결합되고, 미선택 세이브는 4전 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
-    if (!isLiu && this.stageIndex === this.stages().length && !this.hasRoute('cao_p2') && typeof CAO_STAGES2 !== 'undefined' && CAO_STAGES2.length) {
+    // 2부 연장 선택(세력 공통): 미언락(route '<세력>_p2' 없음) 완주 화면에만 노출 — 명시 선택 시에만 2부가 stages에 결합되고, 미선택 세이브는 1부 완주 의미·엔딩 기록이 그대로 유지됨. 후일담과 무관한 별도 선택
+    const P2 = isLiu
+      ? { def: (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2 : null), btn: '형주의 시련 계속 · 2부 (제10전 박망파 ~ 제11전 장판)',
+          note: '정사 실재 전투 2종(박망파 · 장판 208). 박망파의 화계는 유비의 위장퇴각 계책(정사)이며 제갈량 지휘 화공은 연의 창작, 장판의 후퇴로 확보 승리조건은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' }
+      : { def: (typeof CAO_STAGES2 !== 'undefined' ? CAO_STAGES2 : null), btn: '북방 원정 계속 · 2부 (제5전 업 포위 ~ 제6전 백랑산)',
+          note: '정사 실재 전투 2종(업 포위전 204 · 백랑산 결전 207). 편성·승리조건·증원 시점 등은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.' };
+    const p2id = this.factionId + '_p2';
+    if (this.stageIndex === this.stages().length && P2.def && P2.def.length && !this.hasRoute(p2id)) {
       let p2 = document.getElementById('cao-part2-choice');
       if (!p2) { p2 = document.createElement('div'); p2.id = 'cao-part2-choice'; document.getElementById('complete-text').after(p2); }
       p2.innerHTML = '';
       const n2 = document.createElement('p'); n2.className = 'dim';
-      n2.textContent = '정사 실재 전투 2종(업 포위전 204 · 백랑산 결전 207). 편성·승리조건·증원 시점 등은 게임 각색입니다. 계속해도 기존 완주·엔딩 기록은 보존됩니다.';
+      n2.textContent = P2.note;
       p2.appendChild(n2);
-      const b2 = document.createElement('button'); b2.id = 'btn-cao-part2'; b2.textContent = '북방 원정 계속 · 2부 (제5전 업 포위 ~ 제6전 백랑산)';
-      b2.onclick = () => { this.route.push({ c: this.cycle, id: 'cao_p2' }); this.save(); this.renderBriefing(); };
+      const b2 = document.createElement('button'); b2.id = 'btn-cao-part2'; b2.textContent = P2.btn;
+      b2.onclick = () => { this.route.push({ c: this.cycle, id: p2id }); this.save(); this.renderBriefing(); };
       p2.appendChild(b2);
     }
     // 선택형 IF 후일담 패널은 양 세력 공통 — 시험전 내용만 세력별(유비 하비의 탈출로 / 조조 원소 추격)

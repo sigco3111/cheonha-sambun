@@ -202,6 +202,11 @@ const CHARS = {
   shen_pei:  { name: '심배', cls: 'infantry',  hp: 185, mp: 10, atk: 36, def: 30, int: 20, spd: 13, morale: 95 }, // 5전 보스 — 정사상 업 성 수비 사령(성내 방어·회복 이점 위치 배치)
   yuan_shang:{ name: '원상', cls: 'cavalry',   hp: 120, mp: 10, atk: 31, def: 22, int: 12, spd: 21, morale: 90 }, // 업 구원군(정사상 구원 시도 실재, 시간차 합류는 게임 각색) — 백랑산 지휘관 명단에도 포함
   tadun:     { name: '답돈', cls: 'cavalry',   hp: 200, mp: 10, atk: 40, def: 24, int: 8,  spd: 24, morale: 95 }, // 6전 보스 — 오환 족장(정사)
+  // ── 유비 2부 · 박망파(정사, 연대 미명기)/장판(208, 정사) — 정사 실재 인물, 스탯은 기존 동급 장수 체계 · 기존 스프라이트 재사용 ──
+  xiahou_dun_bowang:{ name: '하후돈', cls: 'cavalry',  hp: 190, mp: 15, atk: 38, def: 26, int: 9,  spd: 22, morale: 95 }, // 10전 보스 — 정사상 유비의 복병에 진입해 패한 추격 지휘관(적 버전은 _bowang 접미, lu_bu_siege 패턴)
+  yu_jin:   { name: '우금', cls: 'infantry',  hp: 140, mp: 10, atk: 32, def: 27, int: 12, spd: 14, morale: 90 }, // 박망파 하후돈과 동행(정사)
+  li_dian:  { name: '이전', cls: 'infantry',  hp: 130, mp: 10, atk: 29, def: 25, int: 18, spd: 14, morale: 90 }, // 추격 만류 후 구원(정사) — 시간차 합류 시점은 각색
+  cao_elite_c:{ name: '조조군 정예기병', cls: 'cavalry', hp: 110, mp: 5, atk: 34, def: 20, int: 5, spd: 23, morale: 90 }, // 장판 급습 추격대(정사상 정예 기병 5천의 게임 각색)
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
   yuan_archer:{ name: '원소군 궁수', cls: 'archer',  hp: 74, mp: 5, atk: 26, def: 15, int: 5, spd: 16, morale: 85 },
@@ -780,6 +785,83 @@ const CAO_STAGES2 = [
       { char: 'yuan_shang', x: 12, y: 3, ai: 'hold' },
     ],
     rewards: { gold: 4500, items: ['meat','ore','tonic','manual'], exp: 220 },
+  },
+];
+
+// ═══ 유비군 2부 전역 · 박망파~장판 ═══
+// 역사 구분(전투·화계·지휘자 분리): 박망파는 정사 실재 — 복병+자기 진영 소각 위장퇴각(自燒屯偽遁)은 유비의 계책(정사 촉지 권2 선주전 §19, 위지 권18 이전전 §5–6), 제갈량 지휘 대화공은 연의 창작이라 사용하지 않음. 연대는 진수 본문 미명기라 특정 연도 단정 안 함. 장판(208)은 정사상 유비 패퇴 — 승리조건 '후퇴로 확보(hold)' 자체가 게임 각색임을 브리핑에 명시. 장비의 다리 수비(據水斷橋)는 정사 기록. 출처 URL은 /tmp/cheonha3-liu2-design.md에 보존.
+// 해금: FACTIONS.liu는 9전 유지, route 'liu_p2' 언락 시에만 stages()가 결합 — 미언락 세이브 9전 완주 의미·엔딩 불변. 레벨 앵커 stage.id 10/11로 9전 직후와 자연 연결.
+const LIU_STAGES2 = [
+  {
+    id: 10, name: '제10전 · 박망파의 복병', maxTurns: 24,
+    briefing: '조조가 원소를 꺾은 뒤(연대는 정사에 밝히지 않음), 유표의 명으로 박망에서 하후돈·우금의 남하를 막는다(정사 실재 전투). 복병을 숨기고 진영을 불태워 거짓으로 물러나 적을 끌어들이는 것은 정사에 기록된 유비의 계책이다 — 제갈량이 지휘하는 대화공은 연의 창작이다. 좁은 숲길로 깊이 들어온 하후돈을 격퇴하라. 추격을 만류했던 이전의 구원군이 시간차로 합류한다(합류 시점은 게임 각색).',
+    victory: '하후돈 격퇴', defeat: '유비 전사 또는 턴 초과', bossChar: 'xiahou_dun_bowang',
+    bossDrop: 'famed_sword',
+    fastWin: { turns: 14, gold: 1300 },
+    map: [ // 박망파 복병 지형 — 좁은 숲길(정사 이전의 언급: 길이 좁고 초목이 깊음)의 게임 각색
+      'MMMMMMMMMMMMMM',
+      'M..FF....FF..M',
+      'M.FFFF..FFFF.M',
+      '...FF....FF...',
+      ',,...,,,,....,',
+      ',,.FF....FF..M',
+      'M..FFF..FFF..M',
+      'M...FF..FF...M',
+      'MM..........MM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 서쪽 매복진의 유비군
+      { char: 'liu_bei', x: 1, y: 4, commander: true },
+      { char: 'guan_yu', x: 1, y: 3 },
+      { char: 'zhang_fei', x: 2, y: 5 },
+      { char: 'jian_yong', x: 0, y: 3 },
+      { char: 'sun_qian', x: 1, y: 6 },
+      { char: 'mi_zhu', x: 1, y: 5 },
+    ],
+    enemies: [ // 하후돈 선봉 돌진(정사상 추격) — 편성 규모는 게임 각색
+      { char: 'xiahou_dun_bowang', x: 9, y: 4, boss: true, ai: 'aggressive' },
+      { char: 'yu_jin', x: 10, y: 3, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 9, y: 6, ai: 'aggressive' },
+      { char: 'soldier_i', x: 11, y: 4, ai: 'aggressive' },
+      { char: 'soldier_a', x: 11, y: 6, ai: 'hold' },
+    ],
+    reinforce: {
+      5: { atTurn: 5, dir: '동쪽', units: [ { char: 'li_dian', x: 12, y: 5 }, { char: 'soldier_i', x: 12, y: 6 } ] }, // 이전 구원군(정사상 구원 실재 — 5턴 합류 시점은 게임 각색)
+    },
+    rewards: { gold: 3800, items: ['meat','ore','tonic','manual'], exp: 190 },
+  },
+  {
+    id: 11, name: '제11전 · 장판 후퇴전', maxTurns: 12, victoryType: 'hold', // hold: 12턴 생존·방어 성공이 승리(후퇴로 확보)
+    briefing: '208년, 조조의 정예 기병이 밤낮없이 추격해 장판에서 따라잡힌다(정사 실재 전투). 정사에서 이 싸움은 유비의 패퇴다 — 목표는 적을 멸하는 것이 아니라 후퇴로를 지켜 12턴을 버티는 것이며, 이 승리조건 자체가 게임 각색이다. 장비가 다리를 지키며 추격을 멈춘 기록(정사)처럼 다리 서쪽을 방어하라. 조조 본대는 아직 도착하지 않았다.',
+    victory: '후퇴로 확보(12턴 방어)', defeat: '유비 전사', // hold형: 턴 초과는 패배가 아니라 승리 — 패배는 지휘관 전사뿐
+    map: [ // 장판 수계 축 — 다리 2칸이 유일한 결전로(장비 거수교 기록 반영)
+      'MMMMMMMMMMMMMM',
+      'M......~~~...M',
+      'M..,..~~~.,..M',
+      'M......=.....M',
+      'M,,,...=.....M',
+      'M.,....~~~...M',
+      'M..,...~~~,..M',
+      'M....,....,..M',
+      'MM...,......MM',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 다리 서쪽 방어진의 유비군 — 장비는 다리 앞 배치(정사 거수교 기록)
+      { char: 'liu_bei', x: 3, y: 4, commander: true },
+      { char: 'guan_yu', x: 4, y: 3 },
+      { char: 'zhang_fei', x: 5, y: 4 },
+      { char: 'jian_yong', x: 3, y: 3 },
+      { char: 'sun_qian', x: 3, y: 5 },
+      { char: 'mi_zhu', x: 2, y: 4 },
+    ],
+    enemies: [ // 동쪽 급습 추격대(정사상 정예 기병의 게임 각색 — 조조 본대는 미등장, 브리핑 명시)
+      { char: 'cao_elite_c', x: 10, y: 3, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 10, y: 4, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 11, y: 4, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 10, y: 5, ai: 'aggressive' },
+      { char: 'cao_elite_c', x: 11, y: 2, ai: 'aggressive' },
+    ],
+    rewards: { gold: 4200, items: ['meat','ore','tonic','manual'], exp: 210 },
   },
 ];
 
