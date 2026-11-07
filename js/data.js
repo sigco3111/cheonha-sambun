@@ -239,6 +239,16 @@ const CHARS = {
   yang_ren:  { name: '양임', cls: 'infantry', hp: 145, mp: 10, atk: 33, def: 24, int: 10, spd: 15, morale: 90 }, // 정사 실재 — 야습으로 전사
   hanzhong_soldier: { name: '한중 수비병', cls: 'infantry', hp: 100, mp: 5, atk: 27, def: 21, int: 5, spd: 13, morale: 85 },
   hanzhong_archer:  { name: '한중 궁수',   cls: 'archer',   hp: 84,  mp: 5, atk: 29, def: 16, int: 5, spd: 15, morale: 85 },
+  // ── 유비 3부 · 낙성 공략(정사 선주전 이름, 스탯은 초안 — AUTO 실측 조정 전) ──
+  liu_xun:   { name: '유순', cls: 'infantry', hp: 170, mp: 15, atk: 33, def: 26, int: 15, spd: 14, morale: 95 }, // 유장의 아들 — 낙성 수비 지휘(정사 실재)
+  zhang_ren: { name: '장임', cls: 'cavalry',  hp: 155, mp: 10, atk: 35, def: 24, int: 12, spd: 20, morale: 95 }, // 정사 실재 — 낙성 방어 후 전사
+  pang_tong: { name: '방통', cls: 'strategist', hp: 82, mp: 40, atk: 12, def: 14, int: 35, spd: 15, morale: 95, tactics: ['fire','heal'] }, // 정사 실재 — 익주 공략 참모(제갈량급 지력, 편입 표현은 각색)
+  wei_yan:   { name: '위연', cls: 'infantry', hp: 118, mp: 15, atk: 34, def: 24, int: 12, spd: 19, morale: 95 }, // 정사 실재 — 부장으로 입촉(편입 표현은 각색)
+  shu_guard: { name: '익주 수비병', cls: 'infantry', hp: 105, mp: 5, atk: 28, def: 21, int: 5, spd: 13, morale: 85 },
+  // ── 유비 3부 · 정군산(정사 선주전 이름, 스탯은 초안 — AUTO 실측 조정 전) ──
+  xiahou_yuan_dj: { name: '하후연', cls: 'cavalry', hp: 180, mp: 15, atk: 36, def: 27, int: 14, spd: 21, morale: 100, tactics: ['intimidate'] }, // 정군산 수비 지휘(정사 실재, 斬淵) — 적벽 보스 동급
+  cao_hong:  { name: '조홍', cls: 'infantry', hp: 130, mp: 10, atk: 31, def: 23, int: 12, spd: 16, morale: 90 }, // 정사 실재
+  huang_zhong: { name: '황충', cls: 'archer', hp: 110, mp: 15, atk: 35, def: 22, int: 12, spd: 19, morale: 95 }, // 정사 실재 — 정군산의 노장(편입 표현은 각색)
   cao_cao_chibi:{ name: '조조', cls: 'infantry',   hp: 185, mp: 35, atk: 38, def: 30, int: 26, spd: 16, morale: 100, tactics: ['intimidate'] }, // 적벽 보스 — 심배(hp185/def30) 동급 후반 보스. 초기 220/40/32는 AUTO 실측 전패로 하향
   wuhuan_c:  { name: '오환 돌격기병', cls: 'cavalry', hp: 100, mp: 5, atk: 32, def: 18, int: 4, spd: 22, morale: 90 }, // 백랑산 오환 기병 돌격의 게임 각색 편성
 
@@ -971,6 +981,78 @@ const LIU_STAGES3 = [
       { char: 'jing_archer', x: 11, y: 10, ai: 'hold', holdUntil: 8 },
     ],
     rewards: { gold: 4600, items: ['meat','ore','tonic','manual'], exp: 220 }, // 초안
+  },
+  {
+    id: 14, name: '제14전 · 낙성 공략', maxTurns: 26, bossChar: 'liu_xun',
+    briefing: '213년, 유비는 유장과 결별하고 늑성을 향해 북상한다. 낙성은 유장의 아들 유순과 장임이 지키는 익주의 핵심 성이다(정사 선주전: "進軍圍雒…十九年夏，雒城破…進圍成都…璋出降"). 정사에서 낙성은 이듬해에야 함락됐고 이 공략 과정에서 방통이 전사했다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성벽을 돌파하고 수비대장 유순을 격퇴하라.',
+    victory: '유순 격퇴(낙성 함락)', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 15, gold: 1500 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 낙성 성곽 — 성벽(#)과 관문(G), 성내 수비(유비 5전 낙양 공성 구조 계열, 게임 각색)
+      'MMMMMMMMMMMMMM',
+      'M..,,,....,,.M',
+      'M.,,,..F..,,.M',
+      'M....,,,,,...M',
+      'MCCC.F~~F.CCCM',
+      'MCVG..~~..GVCM',
+      'M...,.==.,...M',
+      'M....,,,,,...M',
+      'M.,,,..F..,,.M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 포위진의 유비군 — 방통·위연은 14전 진입 시 편입(정사 실재, 편입 표현은 각색)
+      { char: 'liu_bei', x: 6, y: 8, commander: true },
+      { char: 'guan_yu', x: 5, y: 7 },
+      { char: 'zhang_fei', x: 7, y: 7 },
+      { char: 'zhao_yun', x: 4, y: 8 },
+      { char: 'pang_tong', x: 6, y: 7 },
+      { char: 'wei_yan', x: 8, y: 8 },
+    ],
+    enemies: [ // 성내 수비대(정사 실재 지휘관: 유순·장임) — 편성 규모·배치는 게임 각색
+      { char: 'liu_xun', x: 5, y: 5, boss: true, ai: 'guard' }, // 유순(정사 실재)
+      { char: 'zhang_ren', x: 9, y: 5, ai: 'hold', holdUntil: 6 }, // 장임(정사 실재)
+      { char: 'shu_guard', x: 2, y: 4, ai: 'guard' },
+      { char: 'shu_guard', x: 11, y: 4, ai: 'guard' },
+      { char: 'shu_guard', x: 4, y: 4, ai: 'guard' },
+      { char: 'jing_archer', x: 3, y: 5, ai: 'guard' },
+      { char: 'jing_archer', x: 10, y: 5, ai: 'guard' },
+    ],
+    rewards: { gold: 4800, items: ['ore','tonic','manual','rice'], exp: 240 }, // 초안
+  },
+  {
+    id: 15, name: '제15전 · 정군산', maxTurns: 26, bossChar: 'xiahou_yuan_dj',
+    briefing: '219년, 유비는 한중을 두고 조조군과 정군산에서 맞선다(정사 선주전: "於定軍山勢作營…黃忠…斬淵"). 정사에서 황충의 공격으로 하후연이 전사했고 이 승리로 유비는 한중을 얻었다. 산지 전투의 전개·편성·승리조건은 게임 각색이다. 산세를 타고 내려오는 하후연의 본대를 격퇴하라.',
+    victory: '하후연 격퇴', defeat: '유비 전사 또는 턴 초과',
+    fastWin: { turns: 14, gold: 1500 }, // 초안 — 자연 완주 표본 없음
+    map: [ // 정군산 산지 — 북쪽 산세의 수비진과 남쪽 진군로(게임 각색)
+      'MMMMMMMMMMMMMM',
+      'MM....,,....MM',
+      'M.MMM,,,..,,.M',
+      'M.,,,MM..,,..M',
+      '...,,,,,,....M',
+      ',,.MM,,,,.M..M',
+      'M..,,,F.,,..MM',
+      'M...,,,,.MM..M',
+      'MM..,,,,.....M',
+      'MMMMMMMMMMMMMM',
+    ],
+    players: [ // 남쪽 진군로의 유비군 — 황충은 15전 진입 시 편입(정사 실재, 편입 표현은 각색)
+      { char: 'liu_bei', x: 2, y: 8, commander: true },
+      { char: 'zhao_yun', x: 3, y: 7 },
+      { char: 'huang_zhong', x: 4, y: 8 },
+      { char: 'wei_yan', x: 3, y: 8 },
+      { char: 'pang_tong', x: 1, y: 7 },
+      { char: 'guan_yu', x: 2, y: 7 },
+    ],
+    enemies: [ // 북쪽 산세 수비대(정사 실재 지휘관: 하후연·조홍, 장합은 한중 공방 실재) — 편성 규모·배치는 게임 각색
+      { char: 'xiahou_yuan_dj', x: 7, y: 2, boss: true, ai: 'hold', holdUntil: 5 },
+      { char: 'cao_hong', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'zhang_he', x: 9, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'cao_soldier', x: 4, y: 2, ai: 'guard' },
+      { char: 'cao_soldier', x: 10, y: 2, ai: 'guard' },
+      { char: 'cao_archer', x: 6, y: 1, ai: 'guard' },
+      { char: 'cao_archer', x: 8, y: 1, ai: 'guard' },
+    ],
+    rewards: { gold: 4900, items: ['ore','tonic','manual','rice'], exp: 250 }, // 초안
   },
 ];
 
