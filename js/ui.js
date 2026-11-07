@@ -809,9 +809,9 @@ const Game = {
         const k = it.id + '|' + (it.up || 0);
         if (seen[k] !== undefined) { opts[seen[k]].n++; return; }
         seen[k] = opts.length;
-        opts.push({ i, n: 1, label: `${ITEMS[it.id].name}${it.up ? '+' + it.up : ''} — ${this.itemStatText(it)}` });
+        opts.push({ i, n: 1, label: `${ITEMS[it.id].name}${it.up ? '+' + it.up : ''} (${this.itemStatText(it)})` });
       });
-      sel.innerHTML = `<option value="__keep" selected disabled>${curTxt} — 변경하려면 선택</option><option value="">(비우기)</option>` +
+      sel.innerHTML = `<option value="__keep" selected disabled>${curTxt} (변경하려면 선택)</option><option value="">(비우기)</option>` +
         opts.map(o => `<option value="${o.i}">${o.label}${o.n > 1 ? ' ×' + o.n : ''}</option>`).join('');
       sel.onchange = () => {
         if (cur) this.inventory.push(cur);
