@@ -17,7 +17,7 @@ p { line-height: 1.5; }
 #battle-top .dim, #battle-top > span.dim { display: none; } /* 자동전투 안내: 로그 스트립에서 확인 */
 /* 줌·속도: 지도 위 플로팅 (반투명, 44px 히트영역) */
 #battle-main { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; flex-direction: column; display: flex; padding-bottom: 60px; }
-#battle-wrap { flex: 0 1 auto; min-height: 160px; position: relative; overflow: auto; }
+#battle-wrap { flex: 0 0 auto; position: relative; }
 /* 줌·속도: 헤더 2행 조작 스트립(지도를 가리지 않음, 44px 터치) */
 #zoom-controls { flex: 0 0 auto; gap: 4px; padding: 0; margin-left: auto; }
 #zoom-controls button { padding: 4px 6px; font-size: 13px; min-height: 44px; min-width: 44px; }
@@ -225,3 +225,18 @@ p { line-height: 1.5; }
 
 /* 가로/데스크톱: 헤더 버튼 축소 방지(글자 잘림 수정) */
 #battle-top button { flex: 0 0 auto; white-space: nowrap; }
+
+/* 유닛 카드 상세 펼침(표시층) */
+#unit-info .uc-more { display:block; width:100%; min-height:26px; margin-top:4px; padding:2px 10px; background:#26221d; border:1px solid rgba(240,217,168,.25); border-radius:5px; color:#f0d9a8; font-size:11px; text-align:left; cursor:pointer; }
+#unit-info .uc-detail[hidden] { display:none; }
+
+/* 유닛 카드 표시 중에는 로그 스트립을 숨겨 카드 공간 확보(토글 행은 유지, 시트로 열람 가능) */
+#unit-info:not(:empty) ~ #ui2-logwrap #battle-log { display: none; }
+/* 카드 표시 중에도 로그 시트(펼침)는 정상 표시 */
+#unit-info:not(:empty) ~ #ui2-logwrap.open #battle-log { display: block; }
+
+
+/* 유닛 카드 표시 중: 전장을 축소 허용하고 하단 패널은 내용 높이(카드+토글 행)만 사용 */
+#battle-main:has(#unit-info:not(:empty)) #battle-wrap { flex: 0 1 auto; min-height: 150px; overflow: auto; }
+#battle-main:has(#unit-info:not(:empty)) #battle-bottom { flex: 0 0 auto; align-self: stretch; }
+#battle-main:has(#unit-info:not(:empty)) #unit-info { max-height: none; }

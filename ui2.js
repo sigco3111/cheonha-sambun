@@ -43,8 +43,11 @@
         ${bar('uc-mp',u.mp,u.maxMp)}
         <div class="uc-morale">사기 ${moraleTxt}</div>
       </div></div>
-      <div class="uc-stats">${stat('공격',u.atk+es.atk)}${stat('방어',u.def+es.def)}${stat('지략',u.int)}${stat('속도',u.spd)}</div>
-      <div class="uc-trait">${this.traitText(u)}</div>`;
+      <button type="button" class="uc-more">상세 보기 ▾</button>
+      <div class="uc-detail" hidden><div class="uc-stats">${stat('공격',u.atk+es.atk)}${stat('방어',u.def+es.def)}${stat('지략',u.int)}${stat('속도',u.spd)}</div>
+      <div class="uc-trait">${this.traitText(u)}</div></div>`;
+    const more=el.querySelector('.uc-more');
+    if(more)more.addEventListener('click',()=>{const d=el.querySelector('.uc-detail');const open=d.hidden;d.hidden=!open;more.textContent=open?'접기 ▴':'상세 보기 ▾';});
   };
   const wrap=()=>{
     if(typeof Game==='undefined'||Game._ui2Card)return;
