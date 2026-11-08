@@ -25,7 +25,10 @@ window.addEventListener('load', () => {
         const b = document.createElement('button');
         b.className = 'primary'; b.id = 'btn-faction-' + fId;
         b.style.wordBreak = 'keep-all'; // 한글 어절 중간 줄바꿈 방지 (장수명 갈라짐)
-        b.textContent = `${f.name} · ${f.stages.length}전 (${f.roster.map(id => CHARS[id].name).join('·')})`;
+        // 표기는 완결 전역 길이(1~3부 합산) — f.stages는 1부 기본 배열만 담고 2부·3부는 루트 해금 시 Game.stages()가 결합하므로 여기서는 확장 배열 존재 시 합산
+        const ext = (fId === 'cao' ? (typeof CAO_STAGES2 !== 'undefined' ? CAO_STAGES2.length : 0) + (typeof CAO_STAGES3 !== 'undefined' ? CAO_STAGES3.length : 0)
+                    : fId === 'liu' ? (typeof LIU_STAGES2 !== 'undefined' ? LIU_STAGES2.length : 0) + (typeof LIU_STAGES3 !== 'undefined' ? LIU_STAGES3.length : 0) : 0);
+        b.textContent = `${f.name} · ${f.stages.length + ext}전 (${f.roster.map(id => CHARS[id].name).join('·')})`;
         b.onclick = () => { div.remove(); startNewGame(fId); };
         div.appendChild(b); div.appendChild(document.createTextNode(' '));
       }
