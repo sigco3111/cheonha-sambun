@@ -412,11 +412,11 @@ class Battle {
     // 모사: 아군 치유 우선
     if (u.tactics.includes('heal') && u.mp >= TACTICS.heal.mp) {
       const hurt = friends.filter(f => f.hp < f.maxHp * 0.6 && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.heal.range);
-      if (hurt.length) { this.useTactic(u, 'heal', hurt[0].x, hurt[0].y); return; }
+      if (hurt.length) return this.useTactic(u, 'heal', hurt[0].x, hurt[0].y);
     }
     if (u.tactics.includes('cheer') && u.mp >= TACTICS.cheer.mp && Math.random() < 0.4) {
       const low = friends.filter(f => f.morale < 70 && Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.cheer.range);
-      if (low.length) { this.useTactic(u, 'cheer', low[0].x, low[0].y); return; }
+      if (low.length) return this.useTactic(u, 'cheer', low[0].x, low[0].y);
     }
     // 이미 사거리 안 적이 있으면 공격
     let targets = this.targetsFor(u);
@@ -474,7 +474,7 @@ class Battle {
       if (this.weather !== 'rain' && u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp && catOf(u) === 'strategist') { // 비: AI 화계 후보 배제(실패 행동 반복 방지)
         const t = targets[0];
         const d = Math.abs(t.x - u.x) + Math.abs(t.y - u.y);
-        if (d <= TACTICS.fire.range && (t.boss || t.hp > u.atk * 2)) { this.useTactic(u, 'fire', t.x, t.y); return; }
+        if (d <= TACTICS.fire.range && (t.boss || t.hp > u.atk * 2)) return this.useTactic(u, 'fire', t.x, t.y);
       }
       // 위협: 사거리 내 적 2기 이상이면 사기 붕괴 노림
       if (u.tactics.includes('intimidate') && u.mp >= TACTICS.intimidate.mp) {
@@ -485,15 +485,15 @@ class Battle {
           const n = inRange.filter(v => Math.abs(v.x - c.x) + Math.abs(v.y - c.y) <= it.area).length;
           if (n > bestN) { bestN = n; bestC = c; }
         }
-        if (bestN >= 2) { this.useTactic(u, 'intimidate', bestC.x, bestC.y); return; }
+        if (bestN >= 2) return this.useTactic(u, 'intimidate', bestC.x, bestC.y);
       }
       // 가장 약한 적 공격
       const t = targets.reduce((a, b) => (b.hp < a.hp ? b : a));
-      this.attack(u, t);
+      return this.attack(u, t);
     } else if (u.tactics.includes('fire') && u.mp >= TACTICS.fire.mp) {
       // 사거리 내 적에게 화계
       const inR = foes.filter(f => Math.abs(f.x - u.x) + Math.abs(f.y - u.y) <= TACTICS.fire.range);
-      if (inR.length) this.useTactic(u, 'fire', inR[0].x, inR[0].y);
+      if (inR.length) return this.useTactic(u, 'fire', inR[0].x, inR[0].y);
     }
   }
 

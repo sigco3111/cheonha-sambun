@@ -90,7 +90,13 @@ localStorage 자동 저장 - 전투 승리 시마다 저장되고 타이틀의 '
 
 ## 에셋
 
-모든 그래픽은 자체 생성한 AI 이미지 시트를 잘라 재배치한 것이다(지형 타일, 병종 스프라이트, 장수 초상). 외부 게임·저작물의 이미지를 가져오거나 복사한 것은 없다.
+지형 타일, 병종 스프라이트, 장수 초상은 자체 생성한 AI 이미지 시트를 잘라 재배치한 것이다. 외부 게임·저작물의 이미지를 가져오거나 복사한 것은 없다.
+
+전투 이펙트(assets/fx/)만 아래의 자유 배포 에셋을 축소·착색해 사용했다.
+
+- Kenney Particle Pack (CC0, kenney.nl) - 베기/피격 스파크/격파 연기/별 시트
+- Animated Explosions by Nikita_Sadkov (CC0, opengameart.org) - 화계 폭발 시트
+- Magic Pack by Luis Zuno @ansimuz (자유 사용·수정·재배포 허용) - 치유 반짝임, 위협 암흑 시트
 
 ## 참고
 

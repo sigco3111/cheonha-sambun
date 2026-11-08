@@ -10,9 +10,22 @@ const SPRITE_FILE = {cavalry:'1-cavalry', archer:'2-archer', strategist:'1-strat
 // Individual commander sprites (allied officers); fallback to class sprite when absent.
 const CHAR_SPRITES = ['liu_bei','guan_yu','zhang_fei','jian_yong','sun_qian','mi_zhu','cheng','deng','pei','zhang_jue','hua_xiong','lu_bu','li_ru','dong_zhuo','li_jue','guo_si','cao_cao','xiahou_dun','xiahou_yuan','cao_ren','yue_jin','xun_yu','yuan_shao','yan_liang','wen_chou','ju_shou'];
 
+const FX_SHEETS = {
+  slash: { src: 'assets/fx/slash.png', frames: 4, fw: 64, fh: 64 },
+  hit_spark: { src: 'assets/fx/hit_spark.png', frames: 4, fw: 64, fh: 64 },
+  smoke: { src: 'assets/fx/smoke.png', frames: 5, fw: 64, fh: 64 },
+  stars: { src: 'assets/fx/stars.png', frames: 5, fw: 64, fh: 64 },
+  explosion: { src: 'assets/fx/explosion.png', frames: 12, fw: 128, fh: 128 },
+  explosion_small: { src: 'assets/fx/explosion_small.png', frames: 8, fw: 32, fh: 32 },
+  heal_spark: { src: 'assets/fx/heal_spark.png', frames: 7, fw: 32, fh: 32 },
+  darkbolt: { src: 'assets/fx/darkbolt.png', frames: 8, fw: 88, fh: 88 },
+};
+
 function loadImages(cb) {
-  let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length; let done = 0;
+  let total = TERRAIN_KEYS.length + UNIT_SPRITES.length + CHAR_SPRITES.length + Object.keys(FX_SHEETS).length; let done = 0;
   const check = () => { if (++done >= total) cb(); };
+  IMG.fx = {};
+  for (const k of Object.keys(FX_SHEETS)) { const im = new Image(); im.onload = check; im.onerror = check; im.src = FX_SHEETS[k].src; IMG.fx[k] = im; }
   for (const k of TERRAIN_KEYS) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/terrain/${k}.png`; IMG.terrain[k] = im; }
   for (const k of UNIT_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/${SPRITE_FILE[k] || k}_0_0.png`; IMG.units[k] = im; }
   for (const k of CHAR_SPRITES) { const im = new Image(); im.onload = check; im.onerror = check; im.src = `assets/units/char_${k}_0_0.png`; (IMG.chars ||= {})[k] = im; }
@@ -1173,10 +1186,37 @@ const Game = {
         ctx.textAlign = 'left';
       }
     }
-    // 부유 텍스트 (피해/회복/상태)
+    // 전투 이펙트 + 부유 텍스트 (피해/회복/상태)
     this.fx = this.fx.filter(f => now - f.t0 < f.dur);
     for (const f of this.fx) {
-      const k = (now - f.t0) / f.dur;
+      const el = now - f.t0;
+      if (el < 0) continue; // 지연 예약된 이펙트
+      const k = el / f.dur;
+      if (f.kind === 'proj') {
+        const cx = (f.x0 + (f.x1 - f.x0) * k) * TILE + TILE / 2;
+        const cy = (f.y0 + (f.y1 - f.y0) * k) * TILE + TILE / 2;
+        const ang = Math.atan2((f.y1 - f.y0) * TILE, (f.x1 - f.x0) * TILE);
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+        ctx.strokeStyle = '#e8d9b0'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(5, 0); ctx.stroke();
+        ctx.fillStyle = '#e8d9b0';
+        ctx.beginPath(); ctx.moveTo(5, -4); ctx.lineTo(13, 0); ctx.lineTo(5, 4); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#8a6f4d'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-12, -3); ctx.lineTo(-7, 0); ctx.lineTo(-12, 3); ctx.stroke();
+        ctx.restore();
+        continue;
+      }
+      if (f.kind === 'sprite') {
+        const def = FX_SHEETS[f.img];
+        const img = def && IMG.fx[f.img];
+        if (!img || !img.naturalWidth) continue;
+        const fi = Math.min(def.frames - 1, Math.floor(k * def.frames));
+        const sz = TILE * (f.scale || 1.3);
+        ctx.globalAlpha = 1 - k * k;
+        ctx.drawImage(img, fi * def.fw, 0, def.fw, def.fh, f.x * TILE + TILE / 2 - sz / 2, f.y * TILE + TILE / 2 - sz / 2, sz, sz);
+        ctx.globalAlpha = 1;
+        continue;
+      }
       ctx.globalAlpha = 1 - k * k;
       ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
       ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 3;
@@ -1202,6 +1242,58 @@ const Game = {
     this.fx.push({ x, y, text, color, t0: performance.now(), dur: this.fast || this.auto ? 500 : 900 / this.speed });
   },
 
+  fxDur(base) { return this.fast || this.auto ? Math.min(base, 240) : base / this.speed; },
+
+  spriteFx(img, x, y, opts) {
+    opts = opts || {};
+    if (!FX_SHEETS[img]) return;
+    this.fx.push({ kind: 'sprite', img, x, y, scale: opts.scale || 1.3, t0: performance.now() + (opts.delay || 0), dur: this.fxDur(opts.dur || 480) });
+    this.scheduleFxFrame();
+  },
+
+  hitFx(x, y, crit) {
+    this.spriteFx('slash', x, y, { dur: 320, scale: crit ? 1.7 : 1.2 });
+    this.spriteFx('hit_spark', x, y, { dur: 400, scale: crit ? 1.6 : 1.1 });
+  },
+
+  arrowFx(x0, y0, x1, y1) {
+    this.fx.push({ kind: 'proj', x0, y0, x1, y1, t0: performance.now(), dur: this.fxDur(240) });
+    this.scheduleFxFrame();
+  },
+
+  smokeFx(x, y) {
+    this.spriteFx('smoke', x, y, { dur: 780, scale: 1.5 });
+  },
+
+  tacticFx(tid, tx, ty) {
+    const cross = [[tx, ty], [tx + 1, ty], [tx - 1, ty], [tx, ty + 1], [tx, ty - 1]];
+    if (tid === 'fire') {
+      this.spriteFx('explosion', tx, ty, { dur: 660, scale: 2.0 });
+      for (let i = 1; i < cross.length; i++) this.spriteFx('explosion_small', cross[i][0], cross[i][1], { dur: 500, scale: 1.6, delay: i * 60 });
+    } else if (tid === 'heal') {
+      this.spriteFx('heal_spark', tx, ty, { dur: 580, scale: 1.7 });
+    } else if (tid === 'cheer') {
+      for (let i = 0; i < cross.length; i++) this.spriteFx('stars', cross[i][0], cross[i][1], { dur: 620, scale: 1.2, delay: i * 50 });
+    } else if (tid === 'intimidate') {
+      for (let i = 0; i < cross.length; i++) this.spriteFx('darkbolt', cross[i][0], cross[i][1], { dur: 580, scale: 1.3, delay: i * 50 });
+    }
+  },
+
+  spawnActionFx(evs) {
+    if (!evs || !this.battle) return;
+    for (const e of evs) {
+      if (e.type === 'attack') {
+        const att = this.battle.units.find(v => v.uid === e.att);
+        const def = this.battle.units.find(v => v.uid === e.def);
+        if (!att || !def) continue;
+        if (Math.abs(att.x - def.x) + Math.abs(att.y - def.y) > 1) this.arrowFx(att.x, att.y, def.x, def.y);
+        this.hitFx(def.x, def.y, e.crit);
+      } else if (e.type === 'tactic') {
+        this.tacticFx(e.tid, e.tx, e.ty);
+      }
+    }
+  },
+
   unitAnim(u, kind, tx, ty) {
     const now = performance.now();
     if (kind === 'lunge' && tx !== undefined) {
@@ -1220,9 +1312,11 @@ const Game = {
   diffHp(before) {
     for (const u of this.battle.units) {
       const key = u.uid || u.charId + u.x + ',' + u.y;
-      const d = u.hp - (before[key] !== undefined ? before[key] : u.hp);
+      const prev = before[key] !== undefined ? before[key] : u.hp;
+      const d = u.hp - prev;
       if (d < 0) { this.popText(u.x, u.y, String(d), '#ff6a5e'); this.unitAnim(u, 'flash'); }
       else if (d > 0) this.popText(u.x, u.y, '+' + d, '#7de87d');
+      if (prev > 0 && u.hp <= 0) this.smokeFx(u.x, u.y);
     }
   },
 
@@ -1576,6 +1670,7 @@ const Game = {
     const before = this.snapshotHp();
     this.unitAnim(u, 'lunge', t.x, t.y);
     const evs = b.attack(u, t);
+    this.spawnActionFx(evs);
     this.diffHp(before);
     this.log(b.log[b.log.length - 1]);
     this.flashUnit(t);
@@ -1590,7 +1685,8 @@ const Game = {
     this.closeMenu(); this.menuFor = null; this.restoreMenuButtons();
     this.threatTiles = null;
     const before = this.snapshotHp();
-    b.useTactic(u, tid, x, y);
+    const tevs = b.useTactic(u, tid, x, y);
+    this.spawnActionFx(tevs);
     this.diffHp(before);
     this.log(b.log[b.log.length - 1]);
     u.done = true;
@@ -1624,7 +1720,8 @@ const Game = {
     for (const e of b.alive('enemy')) {
       if (b.over) break;
       const before = this.snapshotHp();
-      b.aiAct(e);
+      const aevs = b.aiAct(e);
+      this.spawnActionFx(aevs);
       this.diffHp(before);
       const last = b.log[b.log.length - 1];
       if (last && last !== this._lastLogged) { this.log(last); this._lastLogged = last; }
@@ -1652,7 +1749,8 @@ const Game = {
         if (b.over || !this.auto || this.battle !== b) break;
         if (u.done) continue;
         const before = this.snapshotHp();
-        b.aiAct(u);
+        const aevs = b.aiAct(u);
+        this.spawnActionFx(aevs);
         this.diffHp(before);
         u.done = true;
         const last = b.log[b.log.length - 1];
