@@ -1074,16 +1074,16 @@ const LIU_STAGES3 = [
   },
   {
     id: 16, name: '제16전 · 정군산', maxTurns: 26, bossChar: 'xiahou_yuan_dj',
-    briefing: '219년, 유비는 한중을 두고 조조군과 정군산에서 맞선다(정사 선주전: "於定軍山勢作營…黃忠…斬淵"). 정사에서 황충의 공격으로 하후연이 전사했고 이 승리로 유비는 한중을 얻었다. 산지 전투의 전개·편성·승리조건은 게임 각색이다. 산세를 타고 내려오는 하후연의 본대를 격퇴하라.',
+    briefing: '219년, 유비는 한중을 두고 조조군과 정군산에서 맞선다(정사 선주전: "於定軍山勢作營…黃忠…斬淵"). 정사에서 황충의 공격으로 하후연이 전사했고 이 승리로 유비는 한중을 얻었다. 산지 전투의 전개·편성·승리조건은 게임 각색이다. 능선 길목을 뚫고 산세에 웅거한 하후연의 본대를 격퇴하라.',
     victory: '하후연 격퇴', defeat: '유비 전사 또는 턴 초과',
     fastWin: { turns: 6, gold: 1500 }, // AUTO 자연 완주 3표본 2~3턴(통상 3) + 여유 — 기존 전투와 동일 산식(통상+3~5)
-    map: [ // 정군산 산지 — 북쪽 산세의 수비진과 남쪽 진군로(게임 각색)
+    map: [ // 정군산 산지 — 북쪽 산세의 수비진과 남쪽 진군로(게임 각색). 중앙 능선(y4)은 기병 불통, 길목 2곳(서 x4·동 x9)만 통행
       'MMMMMMMMMMMMMM',
       'MM....,,....MM',
       'M.MMM,,,..,,.M',
-      'M.,,,MM..,,..M',
-      '...,,,,,,....M',
-      ',,.MM,,,,.M..M',
+      'M.,,,,,..,,,.M',
+      'MMMM,MMMM,MMMM',
+      'M.,,..,,..,,.M',
       'M..,,,F.,,..MM',
       'M...,,,,.MM..M',
       'MM..,,,,.....M',
@@ -1098,9 +1098,9 @@ const LIU_STAGES3 = [
       { char: 'guan_yu', x: 2, y: 7 },
     ],
     enemies: [ // 북쪽 산세 수비대(정사 실재 지휘관: 하후연·조홍, 장합은 한중 공방 실재) — 편성 규모·배치는 게임 각색
-      { char: 'xiahou_yuan_dj', x: 7, y: 2, boss: true, ai: 'hold', holdUntil: 5 },
-      { char: 'cao_hong', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
-      { char: 'zhang_he', x: 9, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'xiahou_yuan_dj', x: 7, y: 1, boss: true, ai: 'guard' }, // 본대는 능선 안쪽에 웅거(낙성 유순과 같은 후방 guard)
+      { char: 'cao_hong', x: 4, y: 4, ai: 'guard' }, // 서쪽 길목 수비
+      { char: 'zhang_he', x: 9, y: 4, ai: 'guard' }, // 동쪽 길목 수비
       { char: 'cao_soldier', x: 4, y: 2, ai: 'guard' },
       { char: 'cao_soldier', x: 10, y: 2, ai: 'guard' },
       { char: 'cao_archer', x: 6, y: 1, ai: 'guard' },
