@@ -1047,7 +1047,7 @@ const LIU_STAGES3 = [
       'M.,CC,,,,,CC.M',
       'M.,,,..,..,,.M',
       'M..,,,,..,,..M',
-      'M.,,..,,..,,.M',
+      'M#G########G#M',
       'M..,F,,,..,..M',
       'M...,,,.,,...M',
       'M..,,,...,,..M',
@@ -1062,11 +1062,11 @@ const LIU_STAGES3 = [
       { char: 'zhao_yun', x: 2, y: 7 },
     ],
     enemies: [ // 성도 수비군(정사 실재: 유장·엄안·왕누) — 편성 규모·배치는 게임 각색
-      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
-      { char: 'yan_yan', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
+      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'guard' }, // 성도 안에 웅거(낙성 유순과 같은 후방 guard)
+      { char: 'yan_yan', x: 2, y: 5, ai: 'guard' }, // 서쪽 관문 수비
       { char: 'wang_lei', x: 7, y: 3, ai: 'hold', holdUntil: 5 },
       { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
-      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
+      { char: 'shu_guard', x: 11, y: 5, ai: 'guard' }, // 동쪽 관문 수비
       { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
       { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
     ],
@@ -1118,8 +1118,8 @@ const LIU_STAGES3 = [
       'M.,,..,,..,,.M',
       'M.,MM,,..,,,.M',
       'M..,,..,.,,..M',
-      'M,,,,~~~,,,,.M',
-      'M.,,~~~~~,,..M',
+      'M~~=~~~~~=~~~M',
+      'M.,=~~~~,=,..M',
       'M..,,~~~,.,,.M',
       'M.,,..,,..,,.M',
       'M..,,.F.,,...M',
@@ -1134,11 +1134,11 @@ const LIU_STAGES3 = [
       { char: 'ma_chao', x: 4, y: 8 },
     ],
     enemies: [ // 북쪽 오군(정사 실재: 육손·주환·손환) — 편성 규모·배치·전개는 게임 각색
-      { char: 'lu_xun', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
-      { char: 'zhu_huan', x: 4, y: 3, ai: 'hold', holdUntil: 5 },
-      { char: 'sun_huan', x: 8, y: 3, ai: 'hold', holdUntil: 5 },
-      { char: 'wu_soldier', x: 3, y: 2, ai: 'guard' },
-      { char: 'wu_soldier', x: 9, y: 2, ai: 'guard' },
+      { char: 'lu_xun', x: 6, y: 1, boss: true, ai: 'guard' }, // 강 북안 본진(낙성 유순과 같은 후방 guard)
+      { char: 'zhu_huan', x: 3, y: 4, ai: 'guard' }, // 서쪽 다리 수비
+      { char: 'sun_huan', x: 9, y: 4, ai: 'guard' }, // 동쪽 다리 수비
+      { char: 'wu_soldier', x: 3, y: 3, ai: 'guard' }, // 서쪽 다리 북안 출구 2차선
+      { char: 'wu_soldier', x: 9, y: 3, ai: 'guard' }, // 동쪽 다리 북안 출구 2차선
       { char: 'wu_archer', x: 5, y: 1, ai: 'guard' },
       { char: 'wu_archer', x: 7, y: 1, ai: 'guard' },
     ],
@@ -1336,8 +1336,8 @@ const CAO_STAGES3 = [
       'M..,,,..,,...M',
       'M.,,,..,..,,.M',
       'M..,,,,,,....M',
-      'M,,~~~,,,~~,.M',
-      'M.,~~~,,~~~,.M',
+      'M~~=~~~~~~=~~M',
+      'M..=......=..M',
       'M..,,,,,.,,..M',
       'M.,,..,,..,,.M',
       'M..,,,...,,..M',
@@ -1352,10 +1352,10 @@ const CAO_STAGES3 = [
       { char: 'cao_ren', x: 5, y: 7 },
     ],
     enemies: [ // 형주 수비군(정사 실재: 관우·관평) — 편성·배치·전개는 게임 각색
-      { char: 'guan_yu', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 5 },
-      { char: 'guan_ping', x: 4, y: 2, ai: 'hold', holdUntil: 5 },
-      { char: 'shu_guard', x: 5, y: 3, ai: 'guard' },
-      { char: 'shu_guard', x: 7, y: 3, ai: 'guard' },
+      { char: 'guan_yu', x: 6, y: 1, boss: true, ai: 'guard' }, // 강 북안 본진(후방 guard)
+      { char: 'guan_ping', x: 3, y: 4, ai: 'guard' }, // 서쪽 다리 수비
+      { char: 'shu_guard', x: 3, y: 3, ai: 'guard' }, // 서쪽 다리 북안 출구 2차선
+      { char: 'shu_guard', x: 10, y: 4, ai: 'guard' }, // 동쪽 다리 수비
       { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
       { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
     ],
