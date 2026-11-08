@@ -1047,7 +1047,7 @@ const LIU_STAGES3 = [
       'M.,CC,,,,,CC.M',
       'M.,,,..,..,,.M',
       'M..,,,,..,,..M',
-      'M#G########G#M',
+      'M.,,..,,..,,.M',
       'M..,F,,,..,..M',
       'M...,,,.,,...M',
       'M..,,,...,,..M',
@@ -1062,11 +1062,11 @@ const LIU_STAGES3 = [
       { char: 'zhao_yun', x: 2, y: 7 },
     ],
     enemies: [ // 성도 수비군(정사 실재: 유장·엄안·왕누) — 편성 규모·배치는 게임 각색
-      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'guard' }, // 성도 안에 웅거(낙성 유순과 같은 후방 guard)
-      { char: 'yan_yan', x: 2, y: 5, ai: 'guard' }, // 서쪽 관문 수비
+      { char: 'liu_zhang', x: 6, y: 2, boss: true, ai: 'hold', holdUntil: 6 },
+      { char: 'yan_yan', x: 5, y: 3, ai: 'hold', holdUntil: 5 },
       { char: 'wang_lei', x: 7, y: 3, ai: 'hold', holdUntil: 5 },
       { char: 'shu_guard', x: 4, y: 2, ai: 'guard' },
-      { char: 'shu_guard', x: 11, y: 5, ai: 'guard' }, // 동쪽 관문 수비
+      { char: 'shu_guard', x: 8, y: 2, ai: 'guard' },
       { char: 'shu_archer', x: 5, y: 1, ai: 'guard' },
       { char: 'shu_archer', x: 7, y: 1, ai: 'guard' },
     ],
