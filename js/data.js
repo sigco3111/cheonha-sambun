@@ -1002,7 +1002,7 @@ const LIU_STAGES3 = [
   },
   {
     id: 14, name: '제14전 · 낙성 공략', maxTurns: 26, bossChar: 'liu_xun',
-    briefing: '213년, 유비는 유장과 결별하고 늑성을 향해 북상한다. 낙성은 유장의 아들 유순과 장임이 지키는 익주의 핵심 성이다(정사 선주전: "進軍圍雒…十九年夏，雒城破…進圍成都…璋出降"). 정사에서 낙성은 이듬해에야 함락됐고 이 공략 과정에서 방통이 전사했다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성벽을 돌파하고 수비대장 유순을 격퇴하라.',
+    briefing: '213년, 유비는 유장과 결별하고 낙성을 향해 북상한다. 낙성은 유장의 아들 유순과 장임이 지키는 익주의 핵심 성이다(정사 선주전: "進軍圍雒…十九年夏，雒城破…進圍成都…璋出降"). 정사에서 낙성은 이듬해에야 함락됐고 이 공략 과정에서 방통이 전사했다. 포위전의 전개·편성·승리조건은 게임 각색이다. 성벽을 돌파하고 수비대장 유순을 격퇴하라.',
     victory: '유순 격퇴(낙성 함락)', defeat: '유비 전사 또는 턴 초과',
     fastWin: { turns: 6, gold: 1500 }, // AUTO 자연 완주 3표본 모두 3턴 + 여유 — 기존 전투와 동일 산식(통상+3~5)
     map: [ // 낙성 성곽 — 성벽(#)과 관문(G), 성내 수비(유비 5전 낙양 공성 구조 계열, 게임 각색)
@@ -1011,7 +1011,7 @@ const LIU_STAGES3 = [
       'M.,,,..F..,,.M',
       'M....,,,,,...M',
       'MCCC.F~~F.CCCM',
-      'MCVG..~~..GVCM',
+      'M##G######G##M',
       'M...,.==.,...M',
       'M....,,,,,...M',
       'M.,,,..F..,,.M',
@@ -1026,7 +1026,7 @@ const LIU_STAGES3 = [
       { char: 'wei_yan', x: 8, y: 8 },
     ],
     enemies: [ // 성내 수비대(정사 실재 지휘관: 유순·장임) — 편성 규모·배치는 게임 각색
-      { char: 'liu_xun', x: 5, y: 5, boss: true, ai: 'guard' }, // 유순(정사 실재)
+      { char: 'liu_xun', x: 6, y: 2, boss: true, ai: 'guard' }, // 유순(정사 실재)
       { char: 'zhang_ren', x: 9, y: 5, ai: 'hold', holdUntil: 6 }, // 장임(정사 실재)
       { char: 'shu_guard', x: 2, y: 4, ai: 'guard' },
       { char: 'shu_guard', x: 11, y: 4, ai: 'guard' },
@@ -1053,7 +1053,7 @@ const LIU_STAGES3 = [
       'M..,,,...,,..M',
       'MMMMMMMMMMMMMM',
     ],
-    players: [ // 남쪽 포위진 — 마초는 16전 진입 시 편입(정사 실재, 편입 표현은 각색)
+    players: [ // 남쪽 포위진 — 마초는 15전부터 편입(정사 실재 합류, 편입 시점·표현은 각색)
       { char: 'liu_bei', x: 2, y: 8, commander: true },
       { char: 'ma_chao', x: 3, y: 7 },
       { char: 'zhang_fei', x: 4, y: 8 },
@@ -1089,7 +1089,7 @@ const LIU_STAGES3 = [
       'MM..,,,,.....M',
       'MMMMMMMMMMMMMM',
     ],
-    players: [ // 남쪽 진군로의 유비군 — 황충은 15전 진입 시 편입(정사 실재, 편입 표현은 각색)
+    players: [ // 남쪽 진군로의 유비군 — 황충은 16전부터 편입(정사 실재 합류, 편입 시점·표현은 각색)
       { char: 'liu_bei', x: 2, y: 8, commander: true },
       { char: 'zhao_yun', x: 3, y: 7 },
       { char: 'huang_zhong', x: 4, y: 8 },
